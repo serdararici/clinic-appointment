@@ -1,3 +1,5 @@
+using Clinic.Api.Security;
+using Microsoft.AspNetCore.Authorization;
 using Clinic.Application.Appointments;
 using Clinic.Application.Exceptions;
 using Microsoft.AspNetCore.Mvc;
@@ -9,6 +11,7 @@ namespace Clinic.Api.Controllers;
 public class AppointmentsController(IAppointmentService appointmentService) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = AppRoles.Patient)]
     public async Task<ActionResult<AppointmentDto>> Create(CreateAppointmentRequest request, CancellationToken cancellationToken)
     {
         try
@@ -59,6 +62,7 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
     }
 
     [HttpPost("{id:guid}/confirm")]
+    [Authorize(Roles = AppRoles.DoctorOrClinicManager)]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -78,6 +82,7 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
 
     /// <summary>Cancels a pending or confirmed appointment; 409 if it is already rejected or cancelled.</summary>
     [HttpPost("{id:guid}/cancel")]
+    [Authorize(Roles = AppRoles.Patient)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
     {
         await appointmentService.CancelAppointmentAsync(id, cancellationToken);
@@ -85,6 +90,7 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
     }
 
     [HttpPost("{id:guid}/reject")]
+    [Authorize(Roles = AppRoles.DoctorOrClinicManager)]
     public async Task<IActionResult> Reject(Guid id, CancellationToken cancellationToken)
     {
         try

@@ -345,6 +345,37 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task Login_Throws_ForADeactivatedStaffMember_WithTheSameMessageAsAWrongPassword_UntilReactivated()
+    {
+        var branch = new ClinicFacility(Guid.NewGuid(), "Merkez", "Sakarya");
+        _clinics.Items.Add(branch);
+        var doctor = (Doctor)AddUserWithPassword(new Doctor("Dr. Hakan", "hakan@example.com", "", branch.AddDepartment("Dahiliye"), "İç Hastalıkları"));
+        var wrongPassword = await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("hakan@example.com", "Wrong123!")));
+
+        doctor.Deactivate();
+        var deactivated = await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("hakan@example.com", "Demo123!")));
+
+        Assert.Equal(wrongPassword.Message, deactivated.Message); // not distinguishable from a wrong password
+        doctor.Activate();
+        await _auth.LoginAsync(new LoginRequest("hakan@example.com", "Demo123!")); // works again
+    }
+
+    [Fact]
+    public async Task Login_Throws_ForADeactivatedTechnician_ButPatientsAndManagersAreUnaffected()
+    {
+        var branch = new ClinicFacility(Guid.NewGuid(), "Merkez", "Sakarya");
+        _clinics.Items.Add(branch);
+        var technician = (HealthTechnician)AddUserWithPassword(new HealthTechnician("Kemal", "kemal@example.com", "", branch.AddDepartment("Radyoloji"), "Teknikeri"));
+        AddUserWithPassword(new ClinicManager("Ayşe", "ayse@example.com", "", branch.Id));
+        AddUserWithPassword(new Patient("Ahmet", "ahmet@example.com", "", new DateOnly(1990, 1, 1)));
+        technician.Deactivate();
+
+        await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("kemal@example.com", "Demo123!")));
+        await _auth.LoginAsync(new LoginRequest("ayse@example.com", "Demo123!"));
+        await _auth.LoginAsync(new LoginRequest("ahmet@example.com", "Demo123!"));
+    }
+
+    [Fact]
     public async Task Login_Throws_ForAnAccountThatHasNoPasswordYet()
     {
         _users.Items.Add(new Patient("Ahmet", "ahmet@example.com", "", new DateOnly(1990, 1, 1))); // created without a hash

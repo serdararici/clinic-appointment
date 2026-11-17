@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -22,6 +22,7 @@
     <ProjectReference Include="..\..\src\Clinic.Domain\Clinic.Domain.csproj" />
     <ProjectReference Include="..\..\src\Clinic.Application\Clinic.Application.csproj" />
     <ProjectReference Include="..\..\src\Clinic.Infrastructure\Clinic.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Clinic.Api\Clinic.Api.csproj" />
   </ItemGroup>
 
 </Project>

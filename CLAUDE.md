@@ -144,7 +144,7 @@ return **all** slots with `startUtc`, `endUtc`, and `status` = `Available` | `Bo
 ## Management API
 
 Create, read, update, list and delete, under the existing layering (controller -> Application
-service -> repositories/entities). No authorization yet (it comes later). Request/response bodies
+service -> repositories/entities). Access is role-based, see "Access rules" below. Request/response bodies
 are DTOs; enums are written as names (`"Monday"`, `"Diagnostic"`) and numbers are still accepted.
 
 | Resource | Endpoints |
@@ -179,7 +179,7 @@ Delete rules (409 with a message when violated):
 - `PUT /api/staff/{id}/services` replaces the offered set; every service must belong to the staff
   member's own department (400 otherwise, nothing changes).
 
-## Authentication (login only, nothing protected yet)
+## Authentication and Authorization
 
 - `User.PasswordHash` stores a salted hash made with ASP.NET's `PasswordHasher` (only the hasher, not the Identity
   tables). Email is the login name and has a unique index (case-insensitive).
@@ -192,7 +192,27 @@ Delete rules (409 with a message when violated):
 - `Jwt:Key` (at least 32 characters), `Jwt:Issuer` and `Jwt:Audience` come from configuration. The committed
   `appsettings.json` holds a **development-only** key; outside local development override it with the
   environment variable `Jwt__Key`. The app refuses to start with a missing or too-short key.
-- No endpoint requires a token yet; authorization is a later step.
+- A **deactivated** staff member cannot log in (the same 401 as a wrong password).
+
+### Access rules (JWT bearer, role-based)
+
+Every token is validated for signature, issuer, audience and expiry (`AddJwtAuthentication`). Every controller action
+is annotated explicitly with `[AllowAnonymous]` or `[Authorize(Roles = ...)]` (constants in `AppRoles`), and a
+fallback policy makes any forgotten endpoint require a login. `AuthorizationGuardTests` scans all actions by
+reflection and fails if one has neither attribute (or `[Authorize]` without roles), so **a new endpoint must be
+annotated and, if it matters, added to the role-mapping table in that test**.
+
+| Who | May call |
+|---|---|
+| Anyone (anonymous) | `auth/register`, `auth/login`; reads of organizations, branches (and their working hours), departments, services, `departments/{id}/doctors`; slot lists (`doctors/{id}/slots`, `services/{id}/slots`) |
+| Patient | `POST appointments`, `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
+| Doctor | `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject |
+| ClinicManager | all create / update / delete of organizations, branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject |
+
+Errors use the plain-text style of the rest of the API: **401** when there is no valid token (missing, bad
+signature, wrong issuer/audience, expired), **403** when the role is not allowed. Whose data it is (a patient only
+sees their own list, a doctor only their own availability, a manager only their own branch) is **not enforced yet**:
+that comes in step 5.3, so for now any user of the right role can pass any id.
 
 ### Demo accounts
 

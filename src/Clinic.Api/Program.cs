@@ -1,4 +1,5 @@
 using Clinic.Api.ErrorHandling;
+using Clinic.Api.Security;
 using Clinic.Application.Appointments;
 using Clinic.Application.Auth;
 using Clinic.Application.Availability;
@@ -25,6 +26,7 @@ builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddJwtAuthentication();
 builder.Services.AddScoped<ISlotService, SlotService>();
 // "Now" comes from TimeProvider so "Past" slots and booking in the past can be tested with a fixed clock.
 builder.Services.AddSingleton(TimeProvider.System);
@@ -45,13 +47,14 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.MapOpenApi().AllowAnonymous();
 }
 
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

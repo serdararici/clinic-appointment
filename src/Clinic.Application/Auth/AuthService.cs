@@ -81,6 +81,12 @@ public class AuthService(
             throw new InvalidCredentialsException();
         }
 
+        // A deactivated staff member has left: refuse with the same answer as a wrong password.
+        if (user is StaffMember { IsActive: false })
+        {
+            throw new InvalidCredentialsException();
+        }
+
         // Staff and managers work in one branch; the token also carries that branch's organization.
         Guid? branchId = user switch
         {

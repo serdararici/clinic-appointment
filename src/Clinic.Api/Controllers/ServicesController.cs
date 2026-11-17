@@ -1,3 +1,5 @@
+using Clinic.Api.Security;
+using Microsoft.AspNetCore.Authorization;
 using Clinic.Application.Management;
 using Clinic.Application.Slots;
 using Microsoft.AspNetCore.Mvc;
@@ -13,16 +15,19 @@ namespace Clinic.Api.Controllers;
 public class ServicesController(IServiceCatalogService serviceCatalog, ISlotService slotService) : ControllerBase
 {
     [HttpGet("{serviceId:guid}")]
+    [AllowAnonymous]
     public async Task<ActionResult<ServiceDto>> Get(Guid serviceId, CancellationToken cancellationToken) =>
         Ok(await serviceCatalog.GetAsync(serviceId, cancellationToken));
 
     /// <summary>409 if the type is changed while appointments exist for the service.</summary>
     [HttpPut("{serviceId:guid}")]
+    [Authorize(Roles = AppRoles.ClinicManager)]
     public async Task<ActionResult<ServiceDto>> Update(Guid serviceId, SaveServiceRequest request, CancellationToken cancellationToken) =>
         Ok(await serviceCatalog.UpdateAsync(serviceId, request, cancellationToken));
 
     /// <summary>204 on success; 409 while appointments refer to the service or staff offer it.</summary>
     [HttpDelete("{serviceId:guid}")]
+    [Authorize(Roles = AppRoles.ClinicManager)]
     public async Task<IActionResult> Delete(Guid serviceId, CancellationToken cancellationToken)
     {
         await serviceCatalog.DeleteAsync(serviceId, cancellationToken);
@@ -34,6 +39,7 @@ public class ServicesController(IServiceCatalogService serviceCatalog, ISlotServ
     /// each Available, Booked or Past. Examination services return 400: they are booked through a doctor.
     /// </summary>
     [HttpGet("{serviceId:guid}/slots")]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<SlotDto>>> GetSlots(Guid serviceId, [FromQuery] DateOnly? date, CancellationToken cancellationToken)
     {
         if (date is null)

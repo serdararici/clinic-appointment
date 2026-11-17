@@ -1,3 +1,5 @@
+using Clinic.Api.Security;
+using Microsoft.AspNetCore.Authorization;
 using Clinic.Application.Appointments;
 using Clinic.Application.Availability;
 using Clinic.Application.Slots;
@@ -6,9 +8,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace Clinic.Api.Controllers;
 
 /// <summary>
-/// A doctor's availability ranges and bookable examination slots. The project has no authentication
-/// yet, so availability changes are not restricted to the doctor / clinic manager roles; that check
-/// would be added with auth.
+/// A doctor's availability ranges, appointments and bookable examination slots. Slots are public; everything
+/// else needs the Doctor role (that it is the doctor's own data gets checked in a later step).
 /// </summary>
 [ApiController]
 [Route("api/doctors/{doctorId:guid}")]
@@ -18,6 +19,7 @@ public class DoctorsController(
     IAppointmentService appointmentService) : ControllerBase
 {
     [HttpGet("availability")]
+    [Authorize(Roles = AppRoles.Doctor)]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetAll(Guid doctorId, CancellationToken cancellationToken)
     {
         try
@@ -31,6 +33,7 @@ public class DoctorsController(
     }
 
     [HttpPost("availability")]
+    [Authorize(Roles = AppRoles.Doctor)]
     public async Task<ActionResult<AvailabilityDto>> Add(Guid doctorId, AddAvailabilityRequest request, CancellationToken cancellationToken)
     {
         try
@@ -58,6 +61,7 @@ public class DoctorsController(
     /// dates and the past dates; 400 if the request is invalid.
     /// </summary>
     [HttpPost("availability/bulk")]
+    [Authorize(Roles = AppRoles.Doctor)]
     public async Task<ActionResult<BulkAvailabilityResultDto>> AddBulk(Guid doctorId, BulkAvailabilityRequest request, CancellationToken cancellationToken)
     {
         try
@@ -76,6 +80,7 @@ public class DoctorsController(
 
     /// <summary>The doctor's appointments in every status, ordered by start time.</summary>
     [HttpGet("appointments")]
+    [Authorize(Roles = AppRoles.Doctor)]
     public async Task<ActionResult<IReadOnlyList<AppointmentDetailDto>>> GetAppointments(Guid doctorId, CancellationToken cancellationToken)
     {
         try
@@ -89,6 +94,7 @@ public class DoctorsController(
     }
 
     [HttpDelete("availability/{slotId:guid}")]
+    [Authorize(Roles = AppRoles.Doctor)]
     public async Task<IActionResult> Remove(Guid doctorId, Guid slotId, CancellationToken cancellationToken)
     {
         try
@@ -111,6 +117,7 @@ public class DoctorsController(
     /// each Available, Booked or Past.
     /// </summary>
     [HttpGet("slots")]
+    [AllowAnonymous]
     public async Task<ActionResult<IReadOnlyList<SlotDto>>> GetSlots(Guid doctorId, [FromQuery] DateOnly? date, CancellationToken cancellationToken)
     {
         if (date is null)
