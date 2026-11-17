@@ -87,6 +87,10 @@ Domain must never reference Application, Infrastructure, or Api.
 - Small, focused, meaningful commits — one logical change per commit.
 - Commit messages in English, imperative mood (e.g. "Add doctor availability
   conflict check"), no emojis.
+- Never run `git commit`, `git push` or any command that modifies git history.
+  Never add `Co-Authored-By` lines or mention Claude in commit messages. When a
+  step is done, provide the exact `git add` paths and a commit message for the
+  user to run themselves.
 - The assignment requires a minimum of 10 commits made on different days;
   keep committing incrementally as features land rather than batching work
   into a few large commits.
