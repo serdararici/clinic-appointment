@@ -16,13 +16,20 @@ public class Department : Entity
 
     public Department(Guid clinicFacilityId, string name)
     {
+        ClinicFacilityId = clinicFacilityId;
+        Name = ValidateName(name);
+    }
+
+    public void Rename(string name) => Name = ValidateName(name);
+
+    private static string ValidateName(string name)
+    {
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new ArgumentException("Department name is required.", nameof(name));
         }
 
-        ClinicFacilityId = clinicFacilityId;
-        Name = name;
+        return name.Trim();
     }
 
     protected Department()

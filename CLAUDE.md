@@ -95,6 +95,12 @@ Appointment   PatientId, StaffMemberId? (null = unassigned), ServiceId, start/en
   (validated in the domain; `PUT /api/staff/{staffId}/slot-duration`).
 - `Service` keeps the names `Service` and `BasePrice`. `ServiceType` is
   `Examination` or `Diagnostic`. The service duration is always defined by the manager.
+  Validation lives in the entity: price 0 to 99,999,999.99 with at most two decimals,
+  duration above zero and at most 24 hours, a known type, a non-blank name.
+- A branch's working hours are ranges per weekday; two ranges on the same weekday may not
+  overlap (back-to-back and a lunch gap are fine).
+- `StaffMember.IsActive` (default true): a deactivated staff member keeps their history but
+  cannot be booked and has no examination slots.
 
 ## Booking Rules
 
@@ -131,7 +137,42 @@ return **all** slots with `startUtc`, `endUtc`, and `status` = `Available` | `Bo
   `TimeProvider`, so it can be fixed in tests.
 - The grid rules live in one place, `SlotGrid` (Domain), and are used both to list slots and
   to check that a booking's start is aligned, so the list and the booking cannot disagree.
-- Booking currently does **not** reject a start time in the past (the slot list marks it Past).
+- Booking a start time in the past is rejected (422): same definition as `Past` in the slot
+  list, so a slot starting exactly now is still bookable. "Now" comes from `TimeProvider`.
+- A deactivated doctor cannot be booked (409).
+
+## Management API
+
+Create, read, update, list and delete, under the existing layering (controller -> Application
+service -> repositories/entities). No authorization yet (it comes later). Request/response bodies
+are DTOs; enums are written as names (`"Monday"`, `"Diagnostic"`) and numbers are still accepted.
+
+| Resource | Endpoints |
+|---|---|
+| Organization | `GET/POST /api/organizations`, `GET/PUT/DELETE /api/organizations/{id}` |
+| Branch | `GET/POST /api/organizations/{orgId}/branches`, `GET/PUT/DELETE /api/branches/{id}` |
+| Working hours | `GET/POST /api/branches/{id}/working-hours` (`?dayOfWeek=`), `DELETE /api/branches/{id}/working-hours/{whId}` |
+| Department | `GET/POST /api/branches/{id}/departments`, `GET/PUT/DELETE /api/departments/{id}` |
+| Service | `GET/POST /api/departments/{id}/services`, `GET/PUT/DELETE /api/services/{id}` |
+| Staff | `POST /api/departments/{id}/doctors`, `POST /api/departments/{id}/technicians`, `GET /api/staff` (`?branchId=&departmentId=`), `GET/PUT/DELETE /api/staff/{id}`, `PUT /api/staff/{id}/services`, `PUT /api/staff/{id}/slot-duration`, `POST /api/staff/{id}/deactivate`, `POST /api/staff/{id}/activate` |
+
+Status codes: 201 on create (with a `Location`), 200 on read/update, 204 on delete; **400** invalid input
+(`ArgumentException`), **404** unknown id or parent (`KeyNotFoundException`), **409** a rule or dependent
+data in the way (`InvalidOperationException`). `ApiExceptionHandler` maps these three exception types
+centrally; the older booking/slot controllers still catch their own exceptions.
+
+Delete rules (409 with a message when violated):
+
+- Organization: no branches. Branch: no departments and no clinic managers (its working hours go with it).
+- Department: no services and no staff.
+- Service: no appointments (any status, it is history) and no staff offering it. Its **type** also cannot
+  be changed once appointments exist; other fields stay editable.
+- Staff: no upcoming appointments, i.e. no pending/confirmed appointment that has not finished yet.
+  The same rule blocks **deactivating** them. Cancelled, rejected and finished appointments do not block.
+  Deleting staff leaves past appointments pointing at a removed id (there is no foreign key on
+  `Appointment.StaffMemberId`); deactivating keeps the history intact.
+- `PUT /api/staff/{id}/services` replaces the offered set; every service must belong to the staff
+  member's own department (400 otherwise, nothing changes).
 
 ## Date and Time
 
@@ -163,6 +204,13 @@ return **all** slots with `startUtc`, `endUtc`, and `status` = `Available` | `Bo
   or other assertion libraries.
 - Prefer testing Domain and Application logic (conflict checks, strategies,
   policies, entity invariants) over trivial EF/infrastructure plumbing.
+
+## Verification and Reporting
+
+- Keep verification lean: after each step run `dotnet build` and `dotnet test` **once**.
+- Do not run the API against throwaway databases, and do not repeat full test runs,
+  unless the user asks.
+- Keep reports short.
 
 ## Git Workflow
 

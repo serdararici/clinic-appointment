@@ -40,6 +40,16 @@ public abstract class User : Entity
         PhoneNumber = string.Empty;
     }
 
+    public void Rename(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            throw new ArgumentException("Full name is required.", nameof(fullName));
+        }
+
+        FullName = fullName.Trim();
+    }
+
     public void UpdateContactInfo(string email, string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(email))

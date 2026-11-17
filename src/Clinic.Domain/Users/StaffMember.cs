@@ -18,6 +18,12 @@ public abstract class StaffMember : User
     public Guid DepartmentId { get; private set; }
     public int SlotDurationMinutes { get; private set; }
 
+    /// <summary>
+    /// False once the person has been deactivated (e.g. left the clinic). Deactivated staff keep their
+    /// history but can no longer be booked.
+    /// </summary>
+    public bool IsActive { get; private set; } = true;
+
     private readonly List<Service> _servicesProvided = [];
     public IReadOnlyCollection<Service> ServicesProvided => _servicesProvided.AsReadOnly();
 
@@ -49,19 +55,48 @@ public abstract class StaffMember : User
 
     public void SetSlotDuration(int minutes) => SlotDurationMinutes = ValidateSlotDuration(minutes);
 
+    public void Deactivate() => IsActive = false;
+
+    public void Activate() => IsActive = true;
+
     /// <summary>Registers a service this person provides; it must belong to their own department.</summary>
     public void AddService(Service service)
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        if (service.DepartmentId != DepartmentId)
-        {
-            throw new InvalidOperationException("A staff member can only provide services of their own department.");
-        }
+        EnsureSameDepartment(service);
 
         if (!_servicesProvided.Any(s => s.Id == service.Id))
         {
             _servicesProvided.Add(service);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the whole set of offered services. Every service must belong to the staff member's
+    /// own department; if any does not, nothing changes.
+    /// </summary>
+    public void SetServices(IEnumerable<Service> services)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        var wanted = services.DistinctBy(s => s.Id).ToList();
+        foreach (var service in wanted)
+        {
+            EnsureSameDepartment(service);
+        }
+
+        _servicesProvided.Clear();
+        _servicesProvided.AddRange(wanted);
+    }
+
+    private void EnsureSameDepartment(Service service)
+    {
+        if (service.DepartmentId != DepartmentId)
+        {
+            throw new ArgumentException(
+                $"Service '{service.Name}' belongs to a different department; a staff member can only provide services of their own department.",
+                nameof(service));
         }
     }
 

@@ -20,12 +20,19 @@ public class Doctor : StaffMember
         int slotDurationMinutes = DefaultSlotDurationMinutes)
         : base(fullName, email, phoneNumber, department, slotDurationMinutes)
     {
+        Specialty = ValidateSpecialty(specialty);
+    }
+
+    public void ChangeSpecialty(string specialty) => Specialty = ValidateSpecialty(specialty);
+
+    private static string ValidateSpecialty(string specialty)
+    {
         if (string.IsNullOrWhiteSpace(specialty))
         {
             throw new ArgumentException("Specialty is required.", nameof(specialty));
         }
 
-        Specialty = specialty;
+        return specialty.Trim();
     }
 
     private Doctor()

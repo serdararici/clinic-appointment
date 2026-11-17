@@ -79,7 +79,7 @@ public class StaffMemberTests
         var xRay = radiology.AddService("Röntgen", ServiceType.Diagnostic, TimeSpan.FromMinutes(20), 350m);
         var doctor = TestData.NewDoctor(TestData.NewDepartment("Dahiliye"));
 
-        Assert.Throws<InvalidOperationException>(() => doctor.AddService(xRay));
+        Assert.Throws<ArgumentException>(() => doctor.AddService(xRay));
         Assert.Empty(doctor.ServicesProvided);
     }
 

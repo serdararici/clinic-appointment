@@ -17,6 +17,9 @@ public class AppointmentServiceTests
     private static readonly DateTime Monday = new(2026, 3, 2, 0, 0, 0, DateTimeKind.Utc);
     private static readonly DateTime Saturday = new(2026, 3, 7, 0, 0, 0, DateTimeKind.Utc);
 
+    /// <summary>The test clock sits before every test date, so nothing is "in the past" unless a test says so.</summary>
+    private static readonly DateTime LongAgo = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     private readonly FakeAppointmentRepository _appointments = new();
     private readonly FakeDoctorRepository _doctors = new();
     private readonly FakePatientRepository _patients = new();
@@ -68,8 +71,9 @@ public class AppointmentServiceTests
         return doctor;
     }
 
-    private AppointmentService CreateService(IPricingStrategy pricing, IConfirmationPolicy policy) =>
-        new(_appointments, _doctors, _patients, _services, _clinics, pricing, policy, _unitOfWork);
+    private AppointmentService CreateService(IPricingStrategy pricing, IConfirmationPolicy policy, DateTime? now = null) =>
+        new(_appointments, _doctors, _patients, _services, _clinics, pricing, policy, _unitOfWork,
+            new FixedTimeProvider(now ?? LongAgo));
 
     private Task<AppointmentDto> BookExaminationAsync(DateTime startUtc, Doctor? doctor = null, Service? service = null) =>
         _service.CreateAppointmentAsync(new CreateAppointmentRequest(
@@ -164,6 +168,36 @@ public class AppointmentServiceTests
     }
 
     [Fact]
+    public async Task Booking_Throws_WhenTheStartTimeIsInThePast_ForBothServiceTypes()
+    {
+        // The clock says 10:00 local (07:00 UTC) on Monday: 09:00 local (06:00 UTC) has already started.
+        var service = CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), now: Monday.AddHours(7));
+
+        await Assert.ThrowsAsync<PastBookingException>(() => service.CreateAppointmentAsync(
+            new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6), _doctor.Id)));
+        await Assert.ThrowsAsync<PastBookingException>(() => service.CreateAppointmentAsync(
+            new CreateAppointmentRequest(_patient.Id, _xRay.Id, Monday.AddHours(6))));
+
+        Assert.Empty(_appointments.Items);
+        Assert.Equal(0, _unitOfWork.SaveCount);
+    }
+
+    [Fact]
+    public async Task Booking_Allows_AStartExactlyAtNow_ButNotOneTickEarlier()
+    {
+        var now = Monday.AddHours(6).AddMinutes(30); // 09:30 local, exactly when a slot starts
+        var service = CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), now);
+
+        // A slot that starts exactly now can still be booked (the slot list shows it as Available)...
+        var dto = await service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, now, _doctor.Id));
+        Assert.Equal(now, dto.ScheduledStartUtc);
+
+        // ...but the slot before it has already started.
+        await Assert.ThrowsAsync<PastBookingException>(() => service.CreateAppointmentAsync(
+            new CreateAppointmentRequest(_patient.Id, _checkUp.Id, now.AddMinutes(-30), _doctor.Id)));
+    }
+
+    [Fact]
     public async Task Booking_Throws_WhenDateTimeHasNoZoneInformation()
     {
         var unspecified = new DateTime(2026, 3, 2, 9, 0, 0, DateTimeKind.Unspecified);
@@ -235,6 +269,20 @@ public class AppointmentServiceTests
     {
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             _service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6), Guid.NewGuid())));
+    }
+
+    [Fact]
+    public async Task Examination_Throws_WhenTheDoctorIsInactive()
+    {
+        _doctor.Deactivate();
+
+        await Assert.ThrowsAsync<StaffInactiveException>(() => BookExaminationAsync(Monday.AddHours(6)));
+
+        Assert.Empty(_appointments.Items);
+
+        // Reactivated, the same slot can be booked again.
+        _doctor.Activate();
+        await BookExaminationAsync(Monday.AddHours(6));
     }
 
     [Fact]

@@ -27,6 +27,17 @@ public class AppointmentRepository(ClinicDbContext dbContext)
                 start < a.ScheduledEndUtc,
             cancellationToken);
 
+    public Task<bool> AnyForServiceAsync(Guid serviceId, CancellationToken cancellationToken = default) =>
+        DbSet.AnyAsync(a => a.ServiceId == serviceId, cancellationToken);
+
+    public Task<bool> HasUpcomingAsync(Guid staffMemberId, DateTime fromUtc, CancellationToken cancellationToken = default) =>
+        DbSet.AnyAsync(a =>
+                a.StaffMemberId == staffMemberId &&
+                a.Status != AppointmentStatus.Cancelled &&
+                a.Status != AppointmentStatus.Rejected &&
+                a.ScheduledEndUtc > fromUtc,
+            cancellationToken);
+
     public async Task<IReadOnlyList<Appointment>> GetActiveByStaffMemberAsync(Guid staffMemberId, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
         await DbSet
             .Where(a => a.StaffMemberId == staffMemberId &&

@@ -20,6 +20,12 @@ public class SlotService(
         var doctor = await doctorRepository.GetByIdAsync(doctorId, cancellationToken)
             ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
 
+        // A deactivated doctor cannot be booked, so offering slots would be misleading.
+        if (!doctor.IsActive)
+        {
+            return [];
+        }
+
         var clinic = await clinicFacilityRepository.GetByIdAsync(doctor.ClinicFacilityId, cancellationToken)
             ?? throw new KeyNotFoundException($"Clinic {doctor.ClinicFacilityId} was not found.");
 

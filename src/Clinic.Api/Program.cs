@@ -1,5 +1,7 @@
+using Clinic.Api.ErrorHandling;
 using Clinic.Application.Appointments;
 using Clinic.Application.Availability;
+using Clinic.Application.Management;
 using Clinic.Application.Slots;
 using Clinic.Application.Staff;
 using Clinic.Infrastructure;
@@ -17,9 +19,17 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IDoctorAvailabilityService, DoctorAvailabilityService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IOrganizationService, OrganizationService>();
+builder.Services.AddScoped<IBranchService, BranchService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 builder.Services.AddScoped<ISlotService, SlotService>();
-// "Now" comes from TimeProvider so slot statuses (Past) can be tested with a fixed clock.
+// "Now" comes from TimeProvider so "Past" slots and booking in the past can be tested with a fixed clock.
 builder.Services.AddSingleton(TimeProvider.System);
+
+// Maps NotFound/Argument/InvalidOperation exceptions to 404/400/409 for the management controllers.
+builder.Services.AddExceptionHandler<ApiExceptionHandler>();
+builder.Services.AddProblemDetails();
 
 var app = builder.Build();
 
@@ -35,6 +45,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 

@@ -24,12 +24,20 @@ public class AppointmentService(
     IClinicFacilityRepository clinicFacilityRepository,
     IPricingStrategy pricingStrategy,
     IConfirmationPolicy confirmationPolicy,
-    IUnitOfWork unitOfWork) : IAppointmentService
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : IAppointmentService
 {
     public async Task<AppointmentDto> CreateAppointmentAsync(CreateAppointmentRequest request, CancellationToken cancellationToken = default)
     {
         // Reject zone-less date-times up front: all stored times are UTC, so guessing would shift bookings.
         var start = UtcDateTime.Require(request.StartUtc, nameof(request.StartUtc));
+
+        // Same definition as the slot list: a slot that has already started is Past. A start exactly
+        // at "now" is still allowed, so the list and the booking agree.
+        if (start < timeProvider.GetUtcNow().UtcDateTime)
+        {
+            throw new PastBookingException(start);
+        }
 
         var patient = await patientRepository.GetByIdAsync(request.PatientId, cancellationToken)
             ?? throw new KeyNotFoundException($"Patient {request.PatientId} was not found.");
@@ -58,6 +66,12 @@ public class AppointmentService(
 
         var doctor = await doctorRepository.GetByIdAsync(doctorId, cancellationToken)
             ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
+
+        // A deactivated doctor keeps their history but can no longer be booked.
+        if (!doctor.IsActive)
+        {
+            throw new StaffInactiveException(doctor.Id);
+        }
 
         if (!doctor.OffersService(service.Id))
         {

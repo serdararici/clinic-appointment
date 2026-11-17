@@ -13,12 +13,19 @@ public class HealthOrganization : Entity
 
     public HealthOrganization(string name)
     {
+        Name = ValidateName(name);
+    }
+
+    public void Rename(string name) => Name = ValidateName(name);
+
+    private static string ValidateName(string name)
+    {
         if (string.IsNullOrWhiteSpace(name))
         {
             throw new ArgumentException("Organization name is required.", nameof(name));
         }
 
-        Name = name;
+        return name.Trim();
     }
 
     /// <summary>EF Core requires a parameterless constructor for materialization.</summary>

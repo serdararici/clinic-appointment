@@ -281,6 +281,9 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("DepartmentId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<int>("SlotDurationMinutes")
                         .HasColumnType("int");
 

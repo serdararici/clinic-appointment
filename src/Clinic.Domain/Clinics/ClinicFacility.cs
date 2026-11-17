@@ -26,20 +26,25 @@ public class ClinicFacility : Entity
             throw new ArgumentException("A branch must belong to an organization.", nameof(organizationId));
         }
 
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            throw new ArgumentException("Branch name is required.", nameof(name));
-        }
-
         OrganizationId = organizationId;
-        Name = name;
-        Address = address;
+        Name = ValidateName(name);
+        Address = ValidateAddress(address);
     }
 
     protected ClinicFacility()
     {
         Name = string.Empty;
         Address = string.Empty;
+    }
+
+    /// <summary>Changes the branch name and address; the branch stays in its organization.</summary>
+    public void UpdateDetails(string name, string address)
+    {
+        var validName = ValidateName(name);
+        var validAddress = ValidateAddress(address);
+
+        Name = validName;
+        Address = validAddress;
     }
 
     public Department AddDepartment(string name)
@@ -51,8 +56,29 @@ public class ClinicFacility : Entity
 
     public WorkingHour AddWorkingHour(DayOfWeek dayOfWeek, TimeOnly opensAt, TimeOnly closesAt)
     {
+        // Constructing first validates the range (closing after opening).
         var workingHour = new WorkingHour(Id, dayOfWeek, opensAt, closesAt);
+
+        // Two opening ranges on the same day must not overlap (a lunch break between ranges is fine,
+        // and so are back-to-back ranges): overlapping hours would make "open" ambiguous.
+        if (_workingHours.Any(existing => existing.Overlaps(dayOfWeek, opensAt, closesAt)))
+        {
+            throw new InvalidOperationException($"The working hours overlap an existing range on {dayOfWeek}.");
+        }
+
         _workingHours.Add(workingHour);
+        return workingHour;
+    }
+
+    /// <summary>Removes a working-hours range by id; returns the removed range, or null if none matched.</summary>
+    public WorkingHour? RemoveWorkingHour(Guid workingHourId)
+    {
+        var workingHour = _workingHours.FirstOrDefault(wh => wh.Id == workingHourId);
+        if (workingHour is not null)
+        {
+            _workingHours.Remove(workingHour);
+        }
+
         return workingHour;
     }
 
@@ -92,5 +118,25 @@ public class ClinicFacility : Entity
         var endTime = TimeOnly.FromDateTime(end);
 
         return _workingHours.Any(wh => wh.Covers(start.DayOfWeek, startTime, endTime));
+    }
+
+    private static string ValidateName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Branch name is required.", nameof(name));
+        }
+
+        return name.Trim();
+    }
+
+    private static string ValidateAddress(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            throw new ArgumentException("Branch address is required.", nameof(address));
+        }
+
+        return address.Trim();
     }
 }

@@ -109,6 +109,19 @@ public class SlotServiceTests
     }
 
     [Fact]
+    public async Task ExaminationSlots_AreEmpty_ForAnInactiveDoctor()
+    {
+        _doctor.Deactivate();
+
+        var slots = await CreateService().GetExaminationSlotsAsync(_doctor.Id, Monday);
+
+        Assert.Empty(slots);
+
+        _doctor.Activate();
+        Assert.NotEmpty(await CreateService().GetExaminationSlotsAsync(_doctor.Id, Monday));
+    }
+
+    [Fact]
     public async Task ExaminationSlots_AreEmpty_OnADayWithoutAvailability()
     {
         var slots = await CreateService().GetExaminationSlotsAsync(_doctor.Id, Monday.AddDays(1));

@@ -18,12 +18,19 @@ public class HealthTechnician : StaffMember
         string title)
         : base(fullName, email, phoneNumber, department)
     {
+        Title = ValidateTitle(title);
+    }
+
+    public void ChangeTitle(string title) => Title = ValidateTitle(title);
+
+    private static string ValidateTitle(string title)
+    {
         if (string.IsNullOrWhiteSpace(title))
         {
             throw new ArgumentException("Title is required.", nameof(title));
         }
 
-        Title = title;
+        return title.Trim();
     }
 
     private HealthTechnician()

@@ -17,6 +17,15 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// </summary>
     Task<bool> HasServiceConflictAsync(Guid serviceId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
 
+    /// <summary>Whether any appointment, in any status, still refers to the service.</summary>
+    Task<bool> AnyForServiceAsync(Guid serviceId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Whether the staff member has an active (not cancelled, not rejected) appointment that has not
+    /// finished yet at <paramref name="fromUtc"/>, i.e. one still ahead or in progress.
+    /// </summary>
+    Task<bool> HasUpcomingAsync(Guid staffMemberId, DateTime fromUtc, CancellationToken cancellationToken = default);
+
     /// <summary>Active appointments of a staff member that overlap [fromUtc, toUtc); used to mark booked slots.</summary>
     Task<IReadOnlyList<Appointment>> GetActiveByStaffMemberAsync(Guid staffMemberId, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default);
 

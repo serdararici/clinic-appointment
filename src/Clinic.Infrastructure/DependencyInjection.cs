@@ -24,6 +24,8 @@ public static class DependencyInjection
         services.AddScoped<IStaffMemberRepository, StaffMemberRepository>();
         services.AddScoped<IPatientRepository, PatientRepository>();
         services.AddScoped<IClinicFacilityRepository, ClinicFacilityRepository>();
+        services.AddScoped<IHealthOrganizationRepository, HealthOrganizationRepository>();
+        services.AddScoped<IDepartmentRepository, DepartmentRepository>();
         services.AddScoped<IServiceRepository, ServiceRepository>();
 
         // Default strategy implementations (Strategy pattern); swap these registrations
