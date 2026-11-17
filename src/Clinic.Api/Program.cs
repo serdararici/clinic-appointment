@@ -1,5 +1,6 @@
 using Clinic.Application.Appointments;
 using Clinic.Application.Availability;
+using Clinic.Application.Slots;
 using Clinic.Application.Staff;
 using Clinic.Infrastructure;
 using Clinic.Infrastructure.Persistence;
@@ -16,6 +17,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IDoctorAvailabilityService, DoctorAvailabilityService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<ISlotService, SlotService>();
+// "Now" comes from TimeProvider so slot statuses (Past) can be tested with a fixed clock.
+builder.Services.AddSingleton(TimeProvider.System);
 
 var app = builder.Build();
 

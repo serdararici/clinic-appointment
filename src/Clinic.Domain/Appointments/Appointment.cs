@@ -53,6 +53,9 @@ public class Appointment : Entity
     {
     }
 
+    /// <summary>Whether the appointment still holds its time (cancelled and rejected ones release it).</summary>
+    public bool IsActive => Status is not (AppointmentStatus.Cancelled or AppointmentStatus.Rejected);
+
     /// <summary>Whether this appointment's time range overlaps the given range.</summary>
     public bool OverlapsWith(DateTime start, DateTime end) =>
         ScheduledStartUtc < end && start < ScheduledEndUtc;

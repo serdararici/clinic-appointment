@@ -3,9 +3,11 @@ namespace Clinic.Application.Appointments;
 /// <summary>
 /// Input DTO for booking a new appointment. <paramref name="StartUtc"/> must be UTC ("...Z")
 /// or carry an explicit offset; a date-time with no zone information is rejected.
+/// <paramref name="DoctorId"/> is required for Examination services and ignored for Diagnostic
+/// services, which are booked without choosing staff.
 /// </summary>
 public record CreateAppointmentRequest(
     Guid PatientId,
-    Guid DoctorId,
     Guid ServiceId,
-    DateTime StartUtc);
+    DateTime StartUtc,
+    Guid? DoctorId = null);

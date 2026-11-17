@@ -1,17 +1,19 @@
 using Clinic.Application.Availability;
+using Clinic.Application.Slots;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Clinic.Api.Controllers;
 
 /// <summary>
-/// Manages a doctor's availability ranges. The project has no authentication yet, so this is
-/// not restricted to the doctor / clinic manager roles; that check would be added with auth.
+/// A doctor's availability ranges and bookable examination slots. The project has no authentication
+/// yet, so availability changes are not restricted to the doctor / clinic manager roles; that check
+/// would be added with auth.
 /// </summary>
 [ApiController]
-[Route("api/doctors/{doctorId:guid}/availability")]
-public class DoctorsController(IDoctorAvailabilityService availabilityService) : ControllerBase
+[Route("api/doctors/{doctorId:guid}")]
+public class DoctorsController(IDoctorAvailabilityService availabilityService, ISlotService slotService) : ControllerBase
 {
-    [HttpGet]
+    [HttpGet("availability")]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetAll(Guid doctorId, CancellationToken cancellationToken)
     {
         try
@@ -24,7 +26,7 @@ public class DoctorsController(IDoctorAvailabilityService availabilityService) :
         }
     }
 
-    [HttpPost]
+    [HttpPost("availability")]
     public async Task<ActionResult<AvailabilityDto>> Add(Guid doctorId, AddAvailabilityRequest request, CancellationToken cancellationToken)
     {
         try
@@ -46,7 +48,7 @@ public class DoctorsController(IDoctorAvailabilityService availabilityService) :
         }
     }
 
-    [HttpDelete("{slotId:guid}")]
+    [HttpDelete("availability/{slotId:guid}")]
     public async Task<IActionResult> Remove(Guid doctorId, Guid slotId, CancellationToken cancellationToken)
     {
         try
@@ -61,6 +63,28 @@ public class DoctorsController(IDoctorAvailabilityService availabilityService) :
         catch (InvalidOperationException ex)
         {
             return Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// All of the doctor's examination slots on a date (YYYY-MM-DD, read as Europe/Istanbul local time),
+    /// each Available, Booked or Past.
+    /// </summary>
+    [HttpGet("slots")]
+    public async Task<ActionResult<IReadOnlyList<SlotDto>>> GetSlots(Guid doctorId, [FromQuery] DateOnly? date, CancellationToken cancellationToken)
+    {
+        if (date is null)
+        {
+            return BadRequest("Query parameter 'date' is required (YYYY-MM-DD).");
+        }
+
+        try
+        {
+            return Ok(await slotService.GetExaminationSlotsAsync(doctorId, date.Value, cancellationToken));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
     }
 }

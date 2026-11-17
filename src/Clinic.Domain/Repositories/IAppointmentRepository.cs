@@ -10,6 +10,19 @@ public interface IAppointmentRepository : IRepository<Appointment>
     /// </summary>
     Task<bool> HasConflictAsync(Guid staffMemberId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Whether an active (not cancelled, not rejected) appointment for the same service overlaps
+    /// [start, end). A service belongs to exactly one branch, so this is "same service, same branch".
+    /// Used by diagnostic bookings, which have no staff member to conflict on.
+    /// </summary>
+    Task<bool> HasServiceConflictAsync(Guid serviceId, DateTime start, DateTime end, CancellationToken cancellationToken = default);
+
+    /// <summary>Active appointments of a staff member that overlap [fromUtc, toUtc); used to mark booked slots.</summary>
+    Task<IReadOnlyList<Appointment>> GetActiveByStaffMemberAsync(Guid staffMemberId, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>Active appointments for a service that overlap [fromUtc, toUtc); used to mark booked slots.</summary>
+    Task<IReadOnlyList<Appointment>> GetActiveByServiceAsync(Guid serviceId, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<Appointment>> GetByStaffMemberIdAsync(Guid staffMemberId, CancellationToken cancellationToken = default);
 
     Task<IReadOnlyList<Appointment>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default);

@@ -96,21 +96,42 @@ Appointment   PatientId, StaffMemberId? (null = unassigned), ServiceId, start/en
 - `Service` keeps the names `Service` and `BasePrice`. `ServiceType` is
   `Examination` or `Diagnostic`. The service duration is always defined by the manager.
 
-## Booking Rules (target design)
+## Booking Rules
 
-Status: the data model, migration and Turkish seed for these rules are done. The
-booking flow itself (slot-based and diagnostic booking) is **not implemented yet**;
-today `POST /api/appointments` still takes a doctor and uses the service's duration.
+The service is chosen at **department** level: if the department has exactly one service
+it is selected automatically; if it has several, they are listed. The service type then
+decides the flow (`POST /api/appointments` takes `patientId`, `serviceId`, `startUtc` and,
+for examinations, `doctorId`).
 
-- The service is chosen at **department** level: if the department has exactly one
-  service it is selected automatically; if it has several, they are listed.
-- **Examination**: the patient picks a doctor, then a slot whose length is that
-  doctor's slot duration, inside the doctor's availability windows.
-- **Diagnostic**: no staff selection. The patient picks a date and time; the
-  appointment lasts the service's fixed duration, must fall inside the branch's
-  working hours, and is stored unassigned (`StaffMemberId` is null).
-- No two active (pending/confirmed) appointments may overlap for the same
-  **service in the same branch** (diagnostic), nor for the same doctor (examination).
+- **Examination**: the patient picks a doctor, then a slot. The doctor is required and
+  must offer the service. The appointment occupies exactly one slot: its length is the
+  **doctor's slot duration** (not the service's `Duration`). It must lie inside the branch
+  working hours and one availability window, start on the doctor's slot grid, and not
+  overlap another active appointment of that doctor.
+- **Diagnostic**: no staff selection (a `doctorId` in the request is ignored). The patient
+  picks a date and time; the appointment lasts the service's fixed `Duration`, starts on
+  the branch's service grid, ends by closing time, and is stored **unassigned**
+  (`StaffMemberId` is null). No two active appointments may overlap for the same service
+  in the same branch (a service belongs to one branch through its department).
+- "Active" means not cancelled and not rejected; pending and confirmed appointments hold
+  their time. Pricing and confirmation always go through the strategies, for both types.
+
+Slot endpoints (`date` is `YYYY-MM-DD`, read in clinic local time, Europe/Istanbul; they
+return **all** slots with `startUtc`, `endUtc`, and `status` = `Available` | `Booked` | `Past`):
+
+- `GET /api/doctors/{doctorId}/slots?date=` - the doctor's availability windows cut into
+  slots of the doctor's slot duration, anchored at each window's start (a window that began
+  on an earlier day is cut from local midnight). A slot shorter than one step at the end of a
+  window is dropped, and so is any slot not entirely inside the branch working hours.
+- `GET /api/services/{serviceId}/slots?date=` - Diagnostic services only (400 for an
+  Examination service). The branch's working hours for that weekday cut into slots of the
+  service's `Duration`, starting at opening time; a slot whose end passes closing is dropped.
+- `Booked` = overlaps an active appointment (the doctor's, or for the same service). `Past` =
+  the slot has already started (`start < now`); Past wins over Booked. "Now" comes from
+  `TimeProvider`, so it can be fixed in tests.
+- The grid rules live in one place, `SlotGrid` (Domain), and are used both to list slots and
+  to check that a booking's start is aligned, so the list and the booking cannot disagree.
+- Booking currently does **not** reject a start time in the past (the slot list marks it Past).
 
 ## Date and Time
 

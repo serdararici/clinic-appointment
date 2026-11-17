@@ -60,6 +60,19 @@ public class ClinicFacility : Entity
     public bool IsOpenAt(DayOfWeek day, TimeOnly time) => _workingHours.Any(wh => wh.Contains(day, time));
 
     /// <summary>
+    /// The facility's opening ranges on a clinic-local calendar date, converted to UTC and ordered by
+    /// opening time. Empty when the branch is closed that weekday.
+    /// </summary>
+    public IReadOnlyList<(DateTime OpensUtc, DateTime ClosesUtc)> GetWorkingRangesUtc(DateOnly localDate) =>
+        _workingHours
+            .Where(wh => wh.DayOfWeek == localDate.DayOfWeek)
+            .OrderBy(wh => wh.OpensAt)
+            .Select(wh => (
+                ClinicTimeZone.ToUtc(localDate.ToDateTime(wh.OpensAt)),
+                ClinicTimeZone.ToUtc(localDate.ToDateTime(wh.ClosesAt))))
+            .ToList();
+
+    /// <summary>
     /// Whether the whole UTC range [startUtc, endUtc) falls inside the facility's working hours.
     /// Working hours are wall-clock times in the clinic's time zone, so the UTC range is converted
     /// to clinic local time first (e.g. 14:00 UTC is 17:00 in Turkey). A range that crosses

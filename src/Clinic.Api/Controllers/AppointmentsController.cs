@@ -28,7 +28,15 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
         {
             return UnprocessableEntity(ex.Message);
         }
+        catch (SlotNotAlignedException ex)
+        {
+            return UnprocessableEntity(ex.Message);
+        }
         catch (OutsideWorkingHoursException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (ServiceSlotConflictException ex)
         {
             return Conflict(ex.Message);
         }

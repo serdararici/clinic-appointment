@@ -13,4 +13,11 @@ public class ClinicFacilityRepository(ClinicDbContext dbContext)
             .Include(c => c.Departments).ThenInclude(d => d.Services)
             .Include(c => c.WorkingHours)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+
+    public Task<ClinicFacility?> GetByServiceIdAsync(Guid serviceId, CancellationToken cancellationToken = default) =>
+        DbSet
+            .Include(c => c.WorkingHours)
+            .FirstOrDefaultAsync(
+                c => c.Departments.Any(d => d.Services.Any(s => s.Id == serviceId)),
+                cancellationToken);
 }

@@ -53,6 +53,17 @@ internal class FakeAppointmentRepository : FakeRepository<Appointment>, IAppoint
             a.Status is not (AppointmentStatus.Cancelled or AppointmentStatus.Rejected) &&
             a.OverlapsWith(start, end)));
 
+    public Task<bool> HasServiceConflictAsync(Guid serviceId, DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Items.Any(a => a.ServiceId == serviceId && a.IsActive && a.OverlapsWith(start, end)));
+
+    public Task<IReadOnlyList<Appointment>> GetActiveByStaffMemberAsync(Guid staffMemberId, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Appointment>>(
+            Items.Where(a => a.StaffMemberId == staffMemberId && a.IsActive && a.OverlapsWith(fromUtc, toUtc)).ToList());
+
+    public Task<IReadOnlyList<Appointment>> GetActiveByServiceAsync(Guid serviceId, DateTime fromUtc, DateTime toUtc, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Appointment>>(
+            Items.Where(a => a.ServiceId == serviceId && a.IsActive && a.OverlapsWith(fromUtc, toUtc)).ToList());
+
     public Task<IReadOnlyList<Appointment>> GetByStaffMemberIdAsync(Guid staffMemberId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<Appointment>>(Items.Where(a => a.StaffMemberId == staffMemberId).ToList());
 
@@ -74,6 +85,14 @@ internal class FakeServiceRepository : FakeRepository<Service>, IServiceReposito
 
 internal class FakeClinicFacilityRepository : FakeRepository<ClinicFacility>, IClinicFacilityRepository
 {
+    public Task<ClinicFacility?> GetByServiceIdAsync(Guid serviceId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Items.FirstOrDefault(c => c.Departments.Any(d => d.Services.Any(sv => sv.Id == serviceId))));
+}
+
+/// <summary>A clock frozen at a chosen instant, so Past/Available slot statuses are deterministic.</summary>
+internal class FixedTimeProvider(DateTime utcNow) : TimeProvider
+{
+    public override DateTimeOffset GetUtcNow() => new(DateTime.SpecifyKind(utcNow, DateTimeKind.Utc));
 }
 
 internal class FakeUnitOfWork : IUnitOfWork

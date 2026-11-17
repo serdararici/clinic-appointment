@@ -1,15 +1,20 @@
 using Clinic.Application.Common;
 using Clinic.Application.Exceptions;
 using Clinic.Domain.Appointments;
+using Clinic.Domain.Clinics;
+using Clinic.Domain.Enums;
 using Clinic.Domain.Repositories;
+using Clinic.Domain.Scheduling;
 using Clinic.Domain.Strategies;
+using Clinic.Domain.Users;
 
 namespace Clinic.Application.Appointments;
 
 /// <summary>
-/// Orchestrates appointment booking: loads the relevant aggregates, enforces the
-/// availability and conflict rules, and delegates pricing/approval decisions to
-/// the configured strategies (Strategy pattern) before persisting via repositories.
+/// Orchestrates appointment booking: loads the relevant aggregates, enforces the slot,
+/// working-hours, availability and conflict rules, and delegates pricing/approval decisions
+/// to the configured strategies (Strategy pattern) before persisting via repositories.
+/// Examination and Diagnostic services follow different flows (see the two private builders).
 /// </summary>
 public class AppointmentService(
     IAppointmentRepository appointmentRepository,
@@ -26,21 +31,42 @@ public class AppointmentService(
         // Reject zone-less date-times up front: all stored times are UTC, so guessing would shift bookings.
         var start = UtcDateTime.Require(request.StartUtc, nameof(request.StartUtc));
 
-        var doctor = await doctorRepository.GetByIdAsync(request.DoctorId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Doctor {request.DoctorId} was not found.");
-
         var patient = await patientRepository.GetByIdAsync(request.PatientId, cancellationToken)
             ?? throw new KeyNotFoundException($"Patient {request.PatientId} was not found.");
 
         var service = await serviceRepository.GetByIdAsync(request.ServiceId, cancellationToken)
             ?? throw new KeyNotFoundException($"Service {request.ServiceId} was not found.");
 
+        // The service type decides the flow: examinations go through a doctor's slot grid,
+        // diagnostics through the branch's service grid with no staff member.
+        var appointment = service.ServiceType == ServiceType.Examination
+            ? await BuildExaminationAppointmentAsync(request, patient, service, start, cancellationToken)
+            : await BuildDiagnosticAppointmentAsync(patient, service, start, cancellationToken);
+
+        await appointmentRepository.AddAsync(appointment, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return ToDto(appointment);
+    }
+
+    /// <summary>Examination: a chosen doctor, exactly one of that doctor's slots.</summary>
+    private async Task<Appointment> BuildExaminationAppointmentAsync(
+        CreateAppointmentRequest request, Patient patient, Service service, DateTime start, CancellationToken cancellationToken)
+    {
+        var doctorId = request.DoctorId
+            ?? throw new ArgumentException("A doctor is required to book an examination.", nameof(request));
+
+        var doctor = await doctorRepository.GetByIdAsync(doctorId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
+
         if (!doctor.OffersService(service.Id))
         {
             throw new ServiceNotOfferedException(doctor.Id, service.Id);
         }
 
-        var end = start + service.Duration;
+        // The appointment occupies exactly one slot, so its length is the doctor's slot duration
+        // (the service's own duration is not used for examinations).
+        var end = start + TimeSpan.FromMinutes(doctor.SlotDurationMinutes);
 
         // Working hours are clinic wall-clock times; the facility converts the UTC range to local time.
         var facility = await clinicFacilityRepository.GetByIdAsync(doctor.ClinicFacilityId, cancellationToken)
@@ -56,20 +82,54 @@ public class AppointmentService(
             throw new NotAvailableException(doctor.Id, start, end);
         }
 
+        // After the availability check on purpose: a time outside any availability window gets the
+        // more specific NotAvailable error, and alignment is measured from the window that holds the slot.
+        if (!SlotGrid.IsExaminationSlotStart(doctor, start))
+        {
+            throw new SlotNotAlignedException(start);
+        }
+
         if (await appointmentRepository.HasConflictAsync(doctor.Id, start, end, cancellationToken))
         {
             throw new AppointmentConflictException(doctor.Id, start, end);
         }
 
-        var price = pricingStrategy.CalculatePrice(service, patient);
-        var initialStatus = confirmationPolicy.DetermineInitialStatus();
+        return new Appointment(
+            patient.Id, doctor.Id, service.Id, start, end,
+            pricingStrategy.CalculatePrice(service, patient),
+            confirmationPolicy.DetermineInitialStatus());
+    }
 
-        var appointment = new Appointment(patient.Id, doctor.Id, service.Id, start, end, price, initialStatus);
+    /// <summary>Diagnostic: no staff member; a slot of the service's fixed duration inside the branch's hours.</summary>
+    private async Task<Appointment> BuildDiagnosticAppointmentAsync(
+        Patient patient, Service service, DateTime start, CancellationToken cancellationToken)
+    {
+        // The branch is the one that owns the service's department.
+        var facility = await clinicFacilityRepository.GetByServiceIdAsync(service.Id, cancellationToken)
+            ?? throw new KeyNotFoundException($"No branch was found for service {service.Id}.");
 
-        await appointmentRepository.AddAsync(appointment, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var end = start + service.Duration;
 
-        return ToDto(appointment);
+        if (!facility.IsOpenDuring(start, end))
+        {
+            throw new OutsideWorkingHoursException(facility.Id, start, end);
+        }
+
+        if (!SlotGrid.IsDiagnosticSlotStart(service, facility, start))
+        {
+            throw new SlotNotAlignedException(start);
+        }
+
+        if (await appointmentRepository.HasServiceConflictAsync(service.Id, start, end, cancellationToken))
+        {
+            throw new ServiceSlotConflictException(service.Id, start, end);
+        }
+
+        // StaffMemberId stays null: the appointment is unassigned.
+        return new Appointment(
+            patient.Id, null, service.Id, start, end,
+            pricingStrategy.CalculatePrice(service, patient),
+            confirmationPolicy.DetermineInitialStatus());
     }
 
     public async Task ConfirmAppointmentAsync(Guid appointmentId, CancellationToken cancellationToken = default)
