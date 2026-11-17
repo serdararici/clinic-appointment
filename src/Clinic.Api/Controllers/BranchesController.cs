@@ -11,6 +11,11 @@ namespace Clinic.Api.Controllers;
 [Route("api/branches")]
 public class BranchesController(IBranchService branchService, IDepartmentService departmentService) : ControllerBase
 {
+    /// <summary>Every branch with its organization's name.</summary>
+    [HttpGet]
+    public async Task<ActionResult<IReadOnlyList<BranchSummaryDto>>> List(CancellationToken cancellationToken) =>
+        Ok(await branchService.ListAllAsync(cancellationToken));
+
     [HttpGet("{branchId:guid}")]
     public async Task<ActionResult<BranchDto>> Get(Guid branchId, CancellationToken cancellationToken) =>
         Ok(await branchService.GetAsync(branchId, cancellationToken));

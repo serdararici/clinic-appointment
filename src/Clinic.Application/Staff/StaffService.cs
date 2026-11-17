@@ -51,6 +51,22 @@ public class StaffService(
         return ToDto(technician);
     }
 
+    public async Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, CancellationToken cancellationToken = default)
+    {
+        _ = await LoadDepartmentAsync(departmentId, cancellationToken);
+
+        return (await staffRepository.ListAsync(null, departmentId, cancellationToken))
+            .OfType<Doctor>()
+            .Where(d => d.IsActive)
+            .Select(d => new DoctorSummaryDto(
+                d.Id,
+                d.FullName,
+                d.Specialty,
+                d.SlotDurationMinutes,
+                d.ServicesProvided.OrderBy(s => s.Name).Select(Management.ServiceDto.From).ToList()))
+            .ToList();
+    }
+
     public async Task<StaffDto> GetAsync(Guid staffId, CancellationToken cancellationToken = default) =>
         ToDto(await LoadAsync(staffId, cancellationToken));
 

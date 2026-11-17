@@ -46,6 +46,11 @@ public class DepartmentsController(
 
     // ---- Staff registered under the department ----
 
+    /// <summary>Active doctors of the department with their offered services and slot duration.</summary>
+    [HttpGet("{departmentId:guid}/doctors")]
+    public async Task<ActionResult<IReadOnlyList<DoctorSummaryDto>>> ListDoctors(Guid departmentId, CancellationToken cancellationToken) =>
+        Ok(await staffService.ListActiveDoctorsAsync(departmentId, cancellationToken));
+
     [HttpPost("{departmentId:guid}/doctors")]
     public async Task<ActionResult<StaffDto>> CreateDoctor(Guid departmentId, CreateDoctorRequest request, CancellationToken cancellationToken)
     {

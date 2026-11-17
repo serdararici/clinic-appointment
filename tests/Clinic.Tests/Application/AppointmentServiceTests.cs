@@ -505,6 +505,92 @@ public class AppointmentServiceTests
     }
 
     // =========================================================================================
+    // Cancel, and appointment lists by patient / doctor
+    // =========================================================================================
+
+    [Fact]
+    public async Task Cancel_ReleasesTheSlot_AndCannotBeRepeated()
+    {
+        var dto = await BookExaminationAsync(Monday.AddHours(6));
+
+        await _service.CancelAppointmentAsync(dto.Id);
+
+        Assert.Equal(AppointmentStatus.Cancelled, _appointments.Items.Single().Status);
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CancelAppointmentAsync(dto.Id));
+        await BookExaminationAsync(Monday.AddHours(6)); // the freed slot can be booked again
+    }
+
+    [Fact]
+    public async Task Cancel_Throws_ForAnUnknownAppointment()
+    {
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.CancelAppointmentAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task Cancel_Throws_ForARejectedAppointment()
+    {
+        var pendingService = CreateService(new StandardPricingStrategy(), new ManagerApprovalConfirmationPolicy());
+        var dto = await pendingService.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6), _doctor.Id));
+        await pendingService.RejectAppointmentAsync(dto.Id);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => pendingService.CancelAppointmentAsync(dto.Id));
+    }
+
+    [Fact]
+    public async Task PatientAppointments_ListServiceTimePriceAndStatus_ByStartTime_IncludingUnassignedOnes()
+    {
+        var examination = await BookExaminationAsync(Monday.AddHours(6));
+        var diagnostic = await BookDiagnosticAsync(_xRay, Monday.AddHours(5));
+        _appointments.Items.Single(a => a.Id == examination.Id).Cancel();
+        // Someone else's appointment must not appear.
+        _appointments.Items.Add(new Clinic.Domain.Appointments.Appointment(
+            Guid.NewGuid(), _doctor.Id, _checkUp.Id, Monday.AddHours(7), Monday.AddHours(7.5), 300m, AppointmentStatus.Pending));
+
+        var list = await _service.GetByPatientAsync(_patient.Id);
+
+        Assert.Equal([diagnostic.Id, examination.Id], list.Select(a => a.Id)); // 08:00 local before 09:00 local
+
+        Assert.Equal("Röntgen", list[0].ServiceName);
+        Assert.Equal(ServiceType.Diagnostic, list[0].ServiceType);
+        Assert.Null(list[0].StaffMemberId);
+        Assert.Equal(350m, list[0].Price);
+        Assert.Equal(AppointmentStatus.Confirmed, list[0].Status);
+        Assert.Equal(Monday.AddHours(5), list[0].ScheduledStartUtc);
+        Assert.Equal(DateTimeKind.Utc, list[0].ScheduledStartUtc.Kind);
+
+        Assert.Equal("Genel Muayene", list[1].ServiceName);
+        Assert.Equal(_doctor.Id, list[1].StaffMemberId);
+        Assert.Equal(AppointmentStatus.Cancelled, list[1].Status); // every status is listed
+    }
+
+    [Fact]
+    public async Task PatientAppointments_AreEmptyForAPatientWithNone_AndThrowForAnUnknownPatient()
+    {
+        Assert.Empty(await _service.GetByPatientAsync(_patient.Id));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByPatientAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task DoctorAppointments_ListOnlyThatDoctorsAppointments()
+    {
+        await BookExaminationAsync(Monday.AddHours(6));
+        await BookDiagnosticAsync(_xRay, Monday.AddHours(5)); // unassigned: not the doctor's
+        var otherDoctor = NewDoctor(slotDurationMinutes: 30, email: "other@example.com");
+        otherDoctor.AddAvailability(Monday, Monday.AddDays(7));
+        _doctors.Items.Add(otherDoctor);
+        await BookExaminationAsync(Monday.AddHours(7), otherDoctor);
+
+        var list = await _service.GetByDoctorAsync(_doctor.Id);
+
+        var only = Assert.Single(list);
+        Assert.Equal(_doctor.Id, only.StaffMemberId);
+        Assert.Equal("Genel Muayene", only.ServiceName);
+        Assert.Equal(ServiceType.Examination, only.ServiceType);
+        Assert.Equal(300m, only.Price);
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByDoctorAsync(Guid.NewGuid()));
+    }
+
+    // =========================================================================================
     // Strategies apply to both paths
     // =========================================================================================
 

@@ -139,6 +139,23 @@ public class OrganizationAndBranchServiceTests
     }
 
     [Fact]
+    public async Task Branch_ListAll_IncludesTheOrganizationName_OrderedByOrganizationThenBranch()
+    {
+        var sakarya = _f.AddOrganization("Sakarya Şehir Hastanesi");
+        var marmara = _f.AddOrganization("Marmara Poliklinik");
+        _f.AddBranch(sakarya, "Merkez");
+        _f.AddBranch(sakarya, "Adapazarı Şubesi");
+        _f.AddBranch(marmara, "Serdivan Kliniği");
+
+        var branches = await _f.BranchService().ListAllAsync();
+
+        Assert.Equal(
+            [("Marmara Poliklinik", "Serdivan Kliniği"), ("Sakarya Şehir Hastanesi", "Adapazarı Şubesi"), ("Sakarya Şehir Hastanesi", "Merkez")],
+            branches.Select(b => (b.OrganizationName, b.Name)));
+        Assert.Equal(sakarya.Id, branches.First(b => b.Name == "Merkez").OrganizationId);
+    }
+
+    [Fact]
     public async Task Branch_Update_ChangesNameAndAddress_OrThrows()
     {
         var branch = _f.AddBranch(_f.AddOrganization());

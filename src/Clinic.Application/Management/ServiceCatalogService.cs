@@ -94,6 +94,5 @@ public class ServiceCatalogService(
     // The API speaks whole minutes; zero, negative and over-long values are rejected by the Service entity.
     private static TimeSpan ToDuration(int minutes) => TimeSpan.FromMinutes(minutes);
 
-    private static ServiceDto ToDto(Service service) =>
-        new(service.Id, service.DepartmentId, service.Name, service.ServiceType, (int)service.Duration.TotalMinutes, service.BasePrice);
+    private static ServiceDto ToDto(Service service) => ServiceDto.From(service);
 }

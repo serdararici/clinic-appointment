@@ -13,6 +13,9 @@ public record BranchDto(Guid Id, Guid OrganizationId, string Name, string Addres
 
 public record SaveBranchRequest(string Name, string Address);
 
+/// <summary>A branch with its organization's name, for listing every branch ("Sakarya Şehir Hastanesi - Merkez").</summary>
+public record BranchSummaryDto(Guid Id, Guid OrganizationId, string OrganizationName, string Name, string Address);
+
 /// <summary>An opening range of a branch on one weekday, in clinic local time ("HH:mm:ss").</summary>
 public record WorkingHourDto(
     Guid Id,
@@ -36,7 +39,11 @@ public record ServiceDto(
     string Name,
     [property: JsonConverter(typeof(JsonStringEnumConverter))] ServiceType ServiceType,
     int DurationMinutes,
-    decimal BasePrice);
+    decimal BasePrice)
+{
+    public static ServiceDto From(Clinic.Domain.Clinics.Service service) =>
+        new(service.Id, service.DepartmentId, service.Name, service.ServiceType, (int)service.Duration.TotalMinutes, service.BasePrice);
+}
 
 public record SaveServiceRequest(
     string Name,

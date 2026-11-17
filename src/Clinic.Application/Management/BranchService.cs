@@ -5,6 +5,9 @@ namespace Clinic.Application.Management;
 
 public interface IBranchService
 {
+    /// <summary>Every branch with its organization's name, ordered by organization then branch name.</summary>
+    Task<IReadOnlyList<BranchSummaryDto>> ListAllAsync(CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<BranchDto>> ListByOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default);
 
     Task<BranchDto> GetAsync(Guid branchId, CancellationToken cancellationToken = default);
@@ -33,6 +36,17 @@ public class BranchService(
     IClinicFacilityRepository clinics,
     IUnitOfWork unitOfWork) : IBranchService
 {
+    public async Task<IReadOnlyList<BranchSummaryDto>> ListAllAsync(CancellationToken cancellationToken = default)
+    {
+        var organizationNames = (await organizations.GetAllAsync(cancellationToken)).ToDictionary(o => o.Id, o => o.Name);
+
+        return (await clinics.GetAllAsync(cancellationToken))
+            .Select(b => new BranchSummaryDto(b.Id, b.OrganizationId, organizationNames.GetValueOrDefault(b.OrganizationId, string.Empty), b.Name, b.Address))
+            .OrderBy(b => b.OrganizationName)
+            .ThenBy(b => b.Name)
+            .ToList();
+    }
+
     public async Task<IReadOnlyList<BranchDto>> ListByOrganizationAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
         _ = await organizations.GetByIdAsync(organizationId, cancellationToken)

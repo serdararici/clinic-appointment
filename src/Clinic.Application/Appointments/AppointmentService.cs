@@ -166,6 +166,59 @@ public class AppointmentService(
         await unitOfWork.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task CancelAppointmentAsync(Guid appointmentId, CancellationToken cancellationToken = default)
+    {
+        var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Appointment {appointmentId} was not found.");
+
+        appointment.Cancel();
+        appointmentRepository.Update(appointment);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AppointmentDetailDto>> GetByPatientAsync(Guid patientId, CancellationToken cancellationToken = default)
+    {
+        _ = await patientRepository.GetByIdAsync(patientId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Patient {patientId} was not found.");
+
+        return await ToDetailsAsync(await appointmentRepository.GetByPatientIdAsync(patientId, cancellationToken), cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<AppointmentDetailDto>> GetByDoctorAsync(Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        _ = await doctorRepository.GetByIdAsync(doctorId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
+
+        return await ToDetailsAsync(await appointmentRepository.GetByStaffMemberIdAsync(doctorId, cancellationToken), cancellationToken);
+    }
+
+    // One query for all the services involved, then a lookup per appointment.
+    private async Task<IReadOnlyList<AppointmentDetailDto>> ToDetailsAsync(IReadOnlyList<Appointment> appointments, CancellationToken cancellationToken)
+    {
+        var serviceIds = appointments.Select(a => a.ServiceId).Distinct().ToList();
+        var services = (await serviceRepository.GetByIdsAsync(serviceIds, cancellationToken)).ToDictionary(s => s.Id);
+
+        return appointments
+            .OrderBy(a => a.ScheduledStartUtc)
+            .Select(a =>
+            {
+                var service = services.GetValueOrDefault(a.ServiceId);
+                return new AppointmentDetailDto(
+                    a.Id,
+                    a.PatientId,
+                    a.StaffMemberId,
+                    a.ServiceId,
+                    service?.Name ?? string.Empty,
+                    service?.ServiceType ?? ServiceType.Examination,
+                    // Stored values come back with an Unspecified kind; mark them UTC so they serialize with a 'Z'.
+                    DateTime.SpecifyKind(a.ScheduledStartUtc, DateTimeKind.Utc),
+                    DateTime.SpecifyKind(a.ScheduledEndUtc, DateTimeKind.Utc),
+                    a.Price,
+                    a.Status);
+            })
+            .ToList();
+    }
+
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
         appointment.PatientId,

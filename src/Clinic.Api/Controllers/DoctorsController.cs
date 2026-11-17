@@ -1,3 +1,4 @@
+using Clinic.Application.Appointments;
 using Clinic.Application.Availability;
 using Clinic.Application.Slots;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,10 @@ namespace Clinic.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/doctors/{doctorId:guid}")]
-public class DoctorsController(IDoctorAvailabilityService availabilityService, ISlotService slotService) : ControllerBase
+public class DoctorsController(
+    IDoctorAvailabilityService availabilityService,
+    ISlotService slotService,
+    IAppointmentService appointmentService) : ControllerBase
 {
     [HttpGet("availability")]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetAll(Guid doctorId, CancellationToken cancellationToken)
@@ -45,6 +49,42 @@ public class DoctorsController(IDoctorAvailabilityService availabilityService, I
         catch (InvalidOperationException ex)
         {
             return Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Creates availability over a date range in Turkey local time: one range per matching weekday, skipping
+    /// days that overlap an existing range. 200 with the created ranges and the skipped dates; 400 if the
+    /// request is invalid.
+    /// </summary>
+    [HttpPost("availability/bulk")]
+    public async Task<ActionResult<BulkAvailabilityResultDto>> AddBulk(Guid doctorId, BulkAvailabilityRequest request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await availabilityService.AddBulkAvailabilityAsync(doctorId, request, cancellationToken));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>The doctor's appointments in every status, ordered by start time.</summary>
+    [HttpGet("appointments")]
+    public async Task<ActionResult<IReadOnlyList<AppointmentDetailDto>>> GetAppointments(Guid doctorId, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await appointmentService.GetByDoctorAsync(doctorId, cancellationToken));
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(ex.Message);
         }
     }
 

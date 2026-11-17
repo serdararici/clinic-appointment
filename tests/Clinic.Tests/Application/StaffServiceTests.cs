@@ -277,6 +277,41 @@ public class StaffServiceTests
     }
 
     [Fact]
+    public async Task ActiveDoctors_ListOnlyActiveDoctorsOfTheDepartment_WithTheirServicesAndSlotDuration()
+    {
+        var branch = _f.AddBranch(_f.AddOrganization());
+        var internalMedicine = _f.AddDepartment(branch, "Dahiliye");
+        var radiology = _f.AddDepartment(branch, "Radyoloji");
+        var checkUp = _f.AddService(internalMedicine, "Genel Muayene", ServiceType.Examination, 30, 450m);
+        var followUp = _f.AddService(internalMedicine, "Kontrol Muayenesi", ServiceType.Examination, 15, 250m);
+        var active = _f.AddDoctor(internalMedicine, "a@example.com", "Dr. Aktif", slotMinutes: 20);
+        active.AddService(followUp);
+        active.AddService(checkUp);
+        _f.AddDoctor(internalMedicine, "b@example.com", "Dr. Pasif").Deactivate();   // inactive: hidden
+        _f.AddTechnician(internalMedicine, "t@example.com");                         // not a doctor: hidden
+        _f.AddDoctor(radiology, "r@example.com", "Dr. Baska Bolum");                 // other department: hidden
+
+        var doctors = await _f.StaffService().ListActiveDoctorsAsync(internalMedicine.Id);
+
+        var doctor = Assert.Single(doctors);
+        Assert.Equal(active.Id, doctor.Id);
+        Assert.Equal("İç Hastalıkları", doctor.Specialty);
+        Assert.Equal(20, doctor.SlotDurationMinutes);
+        Assert.Equal(["Genel Muayene", "Kontrol Muayenesi"], doctor.Services.Select(s => s.Name)); // by name
+        Assert.Equal((ServiceType.Examination, 30, 450m),
+            (doctor.Services[0].ServiceType, doctor.Services[0].DurationMinutes, doctor.Services[0].BasePrice));
+    }
+
+    [Fact]
+    public async Task ActiveDoctors_Throw_ForAnUnknownDepartment_AndAreEmptyForOneWithoutDoctors()
+    {
+        var department = NewDepartment();
+
+        Assert.Empty(await _f.StaffService().ListActiveDoctorsAsync(department.Id));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _f.StaffService().ListActiveDoctorsAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
     public async Task List_IncludesInactiveStaff_WithTheirFlag()
     {
         var department = NewDepartment();

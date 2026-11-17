@@ -6,6 +6,9 @@ public interface IStaffService
 
     Task<StaffDto> CreateTechnicianAsync(Guid departmentId, CreateTechnicianRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>The department's active doctors (no technicians, no deactivated staff) with their offered services.</summary>
+    Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, CancellationToken cancellationToken = default);
+
     Task<StaffDto> GetAsync(Guid staffId, CancellationToken cancellationToken = default);
 
     /// <summary>Staff of a branch and/or department (null means any), ordered by name; inactive staff are included.</summary>

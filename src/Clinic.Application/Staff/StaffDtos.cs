@@ -1,3 +1,5 @@
+using Clinic.Application.Management;
+
 namespace Clinic.Application.Staff;
 
 /// <summary>Output DTO for a staff member. Specialty is set for doctors, Title for technicians.</summary>
@@ -14,6 +16,9 @@ public record StaffDto(
     string? Specialty,
     string? Title,
     IReadOnlyList<Guid> ServiceIds);
+
+/// <summary>An active doctor with the services they offer, for choosing a doctor when booking an examination.</summary>
+public record DoctorSummaryDto(Guid Id, string FullName, string Specialty, int SlotDurationMinutes, IReadOnlyList<ServiceDto> Services);
 
 /// <summary>Input DTO for registering a doctor. The slot duration defaults to 30 minutes when omitted.</summary>
 public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, string Specialty, int? SlotDurationMinutes = null);
