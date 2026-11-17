@@ -4,14 +4,15 @@ using Clinic.Domain.Enums;
 namespace Clinic.Domain.Appointments;
 
 /// <summary>
-/// A booked slot of a doctor's time for a patient's service, with its own
-/// approval workflow. State transitions are exposed as methods (not public
-/// setters) so invalid transitions cannot be expressed.
+/// A booked slot for a patient's service, with its own approval workflow.
+/// <see cref="StaffMemberId"/> is the doctor for an Examination, or null (unassigned)
+/// for a Diagnostic service, where no staff member is chosen. State transitions are
+/// exposed as methods (not public setters) so invalid transitions cannot be expressed.
 /// </summary>
 public class Appointment : Entity
 {
     public Guid PatientId { get; private set; }
-    public Guid DoctorId { get; private set; }
+    public Guid? StaffMemberId { get; private set; }
     public Guid ServiceId { get; private set; }
     public DateTime ScheduledStartUtc { get; private set; }
     public DateTime ScheduledEndUtc { get; private set; }
@@ -21,7 +22,7 @@ public class Appointment : Entity
 
     public Appointment(
         Guid patientId,
-        Guid doctorId,
+        Guid? staffMemberId,
         Guid serviceId,
         DateTime scheduledStartUtc,
         DateTime scheduledEndUtc,
@@ -39,7 +40,7 @@ public class Appointment : Entity
         }
 
         PatientId = patientId;
-        DoctorId = doctorId;
+        StaffMemberId = staffMemberId;
         ServiceId = serviceId;
         ScheduledStartUtc = scheduledStartUtc;
         ScheduledEndUtc = scheduledEndUtc;

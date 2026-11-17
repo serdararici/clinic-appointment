@@ -3,11 +3,13 @@ using Clinic.Domain.Common;
 namespace Clinic.Domain.Clinics;
 
 /// <summary>
-/// A hospital or clinic location. A healthcare provider may run a single facility
-/// or several (multi-branch), each with its own working hours and departments.
+/// A branch of a <see cref="HealthOrganization"/> (e.g. "Merkez" or "Adapazarı Şubesi").
+/// An organization may run a single branch or several, each with its own working hours
+/// and departments. <see cref="Name"/> is the branch name, not the organization's.
 /// </summary>
 public class ClinicFacility : Entity
 {
+    public Guid OrganizationId { get; private set; }
     public string Name { get; private set; }
     public string Address { get; private set; }
 
@@ -17,13 +19,19 @@ public class ClinicFacility : Entity
     private readonly List<WorkingHour> _workingHours = [];
     public IReadOnlyCollection<WorkingHour> WorkingHours => _workingHours.AsReadOnly();
 
-    public ClinicFacility(string name, string address)
+    public ClinicFacility(Guid organizationId, string name, string address)
     {
-        if (string.IsNullOrWhiteSpace(name))
+        if (organizationId == Guid.Empty)
         {
-            throw new ArgumentException("Clinic name is required.", nameof(name));
+            throw new ArgumentException("A branch must belong to an organization.", nameof(organizationId));
         }
 
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Branch name is required.", nameof(name));
+        }
+
+        OrganizationId = organizationId;
         Name = name;
         Address = address;
     }

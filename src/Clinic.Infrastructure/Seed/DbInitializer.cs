@@ -1,4 +1,6 @@
+using Clinic.Domain.Clinics;
 using Clinic.Domain.Common;
+using Clinic.Domain.Enums;
 using Clinic.Domain.Users;
 using Clinic.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -11,8 +13,13 @@ public static class DbInitializer
     /// <summary>How many days ahead (starting tomorrow) availability is seeded.</summary>
     public const int AvailabilityHorizonDays = 14;
 
-    private const string GeneralDoctorEmail = "mehmet.demir@clinic.example";
-    private const string RadiologyDoctorEmail = "elif.kaya@clinic.example";
+    // Every seeded doctor works the same two local-time blocks on weekdays; all of them fall
+    // inside the seeded branches' working hours.
+    private static readonly (TimeOnly From, TimeOnly To)[] DoctorWindows =
+    [
+        (new TimeOnly(9, 0), new TimeOnly(12, 0)),
+        (new TimeOnly(13, 0), new TimeOnly(16, 0)),
+    ];
 
     public static void MigrateAndSeed(ClinicDbContext dbContext)
     {
@@ -22,47 +29,119 @@ public static class DbInitializer
         SeedAvailability(dbContext, DateTime.UtcNow);
     }
 
-    /// <summary>Seeds the clinic, services, users once; skipped when data already exists.</summary>
+    /// <summary>Seeds organizations, branches, services, staff and patients once; skipped when data already exists.</summary>
     private static void SeedCoreData(ClinicDbContext dbContext)
     {
-        if (dbContext.ClinicFacilities.Any())
+        if (dbContext.HealthOrganizations.Any())
         {
             return; // Already seeded.
         }
 
-        var clinic = new Domain.Clinics.ClinicFacility("Sakarya City Hospital", "Sakarya, Turkey");
-        for (var day = DayOfWeek.Monday; day <= DayOfWeek.Friday; day++)
-        {
-            clinic.AddWorkingHour(day, new TimeOnly(8, 0), new TimeOnly(17, 0));
-        }
+        SeedSakaryaCityHospital(dbContext);
+        SeedMarmaraPoliklinik(dbContext);
 
-        var generalMedicine = clinic.AddDepartment("General Medicine");
-        var generalCheckUp = generalMedicine.AddService("General Check-up", TimeSpan.FromMinutes(30), 300m);
-
-        var radiology = clinic.AddDepartment("Radiology");
-        var xRay = radiology.AddService("X-Ray", TimeSpan.FromMinutes(20), 450m);
-
-        dbContext.ClinicFacilities.Add(clinic);
-
-        var manager = new ClinicManager("Ayşe Yilmaz", "ayse.yilmaz@clinic.example", "+90-500-000-0001", clinic.Id);
-
-        var doctor = new Doctor("Dr. Mehmet Demir", GeneralDoctorEmail, "+90-500-000-0002", clinic.Id, "General Medicine");
-        doctor.AddService(generalCheckUp);
-
-        var radiologyDoctor = new Doctor("Dr. Elif Kaya", RadiologyDoctorEmail, "+90-500-000-0003", clinic.Id, "Radiology");
-        radiologyDoctor.AddService(xRay);
-
-        var patient = new Patient("Ahmet Çelik", "ahmet.celik@example.com", "+90-500-000-0004", new DateOnly(1990, 5, 20), insuranceNumber: "INS-12345");
-
-        dbContext.ClinicManagers.Add(manager);
-        dbContext.Doctors.AddRange(doctor, radiologyDoctor);
-        dbContext.Patients.Add(patient);
+        dbContext.Patients.AddRange(
+            new Patient("Ahmet Çelik", "ahmet.celik@example.com", "+90-532-000-0001", new DateOnly(1990, 5, 20), insuranceNumber: "SGK-12345"),
+            new Patient("Fatma Yıldırım", "fatma.yildirim@example.com", "+90-532-000-0002", new DateOnly(1985, 11, 3)));
 
         dbContext.SaveChanges();
     }
 
+    /// <summary>A multi-branch organization: Merkez and Adapazarı Şubesi, each with its own hours and departments.</summary>
+    private static void SeedSakaryaCityHospital(ClinicDbContext dbContext)
+    {
+        var organization = new HealthOrganization("Sakarya Şehir Hastanesi");
+        dbContext.HealthOrganizations.Add(organization);
+
+        // ---- Merkez: weekdays 08:00-17:00 plus a shorter Saturday ----
+        var merkez = new ClinicFacility(organization.Id, "Merkez", "Korucuk Mah. Sağlık Cad. No: 1, Adapazarı / Sakarya");
+        AddWeekdayHours(merkez, new TimeOnly(8, 0), new TimeOnly(17, 0));
+        merkez.AddWorkingHour(DayOfWeek.Saturday, new TimeOnly(9, 0), new TimeOnly(13, 0));
+        var merkezDepartments = AddStandardDepartments(merkez, examinationPrice: 450m);
+        dbContext.ClinicFacilities.Add(merkez);
+
+        dbContext.ClinicManagers.Add(new ClinicManager("Ayşe Yılmaz", "ayse.yilmaz@sakaryasehir.example", "+90-264-555-0001", merkez.Id));
+        dbContext.Doctors.Add(NewDoctor("Dr. Hakan Yıldız", "hakan.yildiz@sakaryasehir.example", "+90-264-555-0011", merkezDepartments.Dahiliye, merkezDepartments.Examination, "İç Hastalıkları", slotDurationMinutes: 30));
+        dbContext.Doctors.Add(NewDoctor("Dr. Elif Şahin", "elif.sahin@sakaryasehir.example", "+90-264-555-0012", merkezDepartments.Dahiliye, merkezDepartments.Examination, "Endokrinoloji", slotDurationMinutes: 20));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Kemal Arslan", "kemal.arslan@sakaryasehir.example", "+90-264-555-0021", merkezDepartments.Radyoloji, "Radyoloji Teknikeri"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Gülşen Demirtaş", "gulsen.demirtas@sakaryasehir.example", "+90-264-555-0022", merkezDepartments.Radyoloji, "Radyoloji Teknikeri"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Fatma Güneş", "fatma.gunes@sakaryasehir.example", "+90-264-555-0023", merkezDepartments.Laboratuvar, "Tıbbi Laboratuvar Teknisyeni"));
+
+        // ---- Adapazarı Şubesi: weekdays 08:30-16:30 ----
+        var adapazari = new ClinicFacility(organization.Id, "Adapazarı Şubesi", "Semerciler Mah. Atatürk Bulvarı No: 48, Adapazarı / Sakarya");
+        AddWeekdayHours(adapazari, new TimeOnly(8, 30), new TimeOnly(16, 30));
+        var adapazariDepartments = AddStandardDepartments(adapazari, examinationPrice: 400m);
+        dbContext.ClinicFacilities.Add(adapazari);
+
+        dbContext.ClinicManagers.Add(new ClinicManager("Mehmet Kara", "mehmet.kara@sakaryasehir.example", "+90-264-555-0002", adapazari.Id));
+        dbContext.Doctors.Add(NewDoctor("Dr. Zeynep Çelik", "zeynep.celik@sakaryasehir.example", "+90-264-555-0031", adapazariDepartments.Dahiliye, adapazariDepartments.Examination, "İç Hastalıkları", slotDurationMinutes: 30));
+        dbContext.Doctors.Add(NewDoctor("Dr. Burak Öztürk", "burak.ozturk@sakaryasehir.example", "+90-264-555-0032", adapazariDepartments.Dahiliye, adapazariDepartments.Examination, "Gastroenteroloji", slotDurationMinutes: 20));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Mustafa Kılıç", "mustafa.kilic@sakaryasehir.example", "+90-264-555-0041", adapazariDepartments.Radyoloji, "Radyoloji Teknikeri"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Ayten Polat", "ayten.polat@sakaryasehir.example", "+90-264-555-0042", adapazariDepartments.Laboratuvar, "Tıbbi Laboratuvar Teknisyeni"));
+    }
+
+    /// <summary>A second, independent organization with a single branch and only two departments.</summary>
+    private static void SeedMarmaraPoliklinik(ClinicDbContext dbContext)
+    {
+        var organization = new HealthOrganization("Marmara Poliklinik");
+        dbContext.HealthOrganizations.Add(organization);
+
+        var serdivan = new ClinicFacility(organization.Id, "Serdivan Kliniği", "Kemalpaşa Mah. Bahçeli Sok. No: 7, Serdivan / Sakarya");
+        for (var day = DayOfWeek.Monday; day <= DayOfWeek.Saturday; day++)
+        {
+            serdivan.AddWorkingHour(day, new TimeOnly(9, 0), new TimeOnly(18, 0));
+        }
+
+        var dahiliye = serdivan.AddDepartment("Dahiliye");
+        var genelMuayene = dahiliye.AddService("Genel Muayene", ServiceType.Examination, TimeSpan.FromMinutes(30), 350m);
+        var laboratuvar = serdivan.AddDepartment("Laboratuvar");
+        laboratuvar.AddService("Kan Tahlili", ServiceType.Diagnostic, TimeSpan.FromMinutes(15), 200m);
+        dbContext.ClinicFacilities.Add(serdivan);
+
+        dbContext.ClinicManagers.Add(new ClinicManager("Ali Rıza Erdoğan", "ali.erdogan@marmarapoliklinik.example", "+90-264-555-0003", serdivan.Id));
+        dbContext.Doctors.Add(NewDoctor("Dr. Can Aksoy", "can.aksoy@marmarapoliklinik.example", "+90-264-555-0051", dahiliye, genelMuayene, "İç Hastalıkları", slotDurationMinutes: 15));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Emre Korkmaz", "emre.korkmaz@marmarapoliklinik.example", "+90-264-555-0052", laboratuvar, "Tıbbi Laboratuvar Teknisyeni"));
+    }
+
+    private static void AddWeekdayHours(ClinicFacility clinic, TimeOnly opensAt, TimeOnly closesAt)
+    {
+        for (var day = DayOfWeek.Monday; day <= DayOfWeek.Friday; day++)
+        {
+            clinic.AddWorkingHour(day, opensAt, closesAt);
+        }
+    }
+
     /// <summary>
-    /// Gives each seeded doctor availability for the next <see cref="AvailabilityHorizonDays"/> days,
+    /// Dahiliye (one Examination service), Radyoloji (two Diagnostic services) and Laboratuvar
+    /// (one Diagnostic service). A department with a single service has it auto-selected when booking;
+    /// one with several lets the patient choose.
+    /// </summary>
+    private static (Department Dahiliye, Service Examination, Department Radyoloji, Department Laboratuvar) AddStandardDepartments(
+        ClinicFacility clinic, decimal examinationPrice)
+    {
+        var dahiliye = clinic.AddDepartment("Dahiliye");
+        var genelMuayene = dahiliye.AddService("Genel Muayene", ServiceType.Examination, TimeSpan.FromMinutes(30), examinationPrice);
+
+        var radyoloji = clinic.AddDepartment("Radyoloji");
+        radyoloji.AddService("Röntgen", ServiceType.Diagnostic, TimeSpan.FromMinutes(20), 350m);
+        radyoloji.AddService("MR", ServiceType.Diagnostic, TimeSpan.FromMinutes(45), 1800m);
+
+        var laboratuvar = clinic.AddDepartment("Laboratuvar");
+        laboratuvar.AddService("Kan Tahlili", ServiceType.Diagnostic, TimeSpan.FromMinutes(15), 250m);
+
+        return (dahiliye, genelMuayene, radyoloji, laboratuvar);
+    }
+
+    private static Doctor NewDoctor(
+        string fullName, string email, string phone, Department department, Service service, string specialty, int slotDurationMinutes)
+    {
+        var doctor = new Doctor(fullName, email, phone, department, specialty, slotDurationMinutes);
+        doctor.AddService(service);
+        return doctor;
+    }
+
+    /// <summary>
+    /// Gives each doctor availability for the next <see cref="AvailabilityHorizonDays"/> days,
     /// but only if that doctor has no future availability at all. Runs on every startup, so it must be
     /// idempotent, and it must not resurrect ranges a manager deleted: once a doctor has any future
     /// range, the seed leaves their schedule alone.
@@ -71,30 +150,19 @@ public static class DbInitializer
     {
         var firstDay = DateOnly.FromDateTime(ClinicTimeZone.ToLocal(utcNow)).AddDays(1);
 
-        var plans = new (string Email, (TimeOnly From, TimeOnly To)[] Windows)[]
+        var doctors = dbContext.Doctors
+            .Include(d => d.AvailabilitySlots)
+            .ToList();
+
+        foreach (var doctor in doctors)
         {
-            (GeneralDoctorEmail, [(new TimeOnly(9, 0), new TimeOnly(12, 0)), (new TimeOnly(13, 0), new TimeOnly(16, 0))]),
-            (RadiologyDoctorEmail, [(new TimeOnly(10, 0), new TimeOnly(15, 0))]),
-        };
-
-        foreach (var (email, windows) in plans)
-        {
-            var doctor = dbContext.Doctors
-                .Include(d => d.AvailabilitySlots)
-                .FirstOrDefault(d => d.Email == email);
-
-            if (doctor is null)
-            {
-                continue;
-            }
-
             // A range that has not ended yet counts as future availability.
             if (doctor.AvailabilitySlots.Any(s => s.EndUtc > utcNow))
             {
                 continue;
             }
 
-            foreach (var (from, to) in windows)
+            foreach (var (from, to) in DoctorWindows)
             {
                 foreach (var (startUtc, endUtc) in BuildWeekdayWindows(firstDay, AvailabilityHorizonDays, from, to))
                 {

@@ -31,9 +31,6 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("PatientId")
                         .HasColumnType("uniqueidentifier");
 
@@ -47,6 +44,9 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                         .HasColumnType("datetime2");
 
                     b.Property<Guid>("ServiceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("StaffMemberId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<int>("Status")
@@ -71,7 +71,12 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("OrganizationId");
 
                     b.ToTable("ClinicFacilities");
                 });
@@ -96,6 +101,21 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.ToTable("Departments");
                 });
 
+            modelBuilder.Entity("Clinic.Domain.Clinics.HealthOrganization", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("HealthOrganizations");
+                });
+
             modelBuilder.Entity("Clinic.Domain.Clinics.Service", b =>
                 {
                     b.Property<Guid>("Id")
@@ -114,6 +134,9 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ServiceType")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -153,18 +176,18 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<DateTime>("EndUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<Guid>("StaffMemberId")
+                        .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime>("StartUtc")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DoctorId");
+                    b.HasIndex("StaffMemberId");
 
                     b.ToTable("DoctorAvailabilities");
                 });
@@ -192,8 +215,8 @@ namespace Clinic.Infrastructure.Persistence.Migrations
 
                     b.Property<string>("UserType")
                         .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("nvarchar(13)");
+                        .HasMaxLength(21)
+                        .HasColumnType("nvarchar(21)");
 
                     b.HasKey("Id");
 
@@ -204,19 +227,19 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.UseTphMappingStrategy();
                 });
 
-            modelBuilder.Entity("DoctorService", b =>
+            modelBuilder.Entity("ServiceStaffMember", b =>
                 {
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<Guid>("ServicesProvidedId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("DoctorId", "ServicesProvidedId");
+                    b.Property<Guid>("StaffMemberId")
+                        .HasColumnType("uniqueidentifier");
 
-                    b.HasIndex("ServicesProvidedId");
+                    b.HasKey("ServicesProvidedId", "StaffMemberId");
 
-                    b.ToTable("DoctorService");
+                    b.HasIndex("StaffMemberId");
+
+                    b.ToTable("ServiceStaffMember");
                 });
 
             modelBuilder.Entity("Clinic.Domain.Users.ClinicManager", b =>
@@ -235,20 +258,6 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.HasDiscriminator().HasValue("ClinicManager");
                 });
 
-            modelBuilder.Entity("Clinic.Domain.Users.Doctor", b =>
-                {
-                    b.HasBaseType("Clinic.Domain.Users.User");
-
-                    b.Property<Guid>("ClinicFacilityId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Specialty")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasDiscriminator().HasValue("Doctor");
-                });
-
             modelBuilder.Entity("Clinic.Domain.Users.Patient", b =>
                 {
                     b.HasBaseType("Clinic.Domain.Users.User");
@@ -260,6 +269,57 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasDiscriminator().HasValue("Patient");
+                });
+
+            modelBuilder.Entity("Clinic.Domain.Users.StaffMember", b =>
+                {
+                    b.HasBaseType("Clinic.Domain.Users.User");
+
+                    b.Property<Guid>("ClinicFacilityId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("DepartmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SlotDurationMinutes")
+                        .HasColumnType("int");
+
+                    b.HasIndex("ClinicFacilityId");
+
+                    b.HasIndex("DepartmentId");
+
+                    b.HasDiscriminator().HasValue("StaffMember");
+                });
+
+            modelBuilder.Entity("Clinic.Domain.Users.Doctor", b =>
+                {
+                    b.HasBaseType("Clinic.Domain.Users.StaffMember");
+
+                    b.Property<string>("Specialty")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasDiscriminator().HasValue("Doctor");
+                });
+
+            modelBuilder.Entity("Clinic.Domain.Users.HealthTechnician", b =>
+                {
+                    b.HasBaseType("Clinic.Domain.Users.StaffMember");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasDiscriminator().HasValue("HealthTechnician");
+                });
+
+            modelBuilder.Entity("Clinic.Domain.Clinics.ClinicFacility", b =>
+                {
+                    b.HasOne("Clinic.Domain.Clinics.HealthOrganization", null)
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Clinic.Domain.Clinics.Department", b =>
@@ -291,25 +351,40 @@ namespace Clinic.Infrastructure.Persistence.Migrations
 
             modelBuilder.Entity("Clinic.Domain.Users.DoctorAvailability", b =>
                 {
-                    b.HasOne("Clinic.Domain.Users.Doctor", null)
+                    b.HasOne("Clinic.Domain.Users.StaffMember", null)
                         .WithMany("AvailabilitySlots")
-                        .HasForeignKey("DoctorId")
+                        .HasForeignKey("StaffMemberId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DoctorService", b =>
+            modelBuilder.Entity("ServiceStaffMember", b =>
                 {
-                    b.HasOne("Clinic.Domain.Users.Doctor", null)
-                        .WithMany()
-                        .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Clinic.Domain.Clinics.Service", null)
                         .WithMany()
                         .HasForeignKey("ServicesProvidedId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Clinic.Domain.Users.StaffMember", null)
+                        .WithMany()
+                        .HasForeignKey("StaffMemberId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Clinic.Domain.Users.StaffMember", b =>
+                {
+                    b.HasOne("Clinic.Domain.Clinics.ClinicFacility", null)
+                        .WithMany()
+                        .HasForeignKey("ClinicFacilityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Clinic.Domain.Clinics.Department", null)
+                        .WithMany()
+                        .HasForeignKey("DepartmentId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
 
@@ -325,7 +400,7 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.Navigation("Services");
                 });
 
-            modelBuilder.Entity("Clinic.Domain.Users.Doctor", b =>
+            modelBuilder.Entity("Clinic.Domain.Users.StaffMember", b =>
                 {
                     b.Navigation("AvailabilitySlots");
                 });

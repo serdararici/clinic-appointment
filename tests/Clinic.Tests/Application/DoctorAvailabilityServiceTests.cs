@@ -12,7 +12,7 @@ public class DoctorAvailabilityServiceTests
     private readonly FakeDoctorRepository _doctors = new();
     private readonly FakeAppointmentRepository _appointments = new();
     private readonly FakeUnitOfWork _unitOfWork = new();
-    private readonly Doctor _doctor = new("Dr. Test", "doctor@example.com", "+90-500-000-0000", Guid.NewGuid(), "General Medicine");
+    private readonly Doctor _doctor = TestData.NewDoctor();
 
     private DoctorAvailabilityService CreateService()
     {

@@ -10,9 +10,12 @@ public class ClinicDbContext(DbContextOptions<ClinicDbContext> options) : DbCont
 {
     public DbSet<User> Users => Set<User>();
     public DbSet<Patient> Patients => Set<Patient>();
+    public DbSet<StaffMember> StaffMembers => Set<StaffMember>();
     public DbSet<Doctor> Doctors => Set<Doctor>();
+    public DbSet<HealthTechnician> HealthTechnicians => Set<HealthTechnician>();
     public DbSet<ClinicManager> ClinicManagers => Set<ClinicManager>();
 
+    public DbSet<HealthOrganization> HealthOrganizations => Set<HealthOrganization>();
     public DbSet<ClinicFacility> ClinicFacilities => Set<ClinicFacility>();
     public DbSet<Department> Departments => Set<Department>();
     public DbSet<Service> Services => Set<Service>();
@@ -23,16 +26,23 @@ public class ClinicDbContext(DbContextOptions<ClinicDbContext> options) : DbCont
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Users are mapped as a single table with a discriminator column (TPH),
-        // modeling the abstract User -> Patient/Doctor/ClinicManager inheritance.
+        // Users are mapped as a single table with a discriminator column (TPH), modeling
+        // User -> Patient / ClinicManager / StaffMember -> Doctor / HealthTechnician.
+        // StaffMember is abstract: it has no discriminator value of its own, but it must be an
+        // explicit entity type so its columns are shared by Doctor and HealthTechnician.
         modelBuilder.Entity<User>()
             .HasDiscriminator<string>("UserType")
             .HasValue<Patient>("Patient")
             .HasValue<Doctor>("Doctor")
+            .HasValue<HealthTechnician>("HealthTechnician")
             .HasValue<ClinicManager>("ClinicManager");
 
         modelBuilder.Entity<ClinicFacility>(builder =>
         {
+            // A branch always belongs to an organization, which must exist first.
+            builder.HasOne<HealthOrganization>().WithMany().HasForeignKey(c => c.OrganizationId)
+                .IsRequired().OnDelete(DeleteBehavior.Restrict);
+
             builder.HasMany(c => c.Departments).WithOne().HasForeignKey(d => d.ClinicFacilityId);
             builder.Navigation(c => c.Departments).HasField("_departments").UsePropertyAccessMode(PropertyAccessMode.Field);
 
@@ -51,14 +61,20 @@ public class ClinicDbContext(DbContextOptions<ClinicDbContext> options) : DbCont
             builder.Property(s => s.BasePrice).HasColumnType("decimal(10,2)");
         });
 
-        modelBuilder.Entity<Doctor>(builder =>
+        modelBuilder.Entity<StaffMember>(builder =>
         {
-            builder.HasMany(d => d.AvailabilitySlots).WithOne().HasForeignKey(a => a.DoctorId);
-            builder.Navigation(d => d.AvailabilitySlots).HasField("_availabilitySlots").UsePropertyAccessMode(PropertyAccessMode.Field);
+            // A real link to the department (and branch). Restrict avoids multiple cascade paths in SQL Server.
+            builder.HasOne<ClinicFacility>().WithMany().HasForeignKey(s => s.ClinicFacilityId)
+                .IsRequired().OnDelete(DeleteBehavior.Restrict);
+            builder.HasOne<Department>().WithMany().HasForeignKey(s => s.DepartmentId)
+                .IsRequired().OnDelete(DeleteBehavior.Restrict);
 
-            // A doctor providing a service is a plain many-to-many relation.
-            builder.HasMany(d => d.ServicesProvided).WithMany();
-            builder.Navigation(d => d.ServicesProvided).HasField("_servicesProvided").UsePropertyAccessMode(PropertyAccessMode.Field);
+            builder.HasMany(s => s.AvailabilitySlots).WithOne().HasForeignKey(a => a.StaffMemberId);
+            builder.Navigation(s => s.AvailabilitySlots).HasField("_availabilitySlots").UsePropertyAccessMode(PropertyAccessMode.Field);
+
+            // A staff member providing a service is a plain many-to-many relation.
+            builder.HasMany(s => s.ServicesProvided).WithMany();
+            builder.Navigation(s => s.ServicesProvided).HasField("_servicesProvided").UsePropertyAccessMode(PropertyAccessMode.Field);
         });
 
         modelBuilder.Entity<Appointment>(builder =>

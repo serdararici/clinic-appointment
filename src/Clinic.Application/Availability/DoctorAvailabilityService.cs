@@ -64,7 +64,7 @@ public class DoctorAvailabilityService(
 
     private static AvailabilityDto ToDto(DoctorAvailability slot) => new(
         slot.Id,
-        slot.DoctorId,
+        slot.StaffMemberId,
         // EF returns Unspecified kind; mark as UTC so it serializes with a 'Z'.
         DateTime.SpecifyKind(slot.StartUtc, DateTimeKind.Utc),
         DateTime.SpecifyKind(slot.EndUtc, DateTimeKind.Utc));

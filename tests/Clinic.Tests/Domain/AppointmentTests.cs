@@ -21,6 +21,30 @@ public class AppointmentTests
     }
 
     [Fact]
+    public void Appointment_CanBeUnassigned_WhenNoStaffMemberIsChosen()
+    {
+        // Diagnostic services (X-ray, MRI, blood test) are booked without picking a staff member.
+        var start = DateTime.UtcNow;
+
+        var appointment = new Appointment(Guid.NewGuid(), null, Guid.NewGuid(), start, start.AddMinutes(20), 350m, AppointmentStatus.Pending);
+
+        Assert.Null(appointment.StaffMemberId);
+        appointment.Confirm();
+        Assert.Equal(AppointmentStatus.Confirmed, appointment.Status);
+    }
+
+    [Fact]
+    public void Appointment_KeepsTheAssignedStaffMember()
+    {
+        var staffMemberId = Guid.NewGuid();
+        var start = DateTime.UtcNow;
+
+        var appointment = new Appointment(Guid.NewGuid(), staffMemberId, Guid.NewGuid(), start, start.AddMinutes(30), 450m, AppointmentStatus.Pending);
+
+        Assert.Equal(staffMemberId, appointment.StaffMemberId);
+    }
+
+    [Fact]
     public void Confirm_Throws_WhenNotPending()
     {
         var start = DateTime.UtcNow;

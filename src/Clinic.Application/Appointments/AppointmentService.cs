@@ -95,7 +95,7 @@ public class AppointmentService(
     private static AppointmentDto ToDto(Appointment appointment) => new(
         appointment.Id,
         appointment.PatientId,
-        appointment.DoctorId,
+        appointment.StaffMemberId,
         appointment.ServiceId,
         appointment.ScheduledStartUtc,
         appointment.ScheduledEndUtc,

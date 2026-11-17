@@ -47,17 +47,21 @@ internal class FakeDoctorRepository : FakeRepository<Doctor>, IDoctorRepository
 internal class FakeAppointmentRepository : FakeRepository<Appointment>, IAppointmentRepository
 {
     // Mirrors the real query: cancelled/rejected appointments do not block a time range.
-    public Task<bool> HasConflictAsync(Guid doctorId, DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
+    public Task<bool> HasConflictAsync(Guid staffMemberId, DateTime start, DateTime end, CancellationToken cancellationToken = default) =>
         Task.FromResult(Items.Any(a =>
-            a.DoctorId == doctorId &&
+            a.StaffMemberId == staffMemberId &&
             a.Status is not (AppointmentStatus.Cancelled or AppointmentStatus.Rejected) &&
             a.OverlapsWith(start, end)));
 
-    public Task<IReadOnlyList<Appointment>> GetByDoctorIdAsync(Guid doctorId, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<Appointment>>(Items.Where(a => a.DoctorId == doctorId).ToList());
+    public Task<IReadOnlyList<Appointment>> GetByStaffMemberIdAsync(Guid staffMemberId, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Appointment>>(Items.Where(a => a.StaffMemberId == staffMemberId).ToList());
 
     public Task<IReadOnlyList<Appointment>> GetByPatientIdAsync(Guid patientId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<Appointment>>(Items.Where(a => a.PatientId == patientId).ToList());
+}
+
+internal class FakeStaffMemberRepository : FakeRepository<StaffMember>, IStaffMemberRepository
+{
 }
 
 internal class FakePatientRepository : FakeRepository<Patient>, IPatientRepository

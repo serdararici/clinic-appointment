@@ -10,7 +10,7 @@ public class ClinicFacilityTests
 
     private static ClinicFacility CreateClinic()
     {
-        var clinic = new ClinicFacility("Test Clinic", "Test Address");
+        var clinic = new ClinicFacility(Guid.NewGuid(), "Test Clinic", "Test Address");
         for (var day = DayOfWeek.Monday; day <= DayOfWeek.Friday; day++)
         {
             clinic.AddWorkingHour(day, new TimeOnly(8, 0), new TimeOnly(17, 0));
@@ -57,7 +57,7 @@ public class ClinicFacilityTests
     [Fact]
     public void IsOpenDuring_ReturnsFalse_WhenRangeCrossesLocalMidnight()
     {
-        var clinic = new ClinicFacility("Night Clinic", "Test Address");
+        var clinic = new ClinicFacility(Guid.NewGuid(), "Night Clinic", "Test Address");
         for (var day = DayOfWeek.Monday; day <= DayOfWeek.Tuesday; day++)
         {
             clinic.AddWorkingHour(day, new TimeOnly(0, 0), new TimeOnly(23, 59));
@@ -70,7 +70,7 @@ public class ClinicFacilityTests
     [Fact]
     public void IsOpenDuring_ReturnsFalse_WhenClinicHasNoWorkingHours()
     {
-        var clinic = new ClinicFacility("Empty Clinic", "Test Address");
+        var clinic = new ClinicFacility(Guid.NewGuid(), "Empty Clinic", "Test Address");
 
         Assert.False(clinic.IsOpenDuring(Monday.AddHours(6), Monday.AddHours(6.5)));
     }

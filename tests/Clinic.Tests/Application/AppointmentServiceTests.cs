@@ -18,7 +18,8 @@ public class AppointmentServiceTests
 
     private readonly FakeAppointmentRepository _appointments = new();
     private readonly FakeUnitOfWork _unitOfWork = new();
-    private readonly ClinicFacility _clinic = new("Test Clinic", "Test Address");
+    private readonly ClinicFacility _clinic = new(Guid.NewGuid(), "Test Clinic", "Test Address");
+    private readonly Department _department;
     private readonly Service _checkUp;
     private readonly Doctor _doctor;
     private readonly Patient _patient = new("Pat Ient", "pat@example.com", "+90-500-000-0000", new DateOnly(1990, 1, 1));
@@ -31,9 +32,10 @@ public class AppointmentServiceTests
             _clinic.AddWorkingHour(day, new TimeOnly(8, 0), new TimeOnly(17, 0));
         }
 
-        _checkUp = _clinic.AddDepartment("General Medicine").AddService("Check-up", TimeSpan.FromMinutes(30), 300m);
+        _department = _clinic.AddDepartment("Dahiliye");
+        _checkUp = _department.AddService("Check-up", ServiceType.Examination, TimeSpan.FromMinutes(30), 300m);
 
-        _doctor = new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0001", _clinic.Id, "General Medicine");
+        _doctor = new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0001", _department, "İç Hastalıkları");
         _doctor.AddService(_checkUp);
         // Available all week (UTC), so tests that fail on working hours are not masked by availability.
         _doctor.AddAvailability(Monday, Monday.AddDays(7));
@@ -148,7 +150,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task Create_Throws_WhenDoctorDoesNotOfferTheService()
     {
-        var xRay = _clinic.AddDepartment("Radiology").AddService("X-Ray", TimeSpan.FromMinutes(20), 450m);
+        var xRay = _clinic.AddDepartment("Radyoloji").AddService("X-Ray", ServiceType.Diagnostic, TimeSpan.FromMinutes(20), 450m);
         var services = new FakeServiceRepository();
         services.Items.AddRange([_checkUp, xRay]);
         var doctors = new FakeDoctorRepository();
@@ -161,7 +163,7 @@ public class AppointmentServiceTests
             _appointments, doctors, patients, services, clinics,
             new StandardPricingStrategy(), new AutoConfirmationPolicy(), _unitOfWork);
 
-        // The doctor offers only the check-up, not the X-ray, even at an otherwise valid time.
+        // The doctor offers only the examination, not the diagnostic X-ray, even at an otherwise valid time.
         await Assert.ThrowsAsync<ServiceNotOfferedException>(() =>
             service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _doctor.Id, xRay.Id, Monday.AddHours(6))));
 
@@ -173,7 +175,7 @@ public class AppointmentServiceTests
     [Fact]
     public async Task Create_Throws_WhenDoctorHasNoAvailabilityForTheTime()
     {
-        var doctor = new Doctor("Dr. Busy", "busy@example.com", "+90-500-000-0002", _clinic.Id, "General Medicine");
+        var doctor = new Doctor("Dr. Busy", "busy@example.com", "+90-500-000-0002", _department, "İç Hastalıkları");
         doctor.AddService(_checkUp);
         doctor.AddAvailability(Monday.AddHours(6), Monday.AddHours(7)); // 09:00-10:00 local only
         var doctors = new FakeDoctorRepository();

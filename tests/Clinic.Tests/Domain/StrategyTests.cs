@@ -11,7 +11,7 @@ public class StrategyTests
     [Fact]
     public void StandardPricingStrategy_ReturnsServiceBasePrice()
     {
-        var service = new Service(Guid.NewGuid(), "General Check-up", TimeSpan.FromMinutes(30), 300m);
+        var service = new Service(Guid.NewGuid(), "General Check-up", ServiceType.Examination, TimeSpan.FromMinutes(30), 300m);
         var patient = new Patient("John Doe", "john@example.com", "+90-500-000-0000", new DateOnly(1990, 1, 1));
         IPricingStrategy strategy = new StandardPricingStrategy();
 
@@ -23,7 +23,7 @@ public class StrategyTests
     [Fact]
     public void InsuranceDiscountPricingStrategy_DiscountsPrice_WhenPatientHasInsurance()
     {
-        var service = new Service(Guid.NewGuid(), "General Check-up", TimeSpan.FromMinutes(30), 300m);
+        var service = new Service(Guid.NewGuid(), "General Check-up", ServiceType.Examination, TimeSpan.FromMinutes(30), 300m);
         var insuredPatient = new Patient("John Doe", "john@example.com", "+90-500-000-0000", new DateOnly(1990, 1, 1), insuranceNumber: "INS-1");
         IPricingStrategy strategy = new InsuranceDiscountPricingStrategy();
 
@@ -35,7 +35,7 @@ public class StrategyTests
     [Fact]
     public void InsuranceDiscountPricingStrategy_ChargesFullPrice_WhenPatientHasNoInsurance()
     {
-        var service = new Service(Guid.NewGuid(), "General Check-up", TimeSpan.FromMinutes(30), 300m);
+        var service = new Service(Guid.NewGuid(), "General Check-up", ServiceType.Examination, TimeSpan.FromMinutes(30), 300m);
         var uninsuredPatient = new Patient("John Doe", "john@example.com", "+90-500-000-0000", new DateOnly(1990, 1, 1));
         IPricingStrategy strategy = new InsuranceDiscountPricingStrategy();
 
