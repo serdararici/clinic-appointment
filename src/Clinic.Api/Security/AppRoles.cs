@@ -1,16 +1,21 @@
+using Clinic.Application.Auth;
+
 namespace Clinic.Api.Security;
 
 /// <summary>
-/// Role names used in <c>[Authorize(Roles = ...)]</c>. They must equal <c>User.RoleName</c> of the matching
-/// entity, because that is the value written into the token's "role" claim (a test checks this).
+/// Role names used in <c>[Authorize(Roles = ...)]</c>. They are the same strings as <see cref="RoleNames"/>, which
+/// equal <c>User.RoleName</c> and are written into the token's "role" claim (a test checks this).
 /// </summary>
 public static class AppRoles
 {
-    public const string Patient = "Patient";
-    public const string Doctor = "Doctor";
-    public const string HealthTechnician = "HealthTechnician";
-    public const string ClinicManager = "ClinicManager";
+    public const string Patient = RoleNames.Patient;
+    public const string Doctor = RoleNames.Doctor;
+    public const string HealthTechnician = RoleNames.HealthTechnician;
+    public const string ClinicManager = RoleNames.ClinicManager;
+    public const string SystemAdmin = RoleNames.SystemAdmin;
 
-    /// <summary>A comma-separated list means "any of these roles".</summary>
-    public const string DoctorOrClinicManager = Doctor + "," + ClinicManager;
+    // A comma-separated list means "any of these roles". A system administrator may use every management endpoint.
+    public const string ClinicManagerOrAdmin = ClinicManager + "," + SystemAdmin;
+    public const string DoctorOrManagerOrAdmin = Doctor + "," + ClinicManager + "," + SystemAdmin;
+    public const string PatientOrManagerOrAdmin = Patient + "," + ClinicManager + "," + SystemAdmin;
 }

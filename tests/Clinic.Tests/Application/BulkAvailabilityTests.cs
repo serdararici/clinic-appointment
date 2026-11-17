@@ -1,3 +1,4 @@
+using Clinic.Application.Exceptions;
 using Clinic.Application.Availability;
 using Clinic.Domain.Common;
 using Clinic.Domain.Users;
@@ -23,7 +24,7 @@ public class BulkAvailabilityTests
     private DoctorAvailabilityService CreateService(DateTime? now = null)
     {
         _doctors.Items.Add(_doctor);
-        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(now ?? Now));
+        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(now ?? Now), TestGuard.For(FakeCurrentUser.Doctor(_doctor.Id)));
     }
 
     private static DateTime Utc(DateOnly day, int hour, int minute = 0) =>
@@ -98,7 +99,7 @@ public class BulkAvailabilityTests
         // Exactly 09:00 local: the window starts now, which is still allowed (same rule as slots).
         var otherDoctor = TestData.NewDoctor(email: "other@example.com");
         _doctors.Items.Add(otherDoctor);
-        var exact = await new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Utc(wednesday, 9)))
+        var exact = await new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Utc(wednesday, 9)), TestGuard.For(FakeCurrentUser.Doctor(otherDoctor.Id)))
             .AddBulkAvailabilityAsync(otherDoctor.Id, Request(wednesday, wednesday, ["Wednesday"]));
         Assert.Single(exact.Created);
     }
@@ -206,6 +207,19 @@ public class BulkAvailabilityTests
     [Fact]
     public async Task Throws_WhenTheDoctorDoesNotExist()
     {
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => CreateService().AddBulkAvailabilityAsync(Guid.NewGuid(), Request()));
+        var gone = Guid.NewGuid();
+        var service = new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Now), TestGuard.For(FakeCurrentUser.Doctor(gone)));
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.AddBulkAvailabilityAsync(gone, Request()));
+    }
+
+    [Fact]
+    public async Task Throws_ForAnotherDoctorsId_AndCreatesNothing()
+    {
+        var service = CreateService();
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => service.AddBulkAvailabilityAsync(Guid.NewGuid(), Request()));
+        Assert.Empty(_doctor.AvailabilitySlots);
+        Assert.Equal(0, _unitOfWork.SaveCount);
     }
 }

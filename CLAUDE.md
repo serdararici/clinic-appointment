@@ -51,7 +51,7 @@ Domain must never reference Application, Infrastructure, or Api.
 
 ## OOP Showcase (required by the assignment)
 
-- **Abstract base class** `User` with `Patient`, `ClinicManager` and the abstract
+- **Abstract base class** `User` with `Patient`, `ClinicManager`, `SystemAdmin` and the abstract
   `StaffMember`, which in turn has `Doctor` and `HealthTechnician`. Shared
   identity/contact fields live in `User`; facility/department link, services,
   availability and slot duration live in `StaffMember`; role-specific data
@@ -207,17 +207,34 @@ annotated and, if it matters, added to the role-mapping table in that test**.
 | Anyone (anonymous) | `auth/register`, `auth/login`; reads of organizations, branches (and their working hours), departments, services, `departments/{id}/doctors`; slot lists (`doctors/{id}/slots`, `services/{id}/slots`) |
 | Patient | `POST appointments`, `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
 | Doctor | `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject |
-| ClinicManager | all create / update / delete of organizations, branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject |
+| ClinicManager | update of their organization; create / update / delete of branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject / cancel appointments |
+| SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts) |
 
 Errors use the plain-text style of the rest of the API: **401** when there is no valid token (missing, bad
-signature, wrong issuer/audience, expired), **403** when the role is not allowed. Whose data it is (a patient only
-sees their own list, a doctor only their own availability, a manager only their own branch) is **not enforced yet**:
-that comes in step 5.3, so for now any user of the right role can pass any id.
+signature, wrong issuer/audience, expired), **403** when the role is not allowed *or* the resource is not the
+caller's.
+
+### Ownership and scope (checked from the ids in the token)
+
+The role decides which endpoint may be called; `AccessGuard` (Application) then checks that the resource is the caller's
+and throws `ForbiddenException` (403) if not. `ICurrentUser` (read from the JWT in the Api layer) supplies the ids.
+
+- **Patient**: books only for themselves (the patient id comes from the token; a `patientId` in the body is ignored),
+  reads only their own appointment list, cancels only their own appointments.
+- **Doctor**: only their own availability (list, add, bulk, delete), slot duration and appointment list; confirms or
+  rejects only appointments assigned to them (never an unassigned diagnostic one).
+- **ClinicManager**: only resources of the **organization in their token**: that organization, its branches, working
+  hours, departments, services and staff, and the appointments of its branches (confirm, reject, cancel). A staff list
+  without a filter shows only their organization's staff. Creating or deleting organizations and creating manager
+  accounts is SystemAdmin only.
+- **SystemAdmin** is not tied to an organization and passes every scope check. Its token has no branch or organization.
+- Checks run after the resource is loaded, so an unknown id is 404 and someone else's id is 403.
 
 ### Demo accounts
 
 All demo accounts use the password **`Demo123!`** and are given it at startup only if they have no password yet
-(`DbInitializer.DemoEmails`). Technicians have no demo login.
+(`DbInitializer.DemoEmails`). Technicians have no demo login. The system administrator account is created at
+startup if it does not exist.
 
 | Role | Email | Works at |
 |---|---|---|
@@ -228,6 +245,7 @@ All demo accounts use the password **`Demo123!`** and are given it at startup on
 | Clinic manager | `ayse.yilmaz@sakaryasehir.example` | Merkez |
 | Clinic manager | `mehmet.kara@sakaryasehir.example` | Adapazarı Şubesi |
 | Clinic manager | `ali.erdogan@marmarapoliklinik.example` | Serdivan Kliniği |
+| System administrator | `admin@clinic.example` | all organizations |
 
 ## Date and Time
 

@@ -22,6 +22,8 @@ public static class DbInitializer
         (new TimeOnly(13, 0), new TimeOnly(16, 0)),
     ];
 
+    public const string AdminEmail = "admin@clinic.example";
+
     /// <summary>The password of every demo account (documented in CLAUDE.md; for local demos only).</summary>
     public const string DemoPassword = "Demo123!";
 
@@ -31,6 +33,8 @@ public static class DbInitializer
     /// </summary>
     public static readonly string[] DemoEmails =
     [
+        // System administrator
+        AdminEmail,
         // Patients
         "ahmet.celik@example.com",
         "fatma.yildirim@example.com",
@@ -51,8 +55,21 @@ public static class DbInitializer
         dbContext.Database.Migrate();
 
         SeedCoreData(dbContext);
+        SeedSystemAdmin(dbContext);
         SeedDemoAccounts(dbContext);
         SeedAvailability(dbContext, DateTime.UtcNow);
+    }
+
+    /// <summary>Makes sure the demo system administrator exists (runs on every start; creates it only once).</summary>
+    private static void SeedSystemAdmin(ClinicDbContext dbContext)
+    {
+        if (dbContext.Users.Any(u => u.Email == AdminEmail))
+        {
+            return;
+        }
+
+        dbContext.SystemAdmins.Add(new SystemAdmin("Sistem Yöneticisi", AdminEmail, "+90-264-555-0000"));
+        dbContext.SaveChanges();
     }
 
     /// <summary>

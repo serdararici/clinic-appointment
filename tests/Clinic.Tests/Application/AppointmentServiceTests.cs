@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Application.Appointments;
 using Clinic.Application.Exceptions;
 using Clinic.Domain.Clinics;
@@ -71,16 +72,23 @@ public class AppointmentServiceTests
         return doctor;
     }
 
-    private AppointmentService CreateService(IPricingStrategy pricing, IConfirmationPolicy policy, DateTime? now = null) =>
+    private AppointmentService CreateService(IPricingStrategy pricing, IConfirmationPolicy policy, DateTime? now = null, ICurrentUser? user = null) =>
         new(_appointments, _doctors, _patients, _services, _clinics, pricing, policy, _unitOfWork,
-            new FixedTimeProvider(now ?? LongAgo));
+            new FixedTimeProvider(now ?? LongAgo),
+            new AccessGuard(
+                user ?? FakeCurrentUser.Patient(_patient.Id),
+                _clinics,
+                new FakeDepartmentRepository(_services, new FakeStaffMemberRepository())));
+
+    /// <summary>The service as seen by a given caller (the default strategies: standard price, auto-confirm).</summary>
+    private AppointmentService ServiceFor(ICurrentUser user) =>
+        CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), user: user);
 
     private Task<AppointmentDto> BookExaminationAsync(DateTime startUtc, Doctor? doctor = null, Service? service = null) =>
-        _service.CreateAppointmentAsync(new CreateAppointmentRequest(
-            _patient.Id, (service ?? _checkUp).Id, startUtc, (doctor ?? _doctor).Id));
+        _service.CreateAppointmentAsync(new CreateAppointmentRequest((service ?? _checkUp).Id, startUtc, (doctor ?? _doctor).Id));
 
     private Task<AppointmentDto> BookDiagnosticAsync(Service service, DateTime startUtc, Guid? doctorId = null) =>
-        _service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, service.Id, startUtc, doctorId));
+        _service.CreateAppointmentAsync(new CreateAppointmentRequest(service.Id, startUtc, doctorId));
 
     // =========================================================================================
     // Examination
@@ -174,9 +182,9 @@ public class AppointmentServiceTests
         var service = CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), now: Monday.AddHours(7));
 
         await Assert.ThrowsAsync<PastBookingException>(() => service.CreateAppointmentAsync(
-            new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6), _doctor.Id)));
+            new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id)));
         await Assert.ThrowsAsync<PastBookingException>(() => service.CreateAppointmentAsync(
-            new CreateAppointmentRequest(_patient.Id, _xRay.Id, Monday.AddHours(6))));
+            new CreateAppointmentRequest(_xRay.Id, Monday.AddHours(6))));
 
         Assert.Empty(_appointments.Items);
         Assert.Equal(0, _unitOfWork.SaveCount);
@@ -189,12 +197,12 @@ public class AppointmentServiceTests
         var service = CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), now);
 
         // A slot that starts exactly now can still be booked (the slot list shows it as Available)...
-        var dto = await service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, now, _doctor.Id));
+        var dto = await service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, now, _doctor.Id));
         Assert.Equal(now, dto.ScheduledStartUtc);
 
         // ...but the slot before it has already started.
         await Assert.ThrowsAsync<PastBookingException>(() => service.CreateAppointmentAsync(
-            new CreateAppointmentRequest(_patient.Id, _checkUp.Id, now.AddMinutes(-30), _doctor.Id)));
+            new CreateAppointmentRequest(_checkUp.Id, now.AddMinutes(-30), _doctor.Id)));
     }
 
     [Fact]
@@ -261,14 +269,14 @@ public class AppointmentServiceTests
     public async Task Examination_Throws_WhenNoDoctorIsGiven()
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            _service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6))));
+            _service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6))));
     }
 
     [Fact]
     public async Task Examination_Throws_WhenDoctorDoesNotExist()
     {
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-            _service.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6), Guid.NewGuid())));
+            _service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), Guid.NewGuid())));
     }
 
     [Fact]
@@ -530,8 +538,9 @@ public class AppointmentServiceTests
     public async Task Cancel_Throws_ForARejectedAppointment()
     {
         var pendingService = CreateService(new StandardPricingStrategy(), new ManagerApprovalConfirmationPolicy());
-        var dto = await pendingService.CreateAppointmentAsync(new CreateAppointmentRequest(_patient.Id, _checkUp.Id, Monday.AddHours(6), _doctor.Id));
-        await pendingService.RejectAppointmentAsync(dto.Id);
+        var dto = await pendingService.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id));
+        await CreateService(new StandardPricingStrategy(), new ManagerApprovalConfirmationPolicy(), user: FakeCurrentUser.Admin())
+            .RejectAppointmentAsync(dto.Id);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => pendingService.CancelAppointmentAsync(dto.Id));
     }
@@ -572,7 +581,7 @@ public class AppointmentServiceTests
     public async Task PatientAppointments_AreEmptyForAPatientWithNone_AndThrowForAnUnknownPatient()
     {
         Assert.Empty(await _service.GetByPatientAsync(_patient.Id));
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByPatientAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync<ForbiddenException>(() => _service.GetByPatientAsync(Guid.NewGuid())); // not their own id
     }
 
     [Fact]
@@ -581,9 +590,10 @@ public class AppointmentServiceTests
         var second = new Patient("Fatma Yıldırım", "fatma@example.com", "+90-500-000-0005", new DateOnly(1985, 11, 3));
         _patients.Items.Add(second);
         await BookExaminationAsync(Monday.AddHours(6));
-        await _service.CreateAppointmentAsync(new CreateAppointmentRequest(second.Id, _checkUp.Id, Monday.AddHours(6.5), _doctor.Id));
+        await ServiceFor(FakeCurrentUser.Patient(second.Id))
+            .CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6.5), _doctor.Id));
 
-        var list = await _service.GetByDoctorAsync(_doctor.Id);
+        var list = await ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).GetByDoctorAsync(_doctor.Id);
 
         Assert.Equal(["Pat Ient", "Fatma Yıldırım"], list.Select(a => a.PatientName));
     }
@@ -598,7 +608,8 @@ public class AppointmentServiceTests
         _doctors.Items.Add(otherDoctor);
         await BookExaminationAsync(Monday.AddHours(7), otherDoctor);
 
-        var list = await _service.GetByDoctorAsync(_doctor.Id);
+        var doctorService = ServiceFor(FakeCurrentUser.Doctor(_doctor.Id));
+        var list = await doctorService.GetByDoctorAsync(_doctor.Id);
 
         var only = Assert.Single(list);
         Assert.Equal(_doctor.Id, only.StaffMemberId);
@@ -608,7 +619,179 @@ public class AppointmentServiceTests
         Assert.Equal("Dr. Test", only.StaffMemberName);
         Assert.Equal("Pat Ient", only.PatientName);
         Assert.Equal("Merkez", only.BranchName);
-        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByDoctorAsync(Guid.NewGuid()));
+        await Assert.ThrowsAsync<ForbiddenException>(() => doctorService.GetByDoctorAsync(Guid.NewGuid())); // not their own id
+    }
+
+    // =========================================================================================
+    // Ownership and scope (who the token says the caller is)
+    // =========================================================================================
+
+    private Patient AddOtherPatient()
+    {
+        var other = new Patient("Fatma Yıldırım", "fatma@example.com", "+90-500-000-0005", new DateOnly(1985, 11, 3));
+        _patients.Items.Add(other);
+        return other;
+    }
+
+    /// <summary>A pending appointment of the test patient with the test doctor (booked under a manager-approval policy).</summary>
+    private async Task<Guid> PendingAppointmentAsync()
+    {
+        var pending = CreateService(new StandardPricingStrategy(), new ManagerApprovalConfirmationPolicy());
+        return (await pending.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id))).Id;
+    }
+
+    private Guid OwnOrganization => _clinic.OrganizationId;
+
+    [Fact]
+    public async Task Booking_UsesThePatientFromTheToken()
+    {
+        var other = AddOtherPatient();
+
+        var dto = await ServiceFor(FakeCurrentUser.Patient(other.Id))
+            .CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id));
+
+        Assert.Equal(other.Id, dto.PatientId);
+        Assert.Equal(other.Id, _appointments.Items.Single().PatientId);
+    }
+
+    [Fact]
+    public async Task Booking_IsRefused_ForEveryCallerThatIsNotAPatient()
+    {
+        ICurrentUser[] callers =
+        [
+            FakeCurrentUser.Anonymous(),
+            FakeCurrentUser.Doctor(_doctor.Id),
+            FakeCurrentUser.Manager(OwnOrganization),
+            FakeCurrentUser.Admin()
+        ];
+
+        foreach (var caller in callers)
+        {
+            await Assert.ThrowsAsync<ForbiddenException>(() =>
+                ServiceFor(caller).CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id)));
+        }
+
+        Assert.Empty(_appointments.Items);
+    }
+
+    [Fact]
+    public async Task PatientList_IsOnlyForThePatientThemselves()
+    {
+        var other = AddOtherPatient();
+        await BookExaminationAsync(Monday.AddHours(6));
+
+        Assert.Single(await _service.GetByPatientAsync(_patient.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Patient(other.Id)).GetByPatientAsync(_patient.Id));
+
+        // The right id is not enough without the Patient role in the token.
+        foreach (var caller in new ICurrentUser[] { FakeCurrentUser.Doctor(_patient.Id), FakeCurrentUser.Manager(OwnOrganization), FakeCurrentUser.Admin() })
+        {
+            await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(caller).GetByPatientAsync(_patient.Id));
+        }
+    }
+
+    [Fact]
+    public async Task DoctorList_IsOnlyForTheDoctorThemselves()
+    {
+        await BookExaminationAsync(Monday.AddHours(6));
+        var colleague = NewDoctor(slotDurationMinutes: 30, email: "colleague@example.com");
+        _doctors.Items.Add(colleague);
+
+        Assert.Single(await ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).GetByDoctorAsync(_doctor.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(colleague.Id)).GetByDoctorAsync(_doctor.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Patient(_patient.Id)).GetByDoctorAsync(_doctor.Id));
+    }
+
+    // ---- Cancel: the patient's own, or a manager of the appointment's organization, or an admin ----
+
+    [Fact]
+    public async Task Cancel_IsRefused_ForAnotherPatient_AndForADoctor()
+    {
+        var dto = await BookExaminationAsync(Monday.AddHours(6));
+        var other = AddOtherPatient();
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Patient(other.Id)).CancelAppointmentAsync(dto.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).CancelAppointmentAsync(dto.Id));
+
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+    }
+
+    [Fact]
+    public async Task Cancel_IsAllowed_ForAManagerOfTheSameOrganization_AndForAnAdmin_ButNotForAnotherOrganization()
+    {
+        var first = await BookExaminationAsync(Monday.AddHours(6));
+        var second = await BookExaminationAsync(Monday.AddHours(6).AddMinutes(30));
+
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
+            ServiceFor(FakeCurrentUser.Manager(Guid.NewGuid())).CancelAppointmentAsync(first.Id)); // another organization
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.First(a => a.Id == first.Id).Status);
+
+        await ServiceFor(FakeCurrentUser.Manager(OwnOrganization)).CancelAppointmentAsync(first.Id);
+        await ServiceFor(FakeCurrentUser.Admin()).CancelAppointmentAsync(second.Id);
+
+        Assert.All(_appointments.Items, a => Assert.Equal(AppointmentStatus.Cancelled, a.Status));
+    }
+
+    // ---- Confirm / reject: the assigned doctor, a manager of the organization, or an admin ----
+
+    [Fact]
+    public async Task Confirm_IsAllowed_ForTheAssignedDoctor_ButNotForAnotherDoctorOrAPatient()
+    {
+        var id = await PendingAppointmentAsync();
+        var colleague = NewDoctor(slotDurationMinutes: 30, email: "colleague@example.com");
+        _doctors.Items.Add(colleague);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(colleague.Id)).ConfirmAppointmentAsync(id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Patient(_patient.Id)).ConfirmAppointmentAsync(id));
+        Assert.Equal(AppointmentStatus.Pending, _appointments.Items.Single().Status);
+
+        await ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).ConfirmAppointmentAsync(id);
+
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+    }
+
+    [Fact]
+    public async Task Reject_IsAllowed_ForTheAssignedDoctor_ButNotForAnotherDoctor()
+    {
+        var id = await PendingAppointmentAsync();
+        var colleague = NewDoctor(slotDurationMinutes: 30, email: "colleague@example.com");
+        _doctors.Items.Add(colleague);
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(colleague.Id)).RejectAppointmentAsync(id));
+
+        await ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).RejectAppointmentAsync(id);
+
+        Assert.Equal(AppointmentStatus.Rejected, _appointments.Items.Single().Status);
+    }
+
+    [Fact]
+    public async Task ConfirmAndReject_AreScopedToTheOrganization_ForManagers_AndOpenToAnAdmin()
+    {
+        var first = await PendingAppointmentAsync();
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Manager(Guid.NewGuid())).ConfirmAppointmentAsync(first));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Manager(Guid.NewGuid())).RejectAppointmentAsync(first));
+
+        await ServiceFor(FakeCurrentUser.Manager(OwnOrganization)).ConfirmAppointmentAsync(first);
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+
+        var pending = CreateService(new StandardPricingStrategy(), new ManagerApprovalConfirmationPolicy());
+        var second = await pending.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(7), _doctor.Id));
+        await ServiceFor(FakeCurrentUser.Admin()).RejectAppointmentAsync(second.Id);
+        Assert.Equal(AppointmentStatus.Rejected, _appointments.Items.Single(a => a.Id == second.Id).Status);
+    }
+
+    [Fact]
+    public async Task ADoctor_CannotDecideAnUnassignedDiagnosticAppointment_ButItsManagerCan()
+    {
+        var pending = CreateService(new StandardPricingStrategy(), new ManagerApprovalConfirmationPolicy());
+        var dto = await pending.CreateAppointmentAsync(new CreateAppointmentRequest(_xRay.Id, Monday.AddHours(5)));
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).ConfirmAppointmentAsync(dto.Id));
+
+        await ServiceFor(FakeCurrentUser.Manager(OwnOrganization)).ConfirmAppointmentAsync(dto.Id);
+
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
     }
 
     // =========================================================================================
@@ -620,12 +803,12 @@ public class AppointmentServiceTests
     {
         var insured = new Patient("Ins Ured", "ins@example.com", "+90-500-000-0009", new DateOnly(1980, 1, 1), insuranceNumber: "SGK-1");
         _patients.Items.Add(insured);
-        var service = CreateService(new InsuranceDiscountPricingStrategy(), new ManagerApprovalConfirmationPolicy());
+        var service = CreateService(new InsuranceDiscountPricingStrategy(), new ManagerApprovalConfirmationPolicy(), user: FakeCurrentUser.Patient(insured.Id));
 
         var examination = await service.CreateAppointmentAsync(
-            new CreateAppointmentRequest(insured.Id, _checkUp.Id, Monday.AddHours(6), _doctor.Id));
+            new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id));
         var diagnostic = await service.CreateAppointmentAsync(
-            new CreateAppointmentRequest(insured.Id, _xRay.Id, Monday.AddHours(5)));
+            new CreateAppointmentRequest(_xRay.Id, Monday.AddHours(5)));
 
         // 20% insurance discount, and the manager-approval policy leaves both pending.
         Assert.Equal(240m, examination.Price);

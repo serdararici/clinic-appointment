@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Domain.Clinics;
 using Clinic.Domain.Repositories;
 
@@ -34,7 +35,8 @@ public interface IBranchService
 public class BranchService(
     IHealthOrganizationRepository organizations,
     IClinicFacilityRepository clinics,
-    IUnitOfWork unitOfWork) : IBranchService
+    IUnitOfWork unitOfWork,
+    AccessGuard guard) : IBranchService
 {
     public async Task<IReadOnlyList<BranchSummaryDto>> ListAllAsync(CancellationToken cancellationToken = default)
     {
@@ -64,6 +66,8 @@ public class BranchService(
         _ = await organizations.GetByIdAsync(organizationId, cancellationToken)
             ?? throw new KeyNotFoundException($"Organization {organizationId} was not found.");
 
+        guard.EnsureOrganization(organizationId);
+
         var branch = new ClinicFacility(organizationId, request.Name, request.Address);
 
         await clinics.AddAsync(branch, cancellationToken);
@@ -75,6 +79,7 @@ public class BranchService(
     public async Task<BranchDto> UpdateAsync(Guid branchId, SaveBranchRequest request, CancellationToken cancellationToken = default)
     {
         var branch = await LoadAsync(branchId, cancellationToken);
+        guard.EnsureOrganization(branch.OrganizationId);
 
         branch.UpdateDetails(request.Name, request.Address);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -87,6 +92,7 @@ public class BranchService(
         // Loaded with its departments and working hours. Staff and services always sit under a
         // department, so "no departments" also means no staff and no services.
         var branch = await LoadAsync(branchId, cancellationToken);
+        guard.EnsureOrganization(branch.OrganizationId);
 
         if (branch.Departments.Count > 0)
         {
@@ -117,6 +123,7 @@ public class BranchService(
     public async Task<WorkingHourDto> AddWorkingHourAsync(Guid branchId, AddWorkingHourRequest request, CancellationToken cancellationToken = default)
     {
         var branch = await LoadAsync(branchId, cancellationToken);
+        guard.EnsureOrganization(branch.OrganizationId);
 
         // Validates the range and rejects an overlap with an existing range on the same weekday.
         var workingHour = branch.AddWorkingHour(request.DayOfWeek, request.OpensAt, request.ClosesAt);
@@ -130,6 +137,7 @@ public class BranchService(
     public async Task RemoveWorkingHourAsync(Guid branchId, Guid workingHourId, CancellationToken cancellationToken = default)
     {
         var branch = await LoadAsync(branchId, cancellationToken);
+        guard.EnsureOrganization(branch.OrganizationId);
 
         var workingHour = branch.RemoveWorkingHour(workingHourId)
             ?? throw new KeyNotFoundException($"Working hours {workingHourId} were not found for branch {branchId}.");

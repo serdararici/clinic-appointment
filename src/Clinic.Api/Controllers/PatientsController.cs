@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Clinic.Api.Controllers;
 
-/// <summary>A patient's appointments. Errors are mapped centrally by <c>ApiExceptionHandler</c>. Patient role only (whose list it is gets checked in a later step).</summary>
+/// <summary>A patient's appointments. Errors are mapped centrally by <c>ApiExceptionHandler</c>. Patient role only, and only their own list.</summary>
 [ApiController]
 [Route("api/patients/{patientId:guid}")]
 public class PatientsController(IAppointmentService appointmentService) : ControllerBase

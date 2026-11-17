@@ -302,6 +302,21 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task Login_ForASystemAdmin_HasTheSystemAdminRole_AndNoBranchOrOrganization()
+    {
+        AddUserWithPassword(new SystemAdmin("Sistem Yöneticisi", "admin@example.com", ""));
+
+        var response = await _auth.LoginAsync(new LoginRequest("admin@example.com", "Demo123!"));
+
+        Assert.Equal("SystemAdmin", response.Role);
+        Assert.Null(response.BranchId);
+        Assert.Null(response.OrganizationId);
+        var token = new JwtSecurityTokenHandler().ReadJwtToken(response.Token);
+        Assert.Equal("SystemAdmin", token.Claims.Single(c => c.Type == AuthClaims.Role).Value);
+        Assert.DoesNotContain(token.Claims, c => c.Type == AuthClaims.BranchId);
+    }
+
+    [Fact]
     public async Task Login_UsesTheHealthTechnicianRoleName()
     {
         var branch = new ClinicFacility(Guid.NewGuid(), "Merkez", "Sakarya");

@@ -9,7 +9,7 @@ namespace Clinic.Api.Controllers;
 
 /// <summary>
 /// A doctor's availability ranges, appointments and bookable examination slots. Slots are public; everything
-/// else needs the Doctor role (that it is the doctor's own data gets checked in a later step).
+/// else needs the Doctor role and is limited to the doctor's own data.
 /// </summary>
 [ApiController]
 [Route("api/doctors/{doctorId:guid}")]

@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Domain.Clinics;
 using Clinic.Domain.Repositories;
 
@@ -21,7 +22,8 @@ public interface IDepartmentService
 public class DepartmentService(
     IClinicFacilityRepository clinics,
     IDepartmentRepository departments,
-    IUnitOfWork unitOfWork) : IDepartmentService
+    IUnitOfWork unitOfWork,
+    AccessGuard guard) : IDepartmentService
 {
     public async Task<IReadOnlyList<DepartmentDto>> ListByBranchAsync(Guid branchId, CancellationToken cancellationToken = default)
     {
@@ -36,8 +38,9 @@ public class DepartmentService(
 
     public async Task<DepartmentDto> CreateAsync(Guid branchId, SaveDepartmentRequest request, CancellationToken cancellationToken = default)
     {
-        _ = await clinics.GetByIdAsync(branchId, cancellationToken)
+        var branch = await clinics.GetByIdAsync(branchId, cancellationToken)
             ?? throw new KeyNotFoundException($"Branch {branchId} was not found.");
+        guard.EnsureOrganization(branch.OrganizationId);
 
         var department = new Department(branchId, request.Name);
 
@@ -50,6 +53,7 @@ public class DepartmentService(
     public async Task<DepartmentDto> UpdateAsync(Guid departmentId, SaveDepartmentRequest request, CancellationToken cancellationToken = default)
     {
         var department = await LoadAsync(departmentId, cancellationToken);
+        await guard.EnsureDepartmentAsync(department, cancellationToken);
 
         department.Rename(request.Name);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -60,6 +64,7 @@ public class DepartmentService(
     public async Task DeleteAsync(Guid departmentId, CancellationToken cancellationToken = default)
     {
         var department = await LoadAsync(departmentId, cancellationToken);
+        await guard.EnsureDepartmentAsync(department, cancellationToken);
 
         if (await departments.HasServicesAsync(departmentId, cancellationToken))
         {

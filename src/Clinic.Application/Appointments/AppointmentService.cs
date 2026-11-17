@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Application.Common;
 using Clinic.Application.Exceptions;
 using Clinic.Domain.Appointments;
@@ -25,10 +26,14 @@ public class AppointmentService(
     IPricingStrategy pricingStrategy,
     IConfirmationPolicy confirmationPolicy,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : IAppointmentService
+    TimeProvider timeProvider,
+    AccessGuard guard) : IAppointmentService
 {
     public async Task<AppointmentDto> CreateAppointmentAsync(CreateAppointmentRequest request, CancellationToken cancellationToken = default)
     {
+        // The patient is the logged-in patient: taken from the token, never from the request.
+        var patientId = guard.RequirePatientId();
+
         // Reject zone-less date-times up front: all stored times are UTC, so guessing would shift bookings.
         var start = UtcDateTime.Require(request.StartUtc, nameof(request.StartUtc));
 
@@ -39,8 +44,8 @@ public class AppointmentService(
             throw new PastBookingException(start);
         }
 
-        var patient = await patientRepository.GetByIdAsync(request.PatientId, cancellationToken)
-            ?? throw new KeyNotFoundException($"Patient {request.PatientId} was not found.");
+        var patient = await patientRepository.GetByIdAsync(patientId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Patient {patientId} was not found.");
 
         var service = await serviceRepository.GetByIdAsync(request.ServiceId, cancellationToken)
             ?? throw new KeyNotFoundException($"Service {request.ServiceId} was not found.");
@@ -151,6 +156,8 @@ public class AppointmentService(
         var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken)
             ?? throw new KeyNotFoundException($"Appointment {appointmentId} was not found.");
 
+        await guard.EnsureCanDecideAsync(appointment, cancellationToken);
+
         appointment.Confirm();
         appointmentRepository.Update(appointment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -160,6 +167,8 @@ public class AppointmentService(
     {
         var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken)
             ?? throw new KeyNotFoundException($"Appointment {appointmentId} was not found.");
+
+        await guard.EnsureCanDecideAsync(appointment, cancellationToken);
 
         appointment.Reject();
         appointmentRepository.Update(appointment);
@@ -171,6 +180,8 @@ public class AppointmentService(
         var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken)
             ?? throw new KeyNotFoundException($"Appointment {appointmentId} was not found.");
 
+        await guard.EnsureCanCancelAsync(appointment, cancellationToken);
+
         appointment.Cancel();
         appointmentRepository.Update(appointment);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -178,6 +189,8 @@ public class AppointmentService(
 
     public async Task<IReadOnlyList<AppointmentDetailDto>> GetByPatientAsync(Guid patientId, CancellationToken cancellationToken = default)
     {
+        guard.EnsureOwnPatient(patientId); // a patient reads only their own list
+
         _ = await patientRepository.GetByIdAsync(patientId, cancellationToken)
             ?? throw new KeyNotFoundException($"Patient {patientId} was not found.");
 
@@ -186,6 +199,8 @@ public class AppointmentService(
 
     public async Task<IReadOnlyList<AppointmentDetailDto>> GetByDoctorAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {
+        guard.EnsureOwnDoctor(doctorId); // a doctor reads only their own list
+
         _ = await doctorRepository.GetByIdAsync(doctorId, cancellationToken)
             ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
 

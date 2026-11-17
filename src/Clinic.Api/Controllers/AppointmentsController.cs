@@ -62,7 +62,7 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
     }
 
     [HttpPost("{id:guid}/confirm")]
-    [Authorize(Roles = AppRoles.DoctorOrClinicManager)]
+    [Authorize(Roles = AppRoles.DoctorOrManagerOrAdmin)]
     public async Task<IActionResult> Confirm(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -82,7 +82,7 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
 
     /// <summary>Cancels a pending or confirmed appointment; 409 if it is already rejected or cancelled.</summary>
     [HttpPost("{id:guid}/cancel")]
-    [Authorize(Roles = AppRoles.Patient)]
+    [Authorize(Roles = AppRoles.PatientOrManagerOrAdmin)]
     public async Task<IActionResult> Cancel(Guid id, CancellationToken cancellationToken)
     {
         await appointmentService.CancelAppointmentAsync(id, cancellationToken);
@@ -90,7 +90,7 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
     }
 
     [HttpPost("{id:guid}/reject")]
-    [Authorize(Roles = AppRoles.DoctorOrClinicManager)]
+    [Authorize(Roles = AppRoles.DoctorOrManagerOrAdmin)]
     public async Task<IActionResult> Reject(Guid id, CancellationToken cancellationToken)
     {
         try

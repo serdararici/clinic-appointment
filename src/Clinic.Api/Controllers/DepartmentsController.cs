@@ -8,7 +8,7 @@ namespace Clinic.Api.Controllers;
 
 /// <summary>
 /// A department, the services it offers, and registering staff under it. Errors are mapped centrally
-/// by <c>ApiExceptionHandler</c>. Reads are public; changes need the ClinicManager role.
+/// by <c>ApiExceptionHandler</c>. Reads are public; changes need the ClinicManager role (own organization only) or SystemAdmin.
 /// </summary>
 [ApiController]
 [Route("api/departments")]
@@ -23,13 +23,13 @@ public class DepartmentsController(
         Ok(await departmentService.GetAsync(departmentId, cancellationToken));
 
     [HttpPut("{departmentId:guid}")]
-    [Authorize(Roles = AppRoles.ClinicManager)]
+    [Authorize(Roles = AppRoles.ClinicManagerOrAdmin)]
     public async Task<ActionResult<DepartmentDto>> Update(Guid departmentId, SaveDepartmentRequest request, CancellationToken cancellationToken) =>
         Ok(await departmentService.UpdateAsync(departmentId, request, cancellationToken));
 
     /// <summary>204 on success; 409 while the department still has services or staff.</summary>
     [HttpDelete("{departmentId:guid}")]
-    [Authorize(Roles = AppRoles.ClinicManager)]
+    [Authorize(Roles = AppRoles.ClinicManagerOrAdmin)]
     public async Task<IActionResult> Delete(Guid departmentId, CancellationToken cancellationToken)
     {
         await departmentService.DeleteAsync(departmentId, cancellationToken);
@@ -44,7 +44,7 @@ public class DepartmentsController(
         Ok(await serviceCatalog.ListByDepartmentAsync(departmentId, cancellationToken));
 
     [HttpPost("{departmentId:guid}/services")]
-    [Authorize(Roles = AppRoles.ClinicManager)]
+    [Authorize(Roles = AppRoles.ClinicManagerOrAdmin)]
     public async Task<ActionResult<ServiceDto>> CreateService(Guid departmentId, SaveServiceRequest request, CancellationToken cancellationToken)
     {
         var service = await serviceCatalog.CreateAsync(departmentId, request, cancellationToken);
@@ -60,7 +60,7 @@ public class DepartmentsController(
         Ok(await staffService.ListActiveDoctorsAsync(departmentId, cancellationToken));
 
     [HttpPost("{departmentId:guid}/doctors")]
-    [Authorize(Roles = AppRoles.ClinicManager)]
+    [Authorize(Roles = AppRoles.ClinicManagerOrAdmin)]
     public async Task<ActionResult<StaffDto>> CreateDoctor(Guid departmentId, CreateDoctorRequest request, CancellationToken cancellationToken)
     {
         var doctor = await staffService.CreateDoctorAsync(departmentId, request, cancellationToken);
@@ -68,7 +68,7 @@ public class DepartmentsController(
     }
 
     [HttpPost("{departmentId:guid}/technicians")]
-    [Authorize(Roles = AppRoles.ClinicManager)]
+    [Authorize(Roles = AppRoles.ClinicManagerOrAdmin)]
     public async Task<ActionResult<StaffDto>> CreateTechnician(Guid departmentId, CreateTechnicianRequest request, CancellationToken cancellationToken)
     {
         var technician = await staffService.CreateTechnicianAsync(departmentId, request, cancellationToken);

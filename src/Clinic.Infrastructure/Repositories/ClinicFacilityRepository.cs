@@ -14,6 +14,9 @@ public class ClinicFacilityRepository(ClinicDbContext dbContext)
             .Include(c => c.WorkingHours)
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
 
+    public async Task<Guid?> GetOrganizationIdAsync(Guid clinicFacilityId, CancellationToken cancellationToken = default) =>
+        await DbSet.Where(c => c.Id == clinicFacilityId).Select(c => (Guid?)c.OrganizationId).FirstOrDefaultAsync(cancellationToken);
+
     public async Task<IReadOnlyList<ClinicFacility>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
         await DbSet.Where(c => c.OrganizationId == organizationId).OrderBy(c => c.Name).ToListAsync(cancellationToken);
 

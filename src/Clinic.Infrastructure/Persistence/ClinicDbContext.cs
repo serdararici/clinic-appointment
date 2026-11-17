@@ -14,6 +14,7 @@ public class ClinicDbContext(DbContextOptions<ClinicDbContext> options) : DbCont
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<HealthTechnician> HealthTechnicians => Set<HealthTechnician>();
     public DbSet<ClinicManager> ClinicManagers => Set<ClinicManager>();
+    public DbSet<SystemAdmin> SystemAdmins => Set<SystemAdmin>();
 
     public DbSet<HealthOrganization> HealthOrganizations => Set<HealthOrganization>();
     public DbSet<ClinicFacility> ClinicFacilities => Set<ClinicFacility>();
@@ -35,7 +36,8 @@ public class ClinicDbContext(DbContextOptions<ClinicDbContext> options) : DbCont
             .HasValue<Patient>("Patient")
             .HasValue<Doctor>("Doctor")
             .HasValue<HealthTechnician>("HealthTechnician")
-            .HasValue<ClinicManager>("ClinicManager");
+            .HasValue<ClinicManager>("ClinicManager")
+            .HasValue<SystemAdmin>("SystemAdmin");
 
         // Email is the login name: unique (case-insensitive under SQL Server's default collation) and
         // bounded so it can be indexed.

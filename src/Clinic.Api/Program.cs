@@ -26,7 +26,13 @@ builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddJwtAuthentication();
+
+// Who is calling, and the ownership/scope rules that use it.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpContextCurrentUser>();
+builder.Services.AddScoped<AccessGuard>();
 builder.Services.AddScoped<ISlotService, SlotService>();
 // "Now" comes from TimeProvider so "Past" slots and booking in the past can be tested with a fixed clock.
 builder.Services.AddSingleton(TimeProvider.System);

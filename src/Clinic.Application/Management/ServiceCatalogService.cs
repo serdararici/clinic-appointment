@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Domain.Clinics;
 using Clinic.Domain.Repositories;
 
@@ -26,7 +27,8 @@ public class ServiceCatalogService(
     IServiceRepository services,
     IAppointmentRepository appointments,
     IStaffMemberRepository staff,
-    IUnitOfWork unitOfWork) : IServiceCatalogService
+    IUnitOfWork unitOfWork,
+    AccessGuard guard) : IServiceCatalogService
 {
     public async Task<IReadOnlyList<ServiceDto>> ListByDepartmentAsync(Guid departmentId, CancellationToken cancellationToken = default)
     {
@@ -41,8 +43,9 @@ public class ServiceCatalogService(
 
     public async Task<ServiceDto> CreateAsync(Guid departmentId, SaveServiceRequest request, CancellationToken cancellationToken = default)
     {
-        _ = await departments.GetByIdAsync(departmentId, cancellationToken)
+        var department = await departments.GetByIdAsync(departmentId, cancellationToken)
             ?? throw new KeyNotFoundException($"Department {departmentId} was not found.");
+        await guard.EnsureDepartmentAsync(department, cancellationToken);
 
         var service = new Service(departmentId, request.Name, request.ServiceType, ToDuration(request.DurationMinutes), request.BasePrice);
 
@@ -55,6 +58,7 @@ public class ServiceCatalogService(
     public async Task<ServiceDto> UpdateAsync(Guid serviceId, SaveServiceRequest request, CancellationToken cancellationToken = default)
     {
         var service = await LoadAsync(serviceId, cancellationToken);
+        await guard.EnsureServiceAsync(service, cancellationToken);
 
         // The type decides how appointments are booked and how long they last, so it is frozen once
         // appointments exist; everything else stays editable.
@@ -72,6 +76,7 @@ public class ServiceCatalogService(
     public async Task DeleteAsync(Guid serviceId, CancellationToken cancellationToken = default)
     {
         var service = await LoadAsync(serviceId, cancellationToken);
+        await guard.EnsureServiceAsync(service, cancellationToken);
 
         if (await appointments.AnyForServiceAsync(serviceId, cancellationToken))
         {

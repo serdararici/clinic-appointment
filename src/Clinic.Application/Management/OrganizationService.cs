@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Domain.Clinics;
 using Clinic.Domain.Repositories;
 
@@ -18,7 +19,7 @@ public interface IOrganizationService
 }
 
 /// <summary>Manages health organizations (the owners of branches). Validation lives in <see cref="HealthOrganization"/>.</summary>
-public class OrganizationService(IHealthOrganizationRepository organizations, IUnitOfWork unitOfWork) : IOrganizationService
+public class OrganizationService(IHealthOrganizationRepository organizations, IUnitOfWork unitOfWork, AccessGuard guard) : IOrganizationService
 {
     public async Task<IReadOnlyList<OrganizationDto>> ListAsync(CancellationToken cancellationToken = default) =>
         (await organizations.GetAllAsync(cancellationToken)).Select(ToDto).ToList();
@@ -28,6 +29,8 @@ public class OrganizationService(IHealthOrganizationRepository organizations, IU
 
     public async Task<OrganizationDto> CreateAsync(SaveOrganizationRequest request, CancellationToken cancellationToken = default)
     {
+        guard.RequireSystemAdmin(); // only a system administrator creates organizations
+
         var organization = new HealthOrganization(request.Name);
 
         await organizations.AddAsync(organization, cancellationToken);
@@ -39,6 +42,7 @@ public class OrganizationService(IHealthOrganizationRepository organizations, IU
     public async Task<OrganizationDto> UpdateAsync(Guid organizationId, SaveOrganizationRequest request, CancellationToken cancellationToken = default)
     {
         var organization = await LoadAsync(organizationId, cancellationToken);
+        guard.EnsureOrganization(organization.Id); // a manager may rename only their own organization
 
         organization.Rename(request.Name);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -48,6 +52,7 @@ public class OrganizationService(IHealthOrganizationRepository organizations, IU
 
     public async Task DeleteAsync(Guid organizationId, CancellationToken cancellationToken = default)
     {
+        guard.RequireSystemAdmin(); // only a system administrator deletes organizations
         var organization = await LoadAsync(organizationId, cancellationToken);
 
         if (await organizations.HasBranchesAsync(organizationId, cancellationToken))

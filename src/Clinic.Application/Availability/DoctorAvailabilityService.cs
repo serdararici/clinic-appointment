@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Application.Common;
 using Clinic.Domain.Common;
 using Clinic.Domain.Repositories;
@@ -13,10 +14,13 @@ public class DoctorAvailabilityService(
     IDoctorRepository doctorRepository,
     IAppointmentRepository appointmentRepository,
     IUnitOfWork unitOfWork,
-    TimeProvider timeProvider) : IDoctorAvailabilityService
+    TimeProvider timeProvider,
+    AccessGuard guard) : IDoctorAvailabilityService
 {
     public async Task<IReadOnlyList<AvailabilityDto>> GetAvailabilityAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {
+        guard.EnsureOwnDoctor(doctorId); // a doctor manages only their own availability
+
         var doctor = await LoadDoctorAsync(doctorId, cancellationToken);
 
         return doctor.AvailabilitySlots
@@ -27,6 +31,8 @@ public class DoctorAvailabilityService(
 
     public async Task<AvailabilityDto> AddAvailabilityAsync(Guid doctorId, AddAvailabilityRequest request, CancellationToken cancellationToken = default)
     {
+        guard.EnsureOwnDoctor(doctorId); // a doctor manages only their own availability
+
         var doctor = await LoadDoctorAsync(doctorId, cancellationToken);
 
         var start = UtcDateTime.Require(request.StartUtc, nameof(request.StartUtc));
@@ -46,6 +52,8 @@ public class DoctorAvailabilityService(
 
     public async Task<BulkAvailabilityResultDto> AddBulkAvailabilityAsync(Guid doctorId, BulkAvailabilityRequest request, CancellationToken cancellationToken = default)
     {
+        guard.EnsureOwnDoctor(doctorId); // a doctor manages only their own availability
+
         // Validate the whole request before touching the doctor, so a bad request creates nothing.
         if (request.ToDate < request.FromDate)
         {
@@ -131,6 +139,8 @@ public class DoctorAvailabilityService(
 
     public async Task RemoveAvailabilityAsync(Guid doctorId, Guid slotId, CancellationToken cancellationToken = default)
     {
+        guard.EnsureOwnDoctor(doctorId); // a doctor manages only their own availability
+
         var doctor = await LoadDoctorAsync(doctorId, cancellationToken);
 
         var slot = doctor.AvailabilitySlots.FirstOrDefault(s => s.Id == slotId)

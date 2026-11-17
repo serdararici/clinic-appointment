@@ -116,6 +116,9 @@ internal class FakeClinicFacilityRepository : FakeRepository<ClinicFacility>, IC
     public Task<ClinicFacility?> GetByServiceIdAsync(Guid serviceId, CancellationToken cancellationToken = default) =>
         Task.FromResult(Items.FirstOrDefault(c => c.Departments.Any(d => d.Services.Any(sv => sv.Id == serviceId))));
 
+    public Task<Guid?> GetOrganizationIdAsync(Guid clinicFacilityId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(Items.FirstOrDefault(c => c.Id == clinicFacilityId)?.OrganizationId);
+
     public Task<IReadOnlyList<ClinicFacility>> GetByOrganizationIdAsync(Guid organizationId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<ClinicFacility>>(Items.Where(c => c.OrganizationId == organizationId).OrderBy(c => c.Name).ToList());
 

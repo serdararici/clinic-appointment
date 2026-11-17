@@ -301,6 +301,13 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.HasDiscriminator().HasValue("StaffMember");
                 });
 
+            modelBuilder.Entity("Clinic.Domain.Users.SystemAdmin", b =>
+                {
+                    b.HasBaseType("Clinic.Domain.Users.User");
+
+                    b.HasDiscriminator().HasValue("SystemAdmin");
+                });
+
             modelBuilder.Entity("Clinic.Domain.Users.Doctor", b =>
                 {
                     b.HasBaseType("Clinic.Domain.Users.StaffMember");

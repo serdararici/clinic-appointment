@@ -1,3 +1,4 @@
+using Clinic.Application.Exceptions;
 using Clinic.Application.Availability;
 using Clinic.Domain.Appointments;
 using Clinic.Domain.Enums;
@@ -20,7 +21,7 @@ public class DoctorAvailabilityServiceTests
     private DoctorAvailabilityService CreateService()
     {
         _doctors.Items.Add(_doctor);
-        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Now));
+        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Now), TestGuard.For(FakeCurrentUser.Doctor(_doctor.Id)));
     }
 
     [Fact]
@@ -60,12 +61,23 @@ public class DoctorAvailabilityServiceTests
     }
 
     [Fact]
-    public async Task AddAvailability_Throws_WhenDoctorDoesNotExist()
+    public async Task AddAvailability_Throws_ForADoctorIdThatIsNotTheCallers()
     {
         var service = CreateService();
 
-        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+        // Another doctor's id (or any unknown id) is refused before anything is looked up.
+        await Assert.ThrowsAsync<ForbiddenException>(() =>
             service.AddAvailabilityAsync(Guid.NewGuid(), new AddAvailabilityRequest(Day.AddHours(9), Day.AddHours(12))));
+    }
+
+    [Fact]
+    public async Task AddAvailability_Throws_WhenTheCallersOwnDoctorRecordNoLongerExists()
+    {
+        var gone = Guid.NewGuid();
+        var service = new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Now), TestGuard.For(FakeCurrentUser.Doctor(gone)));
+
+        await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            service.AddAvailabilityAsync(gone, new AddAvailabilityRequest(Day.AddHours(9), Day.AddHours(12))));
     }
 
     [Fact]

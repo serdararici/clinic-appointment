@@ -28,15 +28,7 @@ public class AuthService(
     {
         var email = ValidateEmail(request.Email);
 
-        if (request.Password is null || request.Password.Length < MinPasswordLength)
-        {
-            throw new ArgumentException($"The password must be at least {MinPasswordLength} characters long.", nameof(request));
-        }
-
-        if (request.Password.Length > MaxPasswordLength)
-        {
-            throw new ArgumentException($"The password cannot be longer than {MaxPasswordLength} characters.", nameof(request));
-        }
+        ValidatePassword(request.Password);
 
         var today = DateOnly.FromDateTime(timeProvider.GetUtcNow().UtcDateTime);
         if (request.DateOfBirth < new DateOnly(1900, 1, 1) || request.DateOfBirth > today)
@@ -107,7 +99,21 @@ public class AuthService(
             issued.Token, issued.ExpiresAtUtc, user.Id, user.FullName, user.Email, user.RoleName, branchId, organizationId);
     }
 
-    private static string ValidateEmail(string? email)
+    /// <summary>Shared by registration and by creating manager accounts.</summary>
+    internal static void ValidatePassword(string? password)
+    {
+        if (password is null || password.Length < MinPasswordLength)
+        {
+            throw new ArgumentException($"The password must be at least {MinPasswordLength} characters long.", nameof(password));
+        }
+
+        if (password.Length > MaxPasswordLength)
+        {
+            throw new ArgumentException($"The password cannot be longer than {MaxPasswordLength} characters.", nameof(password));
+        }
+    }
+
+    internal static string ValidateEmail(string? email)
     {
         if (string.IsNullOrWhiteSpace(email) || !MailAddress.TryCreate(email.Trim(), out var address) || address.Address != email.Trim())
         {

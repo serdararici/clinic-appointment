@@ -13,7 +13,7 @@ namespace Clinic.Tests.Api;
 /// </summary>
 public class AuthorizationGuardTests
 {
-    private static readonly string[] KnownRoles = [AppRoles.Patient, AppRoles.Doctor, AppRoles.HealthTechnician, AppRoles.ClinicManager];
+    private static readonly string[] KnownRoles = [AppRoles.Patient, AppRoles.Doctor, AppRoles.HealthTechnician, AppRoles.ClinicManager, AppRoles.SystemAdmin];
 
     /// <summary>Every public controller action: a method carrying an HTTP verb attribute.</summary>
     private static List<MethodInfo> Actions() => typeof(AuthController).Assembly.GetTypes()
@@ -92,6 +92,7 @@ public class AuthorizationGuardTests
         Assert.Equal(new Doctor("D", "d@example.com", "", department, "X").RoleName, AppRoles.Doctor);
         Assert.Equal(new HealthTechnician("T", "t@example.com", "", department, "X").RoleName, AppRoles.HealthTechnician);
         Assert.Equal(new ClinicManager("M", "m@example.com", "", Guid.NewGuid()).RoleName, AppRoles.ClinicManager);
+        Assert.Equal(new SystemAdmin("A", "a@example.com", "").RoleName, AppRoles.SystemAdmin);
     }
 
     public static TheoryData<Type, string, string?> RoleMapping => new()
@@ -107,7 +108,7 @@ public class AuthorizationGuardTests
 
         // Patient
         { typeof(AppointmentsController), nameof(AppointmentsController.Create), "Patient" },
-        { typeof(AppointmentsController), nameof(AppointmentsController.Cancel), "Patient" },
+        { typeof(AppointmentsController), nameof(AppointmentsController.Cancel), "ClinicManager,Patient,SystemAdmin" },
         { typeof(PatientsController), nameof(PatientsController.GetAppointments), "Patient" },
 
         // Doctor: own availability and appointment list
@@ -117,18 +118,23 @@ public class AuthorizationGuardTests
         { typeof(DoctorsController), nameof(DoctorsController.GetAppointments), "Doctor" },
 
         // Doctor or clinic manager
-        { typeof(AppointmentsController), nameof(AppointmentsController.Confirm), "ClinicManager,Doctor" },
-        { typeof(AppointmentsController), nameof(AppointmentsController.Reject), "ClinicManager,Doctor" },
-        { typeof(StaffController), nameof(StaffController.SetSlotDuration), "ClinicManager,Doctor" },
+        { typeof(AppointmentsController), nameof(AppointmentsController.Confirm), "ClinicManager,Doctor,SystemAdmin" },
+        { typeof(AppointmentsController), nameof(AppointmentsController.Reject), "ClinicManager,Doctor,SystemAdmin" },
+        { typeof(StaffController), nameof(StaffController.SetSlotDuration), "ClinicManager,Doctor,SystemAdmin" },
 
-        // Clinic manager: management
-        { typeof(OrganizationsController), nameof(OrganizationsController.Create), "ClinicManager" },
-        { typeof(BranchesController), nameof(BranchesController.AddWorkingHour), "ClinicManager" },
-        { typeof(DepartmentsController), nameof(DepartmentsController.CreateDoctor), "ClinicManager" },
-        { typeof(ServicesController), nameof(ServicesController.Delete), "ClinicManager" },
-        { typeof(StaffController), nameof(StaffController.Deactivate), "ClinicManager" },
-        { typeof(StaffController), nameof(StaffController.Activate), "ClinicManager" },
-        { typeof(StaffController), nameof(StaffController.List), "ClinicManager" },
+        // System administrator only: organizations are created and deleted by them, and so are manager accounts
+        { typeof(OrganizationsController), nameof(OrganizationsController.Create), "SystemAdmin" },
+        { typeof(OrganizationsController), nameof(OrganizationsController.Delete), "SystemAdmin" },
+        { typeof(BranchesController), nameof(BranchesController.CreateManager), "SystemAdmin" },
+
+        // Clinic manager (own organization) or system administrator: management
+        { typeof(OrganizationsController), nameof(OrganizationsController.Update), "ClinicManager,SystemAdmin" },
+        { typeof(BranchesController), nameof(BranchesController.AddWorkingHour), "ClinicManager,SystemAdmin" },
+        { typeof(DepartmentsController), nameof(DepartmentsController.CreateDoctor), "ClinicManager,SystemAdmin" },
+        { typeof(ServicesController), nameof(ServicesController.Delete), "ClinicManager,SystemAdmin" },
+        { typeof(StaffController), nameof(StaffController.Deactivate), "ClinicManager,SystemAdmin" },
+        { typeof(StaffController), nameof(StaffController.Activate), "ClinicManager,SystemAdmin" },
+        { typeof(StaffController), nameof(StaffController.List), "ClinicManager,SystemAdmin" },
     };
 
     [Theory]
