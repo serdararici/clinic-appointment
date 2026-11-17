@@ -44,10 +44,34 @@ public class Doctor : User
         }
     }
 
+    /// <summary>Whether this doctor is registered as providing the given service.</summary>
+    public bool OffersService(Guid serviceId) => _servicesProvided.Any(s => s.Id == serviceId);
+
     public DoctorAvailability AddAvailability(DateTime startUtc, DateTime endUtc)
     {
+        // Constructing first validates the range (end after start).
         var slot = new DoctorAvailability(Id, startUtc, endUtc);
+
+        // Overlapping windows would be ambiguous to remove later and would let the
+        // same time be "added twice", so they are rejected.
+        if (_availabilitySlots.Any(existing => existing.Overlaps(startUtc, endUtc)))
+        {
+            throw new InvalidOperationException("The availability range overlaps an existing availability range.");
+        }
+
         _availabilitySlots.Add(slot);
+        return slot;
+    }
+
+    /// <summary>Removes an availability window by id; returns the removed slot, or null if none matched.</summary>
+    public DoctorAvailability? RemoveAvailability(Guid slotId)
+    {
+        var slot = _availabilitySlots.FirstOrDefault(s => s.Id == slotId);
+        if (slot is not null)
+        {
+            _availabilitySlots.Remove(slot);
+        }
+
         return slot;
     }
 

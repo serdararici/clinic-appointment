@@ -20,6 +20,18 @@ public class AppointmentsController(IAppointmentService appointmentService) : Co
         {
             return NotFound(ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (ServiceNotOfferedException ex)
+        {
+            return UnprocessableEntity(ex.Message);
+        }
+        catch (OutsideWorkingHoursException ex)
+        {
+            return Conflict(ex.Message);
+        }
         catch (NotAvailableException ex)
         {
             return Conflict(ex.Message);

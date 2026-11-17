@@ -31,4 +31,11 @@ public class WorkingHour : Entity
 
     public bool Contains(DayOfWeek day, TimeOnly time) =>
         DayOfWeek == day && time >= OpensAt && time <= ClosesAt;
+
+    /// <summary>
+    /// Whether the local time range [start, end) on the given weekday fits inside this window.
+    /// Ending exactly at closing time is allowed; starting at closing time is not.
+    /// </summary>
+    public bool Covers(DayOfWeek day, TimeOnly start, TimeOnly end) =>
+        DayOfWeek == day && start >= OpensAt && end <= ClosesAt;
 }

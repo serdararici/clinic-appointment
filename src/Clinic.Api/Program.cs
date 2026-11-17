@@ -1,4 +1,5 @@
 using Clinic.Application.Appointments;
+using Clinic.Application.Availability;
 using Clinic.Infrastructure;
 using Clinic.Infrastructure.Persistence;
 using Clinic.Infrastructure.Seed;
@@ -12,6 +13,7 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
+builder.Services.AddScoped<IDoctorAvailabilityService, DoctorAvailabilityService>();
 
 var app = builder.Build();
 

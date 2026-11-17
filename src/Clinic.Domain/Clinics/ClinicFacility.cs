@@ -50,4 +50,26 @@ public class ClinicFacility : Entity
 
     /// <summary>Whether the facility is open at the given day/time, per its configured working hours.</summary>
     public bool IsOpenAt(DayOfWeek day, TimeOnly time) => _workingHours.Any(wh => wh.Contains(day, time));
+
+    /// <summary>
+    /// Whether the whole UTC range [startUtc, endUtc) falls inside the facility's working hours.
+    /// Working hours are wall-clock times in the clinic's time zone, so the UTC range is converted
+    /// to clinic local time first (e.g. 14:00 UTC is 17:00 in Turkey). A range that crosses
+    /// local midnight is never inside working hours.
+    /// </summary>
+    public bool IsOpenDuring(DateTime startUtc, DateTime endUtc)
+    {
+        var start = ClinicTimeZone.ToLocal(startUtc);
+        var end = ClinicTimeZone.ToLocal(endUtc);
+
+        if (end <= start || end.Date != start.Date)
+        {
+            return false;
+        }
+
+        var startTime = TimeOnly.FromDateTime(start);
+        var endTime = TimeOnly.FromDateTime(end);
+
+        return _workingHours.Any(wh => wh.Covers(start.DayOfWeek, startTime, endTime));
+    }
 }

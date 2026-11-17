@@ -1,3 +1,4 @@
+using Clinic.Application.Common;
 using Clinic.Application.Exceptions;
 using Clinic.Domain.Appointments;
 using Clinic.Domain.Repositories;
@@ -15,12 +16,16 @@ public class AppointmentService(
     IDoctorRepository doctorRepository,
     IPatientRepository patientRepository,
     IServiceRepository serviceRepository,
+    IClinicFacilityRepository clinicFacilityRepository,
     IPricingStrategy pricingStrategy,
     IConfirmationPolicy confirmationPolicy,
     IUnitOfWork unitOfWork) : IAppointmentService
 {
     public async Task<AppointmentDto> CreateAppointmentAsync(CreateAppointmentRequest request, CancellationToken cancellationToken = default)
     {
+        // Reject zone-less date-times up front: all stored times are UTC, so guessing would shift bookings.
+        var start = UtcDateTime.Require(request.StartUtc, nameof(request.StartUtc));
+
         var doctor = await doctorRepository.GetByIdAsync(request.DoctorId, cancellationToken)
             ?? throw new KeyNotFoundException($"Doctor {request.DoctorId} was not found.");
 
@@ -30,8 +35,21 @@ public class AppointmentService(
         var service = await serviceRepository.GetByIdAsync(request.ServiceId, cancellationToken)
             ?? throw new KeyNotFoundException($"Service {request.ServiceId} was not found.");
 
-        var start = request.StartUtc;
+        if (!doctor.OffersService(service.Id))
+        {
+            throw new ServiceNotOfferedException(doctor.Id, service.Id);
+        }
+
         var end = start + service.Duration;
+
+        // Working hours are clinic wall-clock times; the facility converts the UTC range to local time.
+        var facility = await clinicFacilityRepository.GetByIdAsync(doctor.ClinicFacilityId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Clinic {doctor.ClinicFacilityId} was not found.");
+
+        if (!facility.IsOpenDuring(start, end))
+        {
+            throw new OutsideWorkingHoursException(facility.Id, start, end);
+        }
 
         if (!doctor.IsAvailableDuring(start, end))
         {

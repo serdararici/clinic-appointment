@@ -28,6 +28,9 @@ public class DoctorAvailability : Entity
     {
     }
 
+    /// <summary>Whether the given [start, end) range overlaps this window (touching ends do not count).</summary>
+    public bool Overlaps(DateTime start, DateTime end) => StartUtc < end && start < EndUtc;
+
     /// <summary>Whether the given [start, end) range fits entirely within this availability window.</summary>
     public bool Contains(DateTime start, DateTime end) => start >= StartUtc && end <= EndUtc;
 }
