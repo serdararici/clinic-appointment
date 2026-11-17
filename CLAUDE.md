@@ -154,6 +154,11 @@ are DTOs; enums are written as names (`"Monday"`, `"Diagnostic"`) and numbers ar
 | Working hours | `GET/POST /api/branches/{id}/working-hours` (`?dayOfWeek=`), `DELETE /api/branches/{id}/working-hours/{whId}` |
 | Department | `GET/POST /api/branches/{id}/departments`, `GET/PUT/DELETE /api/departments/{id}` |
 | Service | `GET/POST /api/departments/{id}/services`, `GET/PUT/DELETE /api/services/{id}` |
+| Branch list | `GET /api/branches` (every branch with `organizationName`) |
+| Doctors of a department | `GET /api/departments/{id}/doctors` (active doctors only, with offered services and slot duration) |
+| Appointment lists | `GET /api/patients/{id}/appointments`, `GET /api/doctors/{id}/appointments` (patient, staff, branch and service names, time, price, status) |
+| Appointment actions | `POST /api/appointments/{id}/confirm`, `/reject`, `/cancel` |
+| Bulk availability | `POST /api/doctors/{id}/availability/bulk` (date range + weekdays + local time window; skips overlapping and past dates) |
 | Staff | `POST /api/departments/{id}/doctors`, `POST /api/departments/{id}/technicians`, `GET /api/staff` (`?branchId=&departmentId=`), `GET/PUT/DELETE /api/staff/{id}`, `PUT /api/staff/{id}/services`, `PUT /api/staff/{id}/slot-duration`, `POST /api/staff/{id}/deactivate`, `POST /api/staff/{id}/activate` |
 
 Status codes: 201 on create (with a `Location`), 200 on read/update, 204 on delete; **400** invalid input
@@ -173,6 +178,36 @@ Delete rules (409 with a message when violated):
   `Appointment.StaffMemberId`); deactivating keeps the history intact.
 - `PUT /api/staff/{id}/services` replaces the offered set; every service must belong to the staff
   member's own department (400 otherwise, nothing changes).
+
+## Authentication (login only, nothing protected yet)
+
+- `User.PasswordHash` stores a salted hash made with ASP.NET's `PasswordHasher` (only the hasher, not the Identity
+  tables). Email is the login name and has a unique index (case-insensitive).
+- `POST /api/auth/register` creates a **Patient** (`fullName`, `email`, `password`, `phoneNumber`, `dateOfBirth`,
+  optional `insuranceNumber`): 400 if the password is under 8 characters or the input is invalid, 409 if the
+  email is already used. `POST /api/auth/login` (`email`, `password`) returns a JWT valid for 8 hours:
+  401 with the same message for a wrong password and an unknown email.
+- The token carries `sub` (user id), `email`, `name`, `role` (`Patient`, `Doctor`, `HealthTechnician`,
+  `ClinicManager`) and, for staff and clinic managers only, `branch_id` and `organization_id`.
+- `Jwt:Key` (at least 32 characters), `Jwt:Issuer` and `Jwt:Audience` come from configuration. The committed
+  `appsettings.json` holds a **development-only** key; outside local development override it with the
+  environment variable `Jwt__Key`. The app refuses to start with a missing or too-short key.
+- No endpoint requires a token yet; authorization is a later step.
+
+### Demo accounts
+
+All demo accounts use the password **`Demo123!`** and are given it at startup only if they have no password yet
+(`DbInitializer.DemoEmails`). Technicians have no demo login.
+
+| Role | Email | Works at |
+|---|---|---|
+| Patient | `ahmet.celik@example.com` (insured), `fatma.yildirim@example.com` | - |
+| Doctor | `hakan.yildiz@sakaryasehir.example`, `elif.sahin@sakaryasehir.example` | Sakarya Şehir Hastanesi - Merkez |
+| Doctor | `zeynep.celik@sakaryasehir.example`, `burak.ozturk@sakaryasehir.example` | Sakarya Şehir Hastanesi - Adapazarı Şubesi |
+| Doctor | `can.aksoy@marmarapoliklinik.example` | Marmara Poliklinik - Serdivan Kliniği |
+| Clinic manager | `ayse.yilmaz@sakaryasehir.example` | Merkez |
+| Clinic manager | `mehmet.kara@sakaryasehir.example` | Adapazarı Şubesi |
+| Clinic manager | `ali.erdogan@marmarapoliklinik.example` | Serdivan Kliniği |
 
 ## Date and Time
 

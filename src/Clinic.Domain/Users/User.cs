@@ -14,6 +14,12 @@ public abstract class User : Entity
     public string PhoneNumber { get; private set; }
     public DateTime CreatedAtUtc { get; private set; }
 
+    /// <summary>
+    /// Salted hash of the password (null for an account that cannot log in yet). The domain only stores
+    /// it; hashing and checking happen in the Application/Infrastructure layers.
+    /// </summary>
+    public string? PasswordHash { get; private set; }
+
     protected User(string fullName, string email, string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(fullName))
@@ -38,6 +44,16 @@ public abstract class User : Entity
         FullName = string.Empty;
         Email = string.Empty;
         PhoneNumber = string.Empty;
+    }
+
+    public void SetPasswordHash(string passwordHash)
+    {
+        if (string.IsNullOrWhiteSpace(passwordHash))
+        {
+            throw new ArgumentException("A password hash is required.", nameof(passwordHash));
+        }
+
+        PasswordHash = passwordHash;
     }
 
     public void Rename(string fullName)

@@ -10,6 +10,9 @@ public class BulkAvailabilityTests
     // 2026-03-02 is a Monday; 03-02 .. 03-15 covers two full weeks.
     private static readonly DateOnly Monday = new(2026, 3, 2);
     private static readonly DateOnly TwoWeeksLater = new(2026, 3, 15);
+    /// <summary>A clock long before every test date, so nothing is in the past unless a test says so.</summary>
+    private static readonly DateTime Now = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     private static readonly string[] Weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
 
     private readonly FakeDoctorRepository _doctors = new();
@@ -17,10 +20,10 @@ public class BulkAvailabilityTests
     private readonly FakeUnitOfWork _unitOfWork = new();
     private readonly Doctor _doctor = TestData.NewDoctor();
 
-    private DoctorAvailabilityService CreateService()
+    private DoctorAvailabilityService CreateService(DateTime? now = null)
     {
         _doctors.Items.Add(_doctor);
-        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork);
+        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(now ?? Now));
     }
 
     private static DateTime Utc(DateOnly day, int hour, int minute = 0) =>
@@ -65,6 +68,48 @@ public class BulkAvailabilityTests
 
         Assert.Empty(result.Created);
         Assert.Empty(result.SkippedDates);
+        Assert.Equal(0, _unitOfWork.SaveCount);
+    }
+
+    [Fact]
+    public async Task SkipsDatesWhoseRangeHasAlreadyStarted_AndReportsThemAsPast()
+    {
+        // Wednesday 12:00 local: Monday and Tuesday are over, and so is Wednesday's 09:00-12:00 window.
+        var now = Utc(Monday.AddDays(2), 12);
+
+        var result = await CreateService(now).AddBulkAvailabilityAsync(_doctor.Id, Request(Monday, Monday.AddDays(4)));
+
+        Assert.Equal([Monday, Monday.AddDays(1), Monday.AddDays(2)], result.PastDates);
+        Assert.Equal(2, result.Created.Count); // Thursday and Friday
+        Assert.Empty(result.SkippedDates);
+        Assert.Equal(2, _doctor.AvailabilitySlots.Count);
+    }
+
+    [Fact]
+    public async Task KeepsToday_WhenTheWindowHasNotStartedYet_EvenIfItStartsExactlyNow()
+    {
+        var wednesday = Monday.AddDays(2);
+
+        // 08:00 local: Wednesday's 09:00 window is still ahead.
+        var early = await CreateService(Utc(wednesday, 8)).AddBulkAvailabilityAsync(_doctor.Id, Request(wednesday, wednesday, ["Wednesday"]));
+        Assert.Single(early.Created);
+        Assert.Empty(early.PastDates);
+
+        // Exactly 09:00 local: the window starts now, which is still allowed (same rule as slots).
+        var otherDoctor = TestData.NewDoctor(email: "other@example.com");
+        _doctors.Items.Add(otherDoctor);
+        var exact = await new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Utc(wednesday, 9)))
+            .AddBulkAvailabilityAsync(otherDoctor.Id, Request(wednesday, wednesday, ["Wednesday"]));
+        Assert.Single(exact.Created);
+    }
+
+    [Fact]
+    public async Task CreatesNothing_AndDoesNotSave_WhenEveryMatchingDateIsInThePast()
+    {
+        var result = await CreateService(Utc(TwoWeeksLater.AddDays(1), 8)).AddBulkAvailabilityAsync(_doctor.Id, Request());
+
+        Assert.Empty(result.Created);
+        Assert.Equal(10, result.PastDates.Count);
         Assert.Equal(0, _unitOfWork.SaveCount);
     }
 

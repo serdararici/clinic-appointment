@@ -12,7 +12,8 @@ namespace Clinic.Application.Availability;
 public class DoctorAvailabilityService(
     IDoctorRepository doctorRepository,
     IAppointmentRepository appointmentRepository,
-    IUnitOfWork unitOfWork) : IDoctorAvailabilityService
+    IUnitOfWork unitOfWork,
+    TimeProvider timeProvider) : IDoctorAvailabilityService
 {
     public async Task<IReadOnlyList<AvailabilityDto>> GetAvailabilityAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {
@@ -66,6 +67,8 @@ public class DoctorAvailabilityService(
         var doctor = await LoadDoctorAsync(doctorId, cancellationToken);
         var created = new List<AvailabilityDto>();
         var skipped = new List<DateOnly>();
+        var past = new List<DateOnly>();
+        var now = timeProvider.GetUtcNow().UtcDateTime;
 
         for (var date = request.FromDate; date <= request.ToDate; date = date.AddDays(1))
         {
@@ -77,6 +80,13 @@ public class DoctorAvailabilityService(
             // The window is Turkey wall-clock time; storage stays UTC.
             var start = ClinicTimeZone.ToUtc(date.ToDateTime(request.StartTime));
             var end = ClinicTimeZone.ToUtc(date.ToDateTime(request.EndTime));
+
+            // A range that has already started cannot be booked any more (same rule as a Past slot).
+            if (start < now)
+            {
+                past.Add(date);
+                continue;
+            }
 
             if (doctor.AvailabilitySlots.Any(s => s.Overlaps(start, end)))
             {
@@ -94,7 +104,7 @@ public class DoctorAvailabilityService(
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        return new BulkAvailabilityResultDto(created, skipped);
+        return new BulkAvailabilityResultDto(created, skipped, past);
     }
 
     private static HashSet<DayOfWeek> ParseWeekdays(IReadOnlyList<string>? names)

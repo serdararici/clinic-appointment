@@ -54,8 +54,8 @@ public class DoctorsController(
 
     /// <summary>
     /// Creates availability over a date range in Turkey local time: one range per matching weekday, skipping
-    /// days that overlap an existing range. 200 with the created ranges and the skipped dates; 400 if the
-    /// request is invalid.
+    /// days that overlap an existing range or have already started. 200 with the created ranges, the skipped
+    /// dates and the past dates; 400 if the request is invalid.
     /// </summary>
     [HttpPost("availability/bulk")]
     public async Task<ActionResult<BulkAvailabilityResultDto>> AddBulk(Guid doctorId, BulkAvailabilityRequest request, CancellationToken cancellationToken)

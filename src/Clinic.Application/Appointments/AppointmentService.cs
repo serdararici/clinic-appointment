@@ -192,11 +192,36 @@ public class AppointmentService(
         return await ToDetailsAsync(await appointmentRepository.GetByStaffMemberIdAsync(doctorId, cancellationToken), cancellationToken);
     }
 
-    // One query for all the services involved, then a lookup per appointment.
+    // Looks up everything the list needs once per distinct id (not once per appointment).
     private async Task<IReadOnlyList<AppointmentDetailDto>> ToDetailsAsync(IReadOnlyList<Appointment> appointments, CancellationToken cancellationToken)
     {
-        var serviceIds = appointments.Select(a => a.ServiceId).Distinct().ToList();
-        var services = (await serviceRepository.GetByIdsAsync(serviceIds, cancellationToken)).ToDictionary(s => s.Id);
+        var services = (await serviceRepository.GetByIdsAsync(
+            appointments.Select(a => a.ServiceId).Distinct().ToList(), cancellationToken)).ToDictionary(s => s.Id);
+
+        var patients = (await patientRepository.GetByIdsAsync(
+            appointments.Select(a => a.PatientId).Distinct().ToList(), cancellationToken)).ToDictionary(p => p.Id);
+
+        // A staff member who has since been deleted simply has no name any more.
+        var staffNames = new Dictionary<Guid, string>();
+        foreach (var staffId in appointments.Where(a => a.StaffMemberId is not null).Select(a => a.StaffMemberId!.Value).Distinct())
+        {
+            var staff = await doctorRepository.GetByIdAsync(staffId, cancellationToken);
+            if (staff is not null)
+            {
+                staffNames[staffId] = staff.FullName;
+            }
+        }
+
+        // The branch is the one that owns the service's department (also true for examinations).
+        var branchNames = new Dictionary<Guid, string>();
+        foreach (var service in services.Values)
+        {
+            var branch = await clinicFacilityRepository.GetByServiceIdAsync(service.Id, cancellationToken);
+            if (branch is not null)
+            {
+                branchNames[service.Id] = branch.Name;
+            }
+        }
 
         return appointments
             .OrderBy(a => a.ScheduledStartUtc)
@@ -206,7 +231,10 @@ public class AppointmentService(
                 return new AppointmentDetailDto(
                     a.Id,
                     a.PatientId,
+                    patients.TryGetValue(a.PatientId, out var patient) ? patient.FullName : string.Empty,
                     a.StaffMemberId,
+                    a.StaffMemberId is { } staffId && staffNames.TryGetValue(staffId, out var staffName) ? staffName : null,
+                    branchNames.GetValueOrDefault(a.ServiceId, string.Empty),
                     a.ServiceId,
                     service?.Name ?? string.Empty,
                     service?.ServiceType ?? ServiceType.Examination,

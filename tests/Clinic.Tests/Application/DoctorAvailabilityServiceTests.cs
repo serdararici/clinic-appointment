@@ -7,6 +7,9 @@ namespace Clinic.Tests.Application;
 
 public class DoctorAvailabilityServiceTests
 {
+    /// <summary>A clock long before every test date.</summary>
+    private static readonly DateTime Now = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
     private static readonly DateTime Day = new(2026, 3, 2, 0, 0, 0, DateTimeKind.Utc);
 
     private readonly FakeDoctorRepository _doctors = new();
@@ -17,7 +20,7 @@ public class DoctorAvailabilityServiceTests
     private DoctorAvailabilityService CreateService()
     {
         _doctors.Items.Add(_doctor);
-        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork);
+        return new DoctorAvailabilityService(_doctors, _appointments, _unitOfWork, new FixedTimeProvider(Now));
     }
 
     [Fact]

@@ -3,6 +3,7 @@ using Clinic.Domain.Common;
 using Clinic.Domain.Enums;
 using Clinic.Domain.Users;
 using Clinic.Infrastructure.Persistence;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clinic.Infrastructure.Seed;
@@ -21,12 +22,63 @@ public static class DbInitializer
         (new TimeOnly(13, 0), new TimeOnly(16, 0)),
     ];
 
+    /// <summary>The password of every demo account (documented in CLAUDE.md; for local demos only).</summary>
+    public const string DemoPassword = "Demo123!";
+
+    /// <summary>
+    /// The demo accounts that get <see cref="DemoPassword"/>: the patients, every doctor and the clinic managers.
+    /// Technicians have no demo login. Only these emails are ever given the demo password.
+    /// </summary>
+    public static readonly string[] DemoEmails =
+    [
+        // Patients
+        "ahmet.celik@example.com",
+        "fatma.yildirim@example.com",
+        // Doctors
+        "hakan.yildiz@sakaryasehir.example",
+        "elif.sahin@sakaryasehir.example",
+        "zeynep.celik@sakaryasehir.example",
+        "burak.ozturk@sakaryasehir.example",
+        "can.aksoy@marmarapoliklinik.example",
+        // Clinic managers
+        "ayse.yilmaz@sakaryasehir.example",
+        "mehmet.kara@sakaryasehir.example",
+        "ali.erdogan@marmarapoliklinik.example",
+    ];
+
     public static void MigrateAndSeed(ClinicDbContext dbContext)
     {
         dbContext.Database.Migrate();
 
         SeedCoreData(dbContext);
+        SeedDemoAccounts(dbContext);
         SeedAvailability(dbContext, DateTime.UtcNow);
+    }
+
+    /// <summary>
+    /// Gives the demo users a login. Runs on every start and only fills in demo users that have no password
+    /// hash yet, so it also upgrades a database that was seeded before logins existed, never overwrites a
+    /// changed password, and never touches users outside <see cref="DemoEmails"/>.
+    /// </summary>
+    private static void SeedDemoAccounts(ClinicDbContext dbContext)
+    {
+        var accounts = dbContext.Users
+            .Where(u => DemoEmails.Contains(u.Email) && u.PasswordHash == null)
+            .ToList();
+
+        if (accounts.Count == 0)
+        {
+            return;
+        }
+
+        var hasher = new PasswordHasher<object>();
+        foreach (var account in accounts)
+        {
+            // One hash per account: each gets its own random salt.
+            account.SetPasswordHash(hasher.HashPassword(new object(), DemoPassword));
+        }
+
+        dbContext.SaveChanges();
     }
 
     /// <summary>Seeds organizations, branches, services, staff and patients once; skipped when data already exists.</summary>

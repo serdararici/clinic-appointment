@@ -92,6 +92,8 @@ internal class FakeStaffMemberRepository : FakeRepository<StaffMember>, IStaffMe
 
 internal class FakePatientRepository : FakeRepository<Patient>, IPatientRepository
 {
+    public Task<IReadOnlyList<Patient>> GetByIdsAsync(IReadOnlyCollection<Guid> patientIds, CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Patient>>(Items.Where(p => patientIds.Contains(p.Id)).ToList());
 }
 
 internal class FakeServiceRepository : FakeRepository<Service>, IServiceRepository

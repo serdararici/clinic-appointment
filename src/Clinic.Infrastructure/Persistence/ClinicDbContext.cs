@@ -37,6 +37,14 @@ public class ClinicDbContext(DbContextOptions<ClinicDbContext> options) : DbCont
             .HasValue<HealthTechnician>("HealthTechnician")
             .HasValue<ClinicManager>("ClinicManager");
 
+        // Email is the login name: unique (case-insensitive under SQL Server's default collation) and
+        // bounded so it can be indexed.
+        modelBuilder.Entity<User>(builder =>
+        {
+            builder.Property(u => u.Email).HasMaxLength(256);
+            builder.HasIndex(u => u.Email).IsUnique();
+        });
+
         modelBuilder.Entity<ClinicFacility>(builder =>
         {
             // A branch always belongs to an organization, which must exist first.

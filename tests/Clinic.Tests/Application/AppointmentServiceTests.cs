@@ -553,6 +553,9 @@ public class AppointmentServiceTests
         Assert.Equal("Röntgen", list[0].ServiceName);
         Assert.Equal(ServiceType.Diagnostic, list[0].ServiceType);
         Assert.Null(list[0].StaffMemberId);
+        Assert.Null(list[0].StaffMemberName);      // unassigned
+        Assert.Equal("Pat Ient", list[0].PatientName);
+        Assert.Equal("Merkez", list[0].BranchName);
         Assert.Equal(350m, list[0].Price);
         Assert.Equal(AppointmentStatus.Confirmed, list[0].Status);
         Assert.Equal(Monday.AddHours(5), list[0].ScheduledStartUtc);
@@ -560,6 +563,8 @@ public class AppointmentServiceTests
 
         Assert.Equal("Genel Muayene", list[1].ServiceName);
         Assert.Equal(_doctor.Id, list[1].StaffMemberId);
+        Assert.Equal("Dr. Test", list[1].StaffMemberName);
+        Assert.Equal("Merkez", list[1].BranchName);
         Assert.Equal(AppointmentStatus.Cancelled, list[1].Status); // every status is listed
     }
 
@@ -568,6 +573,19 @@ public class AppointmentServiceTests
     {
         Assert.Empty(await _service.GetByPatientAsync(_patient.Id));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByPatientAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task DoctorAppointments_ShowEachPatientsOwnName()
+    {
+        var second = new Patient("Fatma Yıldırım", "fatma@example.com", "+90-500-000-0005", new DateOnly(1985, 11, 3));
+        _patients.Items.Add(second);
+        await BookExaminationAsync(Monday.AddHours(6));
+        await _service.CreateAppointmentAsync(new CreateAppointmentRequest(second.Id, _checkUp.Id, Monday.AddHours(6.5), _doctor.Id));
+
+        var list = await _service.GetByDoctorAsync(_doctor.Id);
+
+        Assert.Equal(["Pat Ient", "Fatma Yıldırım"], list.Select(a => a.PatientName));
     }
 
     [Fact]
@@ -587,6 +605,9 @@ public class AppointmentServiceTests
         Assert.Equal("Genel Muayene", only.ServiceName);
         Assert.Equal(ServiceType.Examination, only.ServiceType);
         Assert.Equal(300m, only.Price);
+        Assert.Equal("Dr. Test", only.StaffMemberName);
+        Assert.Equal("Pat Ient", only.PatientName);
+        Assert.Equal("Merkez", only.BranchName);
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.GetByDoctorAsync(Guid.NewGuid()));
     }
 

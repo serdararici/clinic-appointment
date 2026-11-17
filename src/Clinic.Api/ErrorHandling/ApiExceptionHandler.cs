@@ -1,3 +1,4 @@
+using Clinic.Application.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 
 namespace Clinic.Api.ErrorHandling;
@@ -5,7 +6,7 @@ namespace Clinic.Api.ErrorHandling;
 /// <summary>
 /// Maps the three generic exception types the Application and Domain layers use to HTTP status codes,
 /// so management controllers do not repeat a try/catch in every action:
-/// not found -> 404, invalid input -> 400, a rule or dependent data in the way -> 409.
+/// not found -> 404, invalid input -> 400, a rule or dependent data in the way -> 409, failed login -> 401.
 /// The body is the plain message, like the older controllers return. Any other exception is not
 /// handled here and becomes a 500.
 /// </summary>
@@ -15,6 +16,7 @@ public class ApiExceptionHandler : IExceptionHandler
     {
         int? status = exception switch
         {
+            InvalidCredentialsException => StatusCodes.Status401Unauthorized,
             KeyNotFoundException => StatusCodes.Status404NotFound,
             ArgumentException => StatusCodes.Status400BadRequest,
             InvalidOperationException => StatusCodes.Status409Conflict,

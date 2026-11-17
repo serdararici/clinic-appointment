@@ -8,7 +8,7 @@ public interface IDoctorAvailabilityService
 
     /// <summary>
     /// Creates one availability range per matching date in the request (clinic local time), skipping dates
-    /// whose range would overlap an existing one. Rejects an invalid request (400) before changing anything.
+    /// whose range would overlap an existing one and dates whose range has already started. Rejects an invalid request (400) before changing anything.
     /// </summary>
     Task<BulkAvailabilityResultDto> AddBulkAvailabilityAsync(Guid doctorId, BulkAvailabilityRequest request, CancellationToken cancellationToken = default);
 

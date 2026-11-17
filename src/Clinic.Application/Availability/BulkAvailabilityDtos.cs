@@ -13,5 +13,11 @@ public record BulkAvailabilityRequest(
     TimeOnly StartTime,
     TimeOnly EndTime);
 
-/// <summary>Which ranges were created and which dates were skipped because they overlapped an existing range.</summary>
-public record BulkAvailabilityResultDto(IReadOnlyList<AvailabilityDto> Created, IReadOnlyList<DateOnly> SkippedDates);
+/// <summary>
+/// Which ranges were created, which dates were skipped because the range would overlap an existing one,
+/// and which were skipped because the range has already started (past).
+/// </summary>
+public record BulkAvailabilityResultDto(
+    IReadOnlyList<AvailabilityDto> Created,
+    IReadOnlyList<DateOnly> SkippedDates,
+    IReadOnlyList<DateOnly> PastDates);
