@@ -1,4 +1,5 @@
 using Clinic.Api.ErrorHandling;
+using Clinic.Api.OpenApi;
 using Clinic.Api.Security;
 using Clinic.Application.Appointments;
 using Clinic.Application.Auth;
@@ -9,13 +10,22 @@ using Clinic.Application.Staff;
 using Clinic.Infrastructure;
 using Clinic.Infrastructure.Persistence;
 using Clinic.Infrastructure.Seed;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecuritySchemeTransformer>());
+
+// CORS: the browser frontend (Vite dev server) may call the API, including with the Authorization header.
+// The allowed origins come from configuration (Cors:AllowedOrigins); the default is the Vite dev server.
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? ["http://localhost:5173"];
+builder.Services.AddCors(options => options.AddPolicy("Frontend", policy => policy
+    .WithOrigins(allowedOrigins)
+    .WithHeaders("Authorization", "Content-Type", "Accept")
+    .WithMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")));
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
@@ -54,11 +64,20 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi().AllowAnonymous();
+
+    // Interactive API reference at /scalar (Development only); "Bearer" lets you paste a login token.
+    app.MapScalarApiReference(options => options
+            .WithTitle("Clinic Appointment API")
+            .AddPreferredSecuritySchemes("Bearer"))
+        .AllowAnonymous();
 }
 
 app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
+
+// Before authentication, so browser preflight (OPTIONS) requests are answered without a token.
+app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
