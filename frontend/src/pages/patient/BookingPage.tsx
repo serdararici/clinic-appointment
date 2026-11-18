@@ -14,6 +14,7 @@ import { useAsync } from '../../utils/useAsync'
 import { CHOICE_ORDER, EMPTY_SELECTION, type BookingResult, type Selection, type Step } from './booking-types'
 import { BranchStep, DepartmentStep, DoctorStep, OrganizationStep, ServiceStep, SlotStep } from './BookingSteps'
 import { SERVICE_TYPE_LABELS } from './labels'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 const HEADINGS: Record<Step, string> = {
   organization: 'Kurum seçin',
@@ -36,6 +37,7 @@ function stepAfterService(service: Service): Step {
  * so "Geri" always returns to a screen the patient has seen.
  */
 export function BookingPage() {
+  usePageTitle('Randevu al')
   const branches = useAsync(useCallback((signal: AbortSignal) => listBranches(signal), []))
 
   const [stack, setStack] = useState<Step[]>(['organization'])

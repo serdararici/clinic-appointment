@@ -11,9 +11,11 @@ import { AvailabilityList } from './AvailabilityList'
 import { BulkAvailabilityCard } from './BulkAvailabilityCard'
 import { SingleAvailabilityCard } from './SingleAvailabilityCard'
 import { SlotDurationCard } from './SlotDurationCard'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 /** The doctor's schedule: appointment length, adding availability (single or bulk) and the upcoming ranges. */
 export function AvailabilityPage() {
+  usePageTitle('Uygunluk')
   const { user } = useAuth()
   const doctorId = user?.id ?? ''
   const profile = useAsync(useCallback((signal: AbortSignal) => getDoctorProfile(doctorId, signal), [doctorId]))

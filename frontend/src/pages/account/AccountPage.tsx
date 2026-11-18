@@ -9,9 +9,11 @@ import { Spinner } from '../../components/Spinner'
 import { useAsync } from '../../utils/useAsync'
 import { PasswordCard } from './PasswordCard'
 import { ProfileCard } from './ProfileCard'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 /** "Hesabım": the same page for every role: personal information and changing the password. */
 export function AccountPage() {
+  usePageTitle('Hesabım')
   const state = useAsync(useCallback((signal: AbortSignal) => getAccount(signal), []))
   // After a save the cards keep showing what was saved without reloading (a reload would blank the forms).
   const [saved, setSaved] = useState<Account | null>(null)

@@ -8,6 +8,7 @@ import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { Input } from '../components/Input'
 import { AuthLayout } from '../layout/AuthLayout'
+import { usePageTitle } from '../utils/usePageTitle'
 
 const MIN_PASSWORD_LENGTH = 8 // the same rule the API enforces
 
@@ -43,6 +44,7 @@ function validate(values: FormValues, today: string): FormErrors {
 }
 
 export function RegisterPage() {
+  usePageTitle('Kayıt')
   const navigate = useNavigate()
   // "YYYY-MM-DD" in Turkey (the same helper as everywhere else); the native date input needs this format for its max value.
   const today = todayIsoDate()

@@ -7,6 +7,7 @@ import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
+import { useToast } from '../../components/useToast'
 
 const MAX_PHONE_LENGTH = 30
 const MAX_INSURANCE_LENGTH = 50
@@ -17,6 +18,7 @@ const MAX_INSURANCE_LENGTH = 50
  */
 export function ProfileCard({ account, onSaved }: { account: Account; onSaved: (account: Account) => void }) {
   const { updateName } = useAuth()
+  const toast = useToast()
   const isPatient = account.role === 'Patient'
 
   const [name, setName] = useState(account.fullName)
@@ -24,12 +26,10 @@ export function ProfileCard({ account, onSaved }: { account: Account; onSaved: (
   const [insurance, setInsurance] = useState(account.insuranceNumber ?? '')
   const [errors, setErrors] = useState<{ name?: string; phone?: string; insurance?: string }>({})
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    setSaved(false)
     setApiError(null)
 
     const found: typeof errors = {}
@@ -47,7 +47,7 @@ export function ProfileCard({ account, onSaved }: { account: Account; onSaved: (
       setName(updated.fullName)
       setPhone(updated.phoneNumber)
       setInsurance(updated.insuranceNumber ?? '')
-      setSaved(true)
+      toast.success('Bilgileriniz kaydedildi.')
     } catch (caught) {
       setApiError(readableMessage(caught))
     } finally {
@@ -72,7 +72,6 @@ export function ProfileCard({ account, onSaved }: { account: Account; onSaved: (
             />
           ) : null}
         </div>
-        {saved ? <Alert tone="success">Bilgileriniz kaydedildi.</Alert> : null}
         {apiError ? <Alert tone="error">{apiError}</Alert> : null}
         <Button type="submit" loading={saving}>
           Kaydet

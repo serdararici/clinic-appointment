@@ -8,6 +8,7 @@ import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { isoDateOf, todayIsoDate } from '../../utils/format'
 import { DEFAULT_WEEKDAYS, WEEKDAYS, minutesOf, previewBulk, type TimeWindow } from './availability-utils'
+import { useToast } from '../../components/useToast'
 
 interface BulkAvailabilityCardProps {
   doctorId: string
@@ -37,6 +38,7 @@ function merge(results: BulkAvailabilityResult[]): Summary {
  * that have already started, and reports them.
  */
 export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }: BulkAvailabilityCardProps) {
+  const toast = useToast()
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [weekdays, setWeekdays] = useState<WeekdayName[]>([...DEFAULT_WEEKDAYS])
@@ -99,7 +101,14 @@ export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }:
       setApiError(readableMessage(caught))
     } finally {
       if (results.length > 0) {
-        setSummary(merge(results))
+        const merged = merge(results)
+        setSummary(merged)
+        const notes = [
+          merged.skippedDays > 0 ? `${merged.skippedDays} gün mevcut bir uygunlukla çakıştığı için atlandı.` : '',
+          merged.pastDays > 0 ? `${merged.pastDays} gün başlamış olduğu için atlandı.` : '',
+        ].filter(Boolean)
+        if (merged.createdDays > 0) toast.success([`${merged.createdDays} gün için uygunluk eklendi.`, ...notes].join(' '))
+        else toast.error(['Hiçbir güne uygunluk eklenmedi.', ...notes].join(' '))
         onAdded()
       }
       setSaving(false)
@@ -155,13 +164,6 @@ export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }:
           </p>
         ) : null}
 
-        {summary ? (
-          <Alert tone={summary.createdDays > 0 ? 'success' : 'info'}>
-            <p className="font-medium">{summary.createdDays} gün için uygunluk eklendi.</p>
-            {summary.skippedDays > 0 ? <p>{summary.skippedDays} gün mevcut bir uygunlukla çakıştığı için atlandı.</p> : null}
-            {summary.pastDays > 0 ? <p>{summary.pastDays} gün başlamış olduğu için atlandı.</p> : null}
-          </Alert>
-        ) : null}
         {apiError ? (
           <Alert tone="error">
             {summary ? 'İşlem yarım kaldı: öğle arasından önceki aralıklar eklendi, sonrakiler eklenemedi. ' : ''}

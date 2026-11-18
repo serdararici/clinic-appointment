@@ -16,6 +16,8 @@ import { useAsync } from '../../utils/useAsync'
 import { SERVICE_TYPE_LABELS } from '../patient/labels'
 import { DepartmentFormModal } from './DepartmentFormModal'
 import { ServiceFormModal } from './ServiceFormModal'
+import { usePageTitle } from '../../utils/usePageTitle'
+import { useToast } from '../../components/useToast'
 
 interface DepartmentWithServices {
   department: Department
@@ -31,7 +33,9 @@ type Dialog =
 
 /** The branch's departments with their services: add, edit and delete both. */
 export function DepartmentsPage() {
+  usePageTitle('Bölümler')
   const { user } = useAuth()
+  const toast = useToast()
   const branchId = user?.branchId ?? ''
 
   const state = useAsync(
@@ -46,9 +50,10 @@ export function DepartmentsPage() {
   const [dialog, setDialog] = useState<Dialog | null>(null)
 
   const close = () => setDialog(null)
-  const saved = () => {
+  const saved = (message: string) => {
     close()
     state.reload()
+    toast.success(message)
   }
 
   const serviceColumns = (department: Department): Column<Service>[] => [
@@ -138,14 +143,14 @@ export function DepartmentsPage() {
         branchId={branchId}
         department={dialog?.kind === 'department' ? dialog.department : null}
         onClose={close}
-        onSaved={saved}
+        onSaved={() => saved(dialog?.kind === 'department' && dialog.department ? 'Bölüm güncellendi.' : 'Bölüm eklendi.')}
       />
       <ServiceFormModal
         open={dialog?.kind === 'service'}
         departmentId={dialog?.kind === 'service' ? dialog.department.id : ''}
         service={dialog?.kind === 'service' ? dialog.service : null}
         onClose={close}
-        onSaved={saved}
+        onSaved={() => saved(dialog?.kind === 'service' && dialog.service ? 'Hizmet güncellendi.' : 'Hizmet eklendi.')}
       />
       <ConfirmDialog
         open={dialog?.kind === 'delete-department'}
@@ -156,6 +161,7 @@ export function DepartmentsPage() {
         onConfirm={async () => {
           if (dialog?.kind !== 'delete-department') return
           await deleteDepartment(dialog.department.id)
+          toast.success('Bölüm silindi.')
           state.reload()
         }}
       >
@@ -174,6 +180,7 @@ export function DepartmentsPage() {
         onConfirm={async () => {
           if (dialog?.kind !== 'delete-service') return
           await deleteService(dialog.service.id)
+          toast.success('Hizmet silindi.')
           state.reload()
         }}
       >

@@ -10,6 +10,7 @@ import { Table, type Column } from '../../components/Table'
 import { formatLongDate, formatTime } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { sortToday, sortUpcoming } from '../patient/appointment-utils'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 const todayColumns: Column<AppointmentDetail>[] = [
   { key: 'time', header: 'Saat', primary: true, cell: (row) => <span className="font-medium tabular-nums">{formatTime(row.scheduledStartUtc)}</span> },
@@ -20,6 +21,7 @@ const todayColumns: Column<AppointmentDetail>[] = [
 
 /** The doctor's home: who and where they are, today's appointments and a short look at what is coming. */
 export function DoctorHome() {
+  usePageTitle('Ana sayfa')
   const { user } = useAuth()
   const doctorId = user?.id ?? ''
   const profile = useAsync(useCallback((signal: AbortSignal) => getDoctorProfile(doctorId, signal), [doctorId]))

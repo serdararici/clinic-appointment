@@ -8,6 +8,7 @@ import { Card } from '../../components/Card'
 import { LinkButton } from '../../components/LinkButton'
 import { Spinner } from '../../components/Spinner'
 import { useAsync } from '../../utils/useAsync'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 interface Counts {
   organizations: number
@@ -29,6 +30,7 @@ function Stat({ label, value }: { label: string; value: number }) {
 
 /** The administrator's home: how big the system is (organizations, branches, managers, staff) and links to manage it. */
 export function AdminHome() {
+  usePageTitle('Ana sayfa')
   const { user } = useAuth()
 
   const state = useAsync(

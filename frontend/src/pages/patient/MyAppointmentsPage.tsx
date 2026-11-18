@@ -14,6 +14,13 @@ import { formatCurrency, formatDateTime, formatPlace } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { ServiceLabel } from './ServiceLabel'
 import { isUpcoming, sortPast, sortUpcoming } from './appointment-utils'
+import { usePageTitle } from '../../utils/usePageTitle'
+import { useToast } from '../../components/useToast'
+import { FilterBar } from '../../components/FilterBar'
+import { Input } from '../../components/Input'
+import { Select } from '../../components/Select'
+import { matchesQuery } from '../../utils/search'
+import { STATUS_OPTIONS } from '../../components/appointment-status'
 
 type Tab = 'upcoming' | 'past'
 
@@ -24,11 +31,15 @@ const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
 
 /** The patient's own appointments: upcoming and past, with cancelling for the ones still active. */
 export function MyAppointmentsPage() {
+  usePageTitle('Randevularım')
   const { user } = useAuth()
+  const toast = useToast()
   const patientId = user?.id ?? ''
   const state = useAsync(useCallback((signal: AbortSignal) => listPatientAppointments(patientId, signal), [patientId]))
 
   const [tab, setTab] = useState<Tab>('upcoming')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   // The moment the page opened decides what is "upcoming"; reloading the page refreshes it.
   const [now] = useState(() => Date.now())
   const [toCancel, setToCancel] = useState<AppointmentDetail | null>(null)
@@ -36,6 +47,16 @@ export function MyAppointmentsPage() {
   const [cancelError, setCancelError] = useState<string | null>(null)
 
   const rows = state.data ? (tab === 'upcoming' ? sortUpcoming(state.data, now) : sortPast(state.data, now)) : undefined
+
+  const filtered = rows?.filter(
+    (row) => matchesQuery(search, [row.staffMemberName, row.serviceName, row.departmentName]) && (!statusFilter || row.status === statusFilter),
+  )
+  const filtersActive = Boolean(search.trim() || statusFilter)
+  const noMatch = (rows?.length ?? 0) > 0 && filtered?.length === 0
+  const clearFilters = () => {
+    setSearch('')
+    setStatusFilter('')
+  }
 
   const closeModal = () => {
     if (cancelling) return
@@ -49,6 +70,7 @@ export function MyAppointmentsPage() {
     setCancelError(null)
     try {
       await cancelAppointment(toCancel.id)
+      toast.success('Randevunuz iptal edildi.')
       setToCancel(null)
       state.reload()
     } catch (error) {
@@ -103,9 +125,16 @@ export function MyAppointmentsPage() {
         ))}
       </div>
 
+      {rows && rows.length > 0 ? (
+        <FilterBar count={filtered?.length ?? 0} active={filtersActive} onClear={clearFilters}>
+          <Input label="Ara" type="search" size="lg" placeholder="Doktor, hizmet veya bölüm" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Select label="Durum" size="lg" placeholder="Tümü" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_OPTIONS} />
+        </FilterBar>
+      ) : null}
+
       <Table
         columns={columns}
-        rows={rows}
+        rows={filtered}
         rowKey={(row) => row.id}
         loading={state.loading}
         error={state.error}
@@ -113,6 +142,8 @@ export function MyAppointmentsPage() {
         emptyTitle={tab === 'upcoming' ? 'Yaklaşan randevunuz yok' : 'Geçmiş randevunuz yok'}
         emptyDescription={tab === 'upcoming' ? 'Yeni bir randevu alarak başlayabilirsiniz.' : 'Tamamlanan, iptal edilen veya reddedilen randevularınız burada listelenir.'}
         emptyAction={tab === 'upcoming' ? <LinkButton to="/hasta/randevu-al">Randevu al</LinkButton> : undefined}
+        filtersHideAll={noMatch}
+        onClearFilters={clearFilters}
       />
 
       <Modal

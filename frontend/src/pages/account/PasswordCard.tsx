@@ -5,6 +5,7 @@ import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
+import { useToast } from '../../components/useToast'
 
 // The same limits as registration (the API checks them too).
 const MIN_PASSWORD_LENGTH = 8
@@ -12,17 +13,16 @@ const MAX_PASSWORD_LENGTH = 128
 
 /** "Şifre değiştir": current password, new password and a repeat; the checks that need no server run first. */
 export function PasswordCard() {
+  const toast = useToast()
   const [current, setCurrent] = useState('')
   const [next, setNext] = useState('')
   const [repeat, setRepeat] = useState('')
   const [errors, setErrors] = useState<{ current?: string; next?: string; repeat?: string }>({})
   const [saving, setSaving] = useState(false)
-  const [done, setDone] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    setDone(false)
     setApiError(null)
 
     const found: typeof errors = {}
@@ -40,7 +40,7 @@ export function PasswordCard() {
       setCurrent('')
       setNext('')
       setRepeat('')
-      setDone(true)
+      toast.success('Şifreniz değiştirildi.')
     } catch (caught) {
       setApiError(readableMessage(caught))
     } finally {
@@ -62,7 +62,6 @@ export function PasswordCard() {
           hint={`En az ${MIN_PASSWORD_LENGTH} karakter.`}
         />
         <Input label="Yeni şifre (tekrar)" type="password" autoComplete="new-password" value={repeat} onChange={(event) => setRepeat(event.target.value)} error={errors.repeat} />
-        {done ? <Alert tone="success">Şifreniz değiştirildi.</Alert> : null}
         {apiError ? <Alert tone="error">{apiError}</Alert> : null}
         <Button type="submit" loading={saving}>
           Şifreyi değiştir

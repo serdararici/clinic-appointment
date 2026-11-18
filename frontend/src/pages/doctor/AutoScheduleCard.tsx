@@ -8,6 +8,7 @@ import { Spinner } from '../../components/Spinner'
 import { BOOKING_WINDOW_DAYS } from '../../utils/booking-window'
 import { cx } from '../../utils/cx'
 import { useAsync } from '../../utils/useAsync'
+import { useToast } from '../../components/useToast'
 
 /**
  * The switch of the automatic work schedule. While it is on, the API keeps the next 14 days filled with the default
@@ -15,6 +16,7 @@ import { useAsync } from '../../utils/useAsync'
  */
 export function AutoScheduleCard({ doctorId, onChanged }: { doctorId: string; onChanged: () => void }) {
   const state = useAsync(useCallback((signal: AbortSignal) => getAutoSchedule(doctorId, signal), [doctorId]))
+  const toast = useToast()
   const [changed, setChanged] = useState<boolean | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -28,6 +30,7 @@ export function AutoScheduleCard({ doctorId, onChanged }: { doctorId: string; on
     try {
       const result = await setAutoSchedule(doctorId, !enabled)
       setChanged(result.enabled)
+      toast.success(result.enabled ? 'Otomatik çalışma takvimi açıldı.' : 'Otomatik çalışma takvimi kapatıldı.')
       onChanged()
     } catch (caught) {
       setError(readableMessage(caught))

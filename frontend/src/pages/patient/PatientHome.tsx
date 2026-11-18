@@ -13,6 +13,7 @@ import { formatCurrency, formatLongDate, formatPlace, formatTime } from '../../u
 import { useAsync } from '../../utils/useAsync'
 import { sortUpcoming } from './appointment-utils'
 import { ServiceLabel } from './ServiceLabel'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 function BigAction({ to, title, description }: { to: string; title: string; description: string }) {
   return (
@@ -28,6 +29,7 @@ function BigAction({ to, title, description }: { to: string; title: string; desc
 
 /** The patient's home: the two main actions and the next upcoming appointment. */
 export function PatientHome() {
+  usePageTitle('Ana sayfa')
   const { user } = useAuth()
   const patientId = user?.id ?? ''
   const state = useAsync(useCallback((signal: AbortSignal) => listPatientAppointments(patientId, signal), [patientId]))

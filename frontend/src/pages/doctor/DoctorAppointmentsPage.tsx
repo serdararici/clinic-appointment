@@ -13,6 +13,13 @@ import { cx } from '../../utils/cx'
 import { formatCurrency, formatDateTime, formatPlace } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { isUpcoming, sortPast, sortUpcoming } from '../patient/appointment-utils'
+import { usePageTitle } from '../../utils/usePageTitle'
+import { useToast } from '../../components/useToast'
+import { FilterBar } from '../../components/FilterBar'
+import { Input } from '../../components/Input'
+import { Select } from '../../components/Select'
+import { matchesQuery } from '../../utils/search'
+import { STATUS_OPTIONS } from '../../components/appointment-status'
 
 type Tab = 'upcoming' | 'past'
 
@@ -23,17 +30,34 @@ const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
 
 /** The doctor's own appointments, upcoming and past. A confirmed upcoming one can be cancelled. */
 export function DoctorAppointmentsPage() {
+  usePageTitle('Randevular')
   const { user } = useAuth()
+  const toast = useToast()
   const doctorId = user?.id ?? ''
   const state = useAsync(useCallback((signal: AbortSignal) => listDoctorAppointments(doctorId, signal), [doctorId]))
 
   const [tab, setTab] = useState<Tab>('upcoming')
+  const [search, setSearch] = useState('')
+  const [serviceFilter, setServiceFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
   const [now] = useState(() => Date.now())
   const [toCancel, setToCancel] = useState<AppointmentDetail | null>(null)
   const [cancelling, setCancelling] = useState(false)
   const [cancelError, setCancelError] = useState<string | null>(null)
 
   const rows = state.data ? (tab === 'upcoming' ? sortUpcoming(state.data, now) : sortPast(state.data, now)) : undefined
+
+  const filtered = rows?.filter(
+    (row) => matchesQuery(search, [row.patientName]) && (!serviceFilter || row.serviceName === serviceFilter) && (!statusFilter || row.status === statusFilter),
+  )
+  const serviceNames = [...new Set((state.data ?? []).map((row) => row.serviceName))].sort((a, b) => a.localeCompare(b, 'tr-TR'))
+  const filtersActive = Boolean(search.trim() || serviceFilter || statusFilter)
+  const noMatch = (rows?.length ?? 0) > 0 && filtered?.length === 0
+  const clearFilters = () => {
+    setSearch('')
+    setServiceFilter('')
+    setStatusFilter('')
+  }
 
   const closeModal = () => {
     if (cancelling) return
@@ -47,6 +71,7 @@ export function DoctorAppointmentsPage() {
     setCancelError(null)
     try {
       await cancelAppointment(toCancel.id)
+      toast.success('Randevu iptal edildi. Hasta randevuyu “İptal edildi” durumunda görecek.')
       setToCancel(null)
       state.reload()
     } catch (error) {
@@ -99,15 +124,31 @@ export function DoctorAppointmentsPage() {
         ))}
       </div>
 
+      {rows && rows.length > 0 ? (
+        <FilterBar count={filtered?.length ?? 0} active={filtersActive} onClear={clearFilters}>
+          <Input label="Hasta ara" type="search" placeholder="Hasta adı" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Select
+            label="Hizmet"
+            placeholder="Tümü"
+            value={serviceFilter}
+            onChange={(event) => setServiceFilter(event.target.value)}
+            options={serviceNames.map((name) => ({ value: name, label: name }))}
+          />
+          <Select label="Durum" placeholder="Tümü" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} options={STATUS_OPTIONS} />
+        </FilterBar>
+      ) : null}
+
       <Table
         columns={columns}
-        rows={rows}
+        rows={filtered}
         rowKey={(row) => row.id}
         loading={state.loading}
         error={state.error}
         onRetry={state.reload}
         emptyTitle={tab === 'upcoming' ? 'Yaklaşan randevu yok' : 'Geçmiş randevu yok'}
         emptyDescription={tab === 'upcoming' ? 'Yeni randevular oluştuğunda burada listelenir.' : 'Tamamlanan, iptal edilen veya reddedilen randevular burada listelenir.'}
+        filtersHideAll={noMatch}
+        onClearFilters={clearFilters}
       />
 
       <Modal

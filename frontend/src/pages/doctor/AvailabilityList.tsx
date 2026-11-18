@@ -8,6 +8,7 @@ import { Modal } from '../../components/Modal'
 import { Table, type Column } from '../../components/Table'
 import { formatDate, formatLongDate, formatTime } from '../../utils/format'
 import { slotCount } from './availability-utils'
+import { useToast } from '../../components/useToast'
 
 interface AvailabilityListProps {
   doctorId: string
@@ -23,6 +24,7 @@ const rangeMinutes = (row: Availability) => (new Date(row.endUtc).getTime() - ne
 
 /** The doctor's upcoming availability ranges, each with its number of slots and a delete button. */
 export function AvailabilityList({ doctorId, rows, loading, error, slotDurationMinutes, onReload }: AvailabilityListProps) {
+  const toast = useToast()
   const [toDelete, setToDelete] = useState<Availability | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
@@ -39,6 +41,7 @@ export function AvailabilityList({ doctorId, rows, loading, error, slotDurationM
     setDeleteError(null)
     try {
       await deleteAvailability(doctorId, toDelete.id)
+      toast.success('Uygunluk silindi.')
       setToDelete(null)
       onReload()
     } catch (caught) {

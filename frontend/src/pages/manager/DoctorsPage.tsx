@@ -10,6 +10,12 @@ import { ConfirmDialog } from '../../components/ConfirmDialog'
 import { Table, type Column } from '../../components/Table'
 import { useAsync } from '../../utils/useAsync'
 import { DoctorFormModal } from './DoctorFormModal'
+import { usePageTitle } from '../../utils/usePageTitle'
+import { useToast } from '../../components/useToast'
+import { FilterBar } from '../../components/FilterBar'
+import { Input } from '../../components/Input'
+import { Select } from '../../components/Select'
+import { matchesQuery } from '../../utils/search'
 
 interface DoctorsData {
   doctors: StaffMember[]
@@ -20,7 +26,9 @@ type Dialog = { kind: 'form'; doctor: StaffMember | null } | { kind: 'deactivate
 
 /** The branch's doctors: add, edit, deactivate and activate. Availability is not shown: the doctor manages it. */
 export function DoctorsPage() {
+  usePageTitle('Doktorlar')
   const { user } = useAuth()
+  const toast = useToast()
   const branchId = user?.branchId ?? ''
 
   const state = useAsync(
@@ -34,8 +42,25 @@ export function DoctorsPage() {
     ),
   )
   const [dialog, setDialog] = useState<Dialog | null>(null)
+  const [search, setSearch] = useState('')
+  const [departmentFilter, setDepartmentFilter] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
 
   const close = () => setDialog(null)
+  const all = state.data?.doctors
+  const doctors = all?.filter(
+    (doctor) =>
+      matchesQuery(search, [doctor.fullName, doctor.email]) &&
+      (!departmentFilter || doctor.departmentId === departmentFilter) &&
+      (!statusFilter || (statusFilter === 'active') === doctor.isActive),
+  )
+  const filtersActive = Boolean(search.trim() || departmentFilter || statusFilter)
+  const noMatch = (all?.length ?? 0) > 0 && doctors?.length === 0
+  const clearFilters = () => {
+    setSearch('')
+    setDepartmentFilter('')
+    setStatusFilter('')
+  }
   const departmentName = (id: string) => state.data?.departments.find((department) => department.id === id)?.name ?? '-'
 
   const columns: Column<StaffMember>[] = [
@@ -72,15 +97,40 @@ export function DoctorsPage() {
 
       {!branchId ? <Alert tone="error">Hesabınıza bağlı bir şube bulunamadı.</Alert> : null}
 
+      {all && all.length > 0 ? (
+        <FilterBar count={doctors?.length ?? 0} active={filtersActive} onClear={clearFilters}>
+          <Input label="Ara" type="search" placeholder="Ad veya e-posta" value={search} onChange={(event) => setSearch(event.target.value)} />
+          <Select
+            label="Bölüm"
+            placeholder="Tümü"
+            value={departmentFilter}
+            onChange={(event) => setDepartmentFilter(event.target.value)}
+            options={(state.data?.departments ?? []).map((department) => ({ value: department.id, label: department.name }))}
+          />
+          <Select
+            label="Durum"
+            placeholder="Tümü"
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
+            options={[
+              { value: 'active', label: 'Aktif' },
+              { value: 'inactive', label: 'Pasif' },
+            ]}
+          />
+        </FilterBar>
+      ) : null}
+
       <Table
         columns={columns}
-        rows={state.data?.doctors}
+        rows={doctors}
         rowKey={(row) => row.id}
         loading={state.loading}
         error={state.error}
         onRetry={state.reload}
         emptyTitle="Henüz doktor yok"
         emptyDescription="Önce bir bölüm oluşturun, sonra “Doktor ekle” ile doktoru tanımlayın."
+        filtersHideAll={noMatch}
+        onClearFilters={clearFilters}
       />
 
       <DoctorFormModal
@@ -89,6 +139,7 @@ export function DoctorsPage() {
         doctor={dialog?.kind === 'form' ? dialog.doctor : null}
         onClose={close}
         onSaved={() => {
+          toast.success(dialog?.kind === 'form' && dialog.doctor ? 'Doktor güncellendi.' : 'Doktor eklendi.')
           close()
           state.reload()
         }}
@@ -102,6 +153,7 @@ export function DoctorsPage() {
         onConfirm={async () => {
           if (dialog?.kind !== 'deactivate') return
           await deactivateStaff(dialog.doctor.id)
+          toast.success('Doktor pasifleştirildi.')
           state.reload()
         }}
       >
@@ -120,6 +172,7 @@ export function DoctorsPage() {
         onConfirm={async () => {
           if (dialog?.kind !== 'activate') return
           await activateStaff(dialog.doctor.id)
+          toast.success('Doktor aktifleştirildi.')
           state.reload()
         }}
       >

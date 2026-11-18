@@ -13,6 +13,8 @@ import { useAsync } from '../../utils/useAsync'
 import { summarizeHours } from './admin-utils'
 import { NameFormModal } from './NameFormModal'
 import { WorkingHoursModal } from './WorkingHoursModal'
+import { usePageTitle } from '../../utils/usePageTitle'
+import { useToast } from '../../components/useToast'
 
 interface BranchRow {
   branch: BranchSummary
@@ -34,6 +36,8 @@ type Dialog =
 
 /** Organizations with their branches (address, departments, working hours): add, edit and delete both. */
 export function OrganizationsPage() {
+  const toast = useToast()
+  usePageTitle('Kurumlar')
   const state = useAsync(
     useCallback(async (signal: AbortSignal): Promise<OrganizationRow[]> => {
       const [organizations, branches] = await Promise.all([listOrganizations(signal), listBranches(signal)])
@@ -50,10 +54,11 @@ export function OrganizationsPage() {
   const [dialog, setDialog] = useState<Dialog | null>(null)
 
   const close = () => setDialog(null)
-  const saved = async (action: () => Promise<unknown>) => {
+  const saved = async (action: () => Promise<unknown>, message: string) => {
     await action()
     close()
     state.reload()
+    toast.success(message)
   }
 
   const branchColumns = (organization: Organization): Column<BranchRow>[] => [
@@ -142,7 +147,10 @@ export function OrganizationsPage() {
         initialName={dialog?.kind === 'organization' ? (dialog.organization?.name ?? '') : ''}
         onClose={close}
         onSubmit={(name) =>
-          saved(() => (dialog?.kind === 'organization' && dialog.organization ? updateOrganization(dialog.organization.id, name) : createOrganization(name)))
+          saved(
+            () => (dialog?.kind === 'organization' && dialog.organization ? updateOrganization(dialog.organization.id, name) : createOrganization(name)),
+            dialog?.kind === 'organization' && dialog.organization ? 'Kurum güncellendi.' : 'Kurum eklendi.',
+          )
         }
       />
       <NameFormModal
@@ -156,10 +164,13 @@ export function OrganizationsPage() {
         initialAddress={dialog?.kind === 'branch' ? (dialog.branch?.address ?? '') : ''}
         onClose={close}
         onSubmit={(name, address) =>
-          saved(() => {
-            if (dialog?.kind !== 'branch') return Promise.resolve()
-            return dialog.branch ? updateBranch(dialog.branch.id, name, address) : createBranch(dialog.organization.id, name, address)
-          })
+          saved(
+            () => {
+              if (dialog?.kind !== 'branch') return Promise.resolve()
+              return dialog.branch ? updateBranch(dialog.branch.id, name, address) : createBranch(dialog.organization.id, name, address)
+            },
+            dialog?.kind === 'branch' && dialog.branch ? 'Şube güncellendi.' : 'Şube eklendi.',
+          )
         }
       />
       <WorkingHoursModal
@@ -178,6 +189,7 @@ export function OrganizationsPage() {
         onConfirm={async () => {
           if (dialog?.kind !== 'delete-organization') return
           await deleteOrganization(dialog.organization.id)
+          toast.success('Kurum silindi.')
           state.reload()
         }}
       >
@@ -196,6 +208,7 @@ export function OrganizationsPage() {
         onConfirm={async () => {
           if (dialog?.kind !== 'delete-branch') return
           await deleteBranch(dialog.branch.id)
+          toast.success('Şube silindi.')
           state.reload()
         }}
       >

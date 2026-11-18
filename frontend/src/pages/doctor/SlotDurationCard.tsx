@@ -6,6 +6,7 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Select } from '../../components/Select'
 import { SLOT_DURATIONS } from './availability-utils'
+import { useToast } from '../../components/useToast'
 
 interface SlotDurationCardProps {
   doctorId: string
@@ -19,18 +20,17 @@ interface SlotDurationCardProps {
  * a change applies to every availability range at once; appointments that already exist keep their own times.
  */
 export function SlotDurationCard({ doctorId, current, onSaved }: SlotDurationCardProps) {
+  const toast = useToast()
   const [value, setValue] = useState(String(current))
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
 
   const save = async () => {
     setSaving(true)
     setError(null)
-    setSaved(false)
     try {
       await setSlotDuration(doctorId, Number(value))
-      setSaved(true)
+      toast.success('Randevu süresi kaydedildi.')
       onSaved(Number(value))
     } catch (caught) {
       setError(readableMessage(caught))
@@ -52,7 +52,6 @@ export function SlotDurationCard({ doctorId, current, onSaved }: SlotDurationCar
               value={value}
               onChange={(event) => {
                 setValue(event.target.value)
-                setSaved(false)
               }}
               options={SLOT_DURATIONS.map((minutes) => ({ value: String(minutes), label: `${minutes} dakika` }))}
             />
@@ -65,7 +64,6 @@ export function SlotDurationCard({ doctorId, current, onSaved }: SlotDurationCar
           Yeni süre, tüm uygunluk aralıklarınızdaki randevu saatlerine hemen uygulanır. Mevcut randevular değişmez; yeni saat düzenine
           oturmasalar bile kendi saatlerinde geçerli kalır ve o saatler dolu görünür.
         </p>
-        {saved ? <Alert tone="success">Randevu süresi kaydedildi.</Alert> : null}
         {error ? <Alert tone="error">{error}</Alert> : null}
       </div>
     </Card>

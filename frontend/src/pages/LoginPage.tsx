@@ -8,6 +8,7 @@ import { Card } from '../components/Card'
 import { Input } from '../components/Input'
 import { AuthLayout } from '../layout/AuthLayout'
 import { DemoAccounts } from './DemoAccounts'
+import { usePageTitle } from '../utils/usePageTitle'
 
 // What other pages pass to the login page through the router state.
 interface LoginLocationState {
@@ -16,6 +17,7 @@ interface LoginLocationState {
 }
 
 export function LoginPage() {
+  usePageTitle('Giriş')
   const { login } = useAuth()
   const location = useLocation()
   const notice = (location.state as LoginLocationState | null)?.notice

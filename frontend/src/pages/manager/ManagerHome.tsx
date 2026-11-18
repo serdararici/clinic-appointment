@@ -8,6 +8,7 @@ import { Card } from '../../components/Card'
 import { LinkButton } from '../../components/LinkButton'
 import { Spinner } from '../../components/Spinner'
 import { useAsync } from '../../utils/useAsync'
+import { usePageTitle } from '../../utils/usePageTitle'
 
 interface Summary {
   organizationName: string
@@ -31,6 +32,7 @@ function Stat({ label, value }: { label: string; value: string | number }) {
  * management pages. There is no endpoint that lists a branch's appointments, so no appointment figures are shown.
  */
 export function ManagerHome() {
+  usePageTitle('Ana sayfa')
   const { user } = useAuth()
   const branchId = user?.branchId ?? ''
 

@@ -8,3 +8,9 @@ export const STATUS_PRESENTATION: Record<AppointmentStatus, { label: string; ton
   Rejected: { label: 'Reddedildi', tone: 'red' },
   Cancelled: { label: 'İptal edildi', tone: 'slate' },
 }
+
+/** The statuses as select options ("Onay bekliyor", "Onaylandı", ...), for the appointment filters. */
+export const STATUS_OPTIONS: ReadonlyArray<{ value: AppointmentStatus; label: string }> = (Object.keys(STATUS_PRESENTATION) as AppointmentStatus[]).map((value) => ({
+  value,
+  label: STATUS_PRESENTATION[value].label,
+}))

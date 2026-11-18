@@ -7,20 +7,20 @@ import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { istanbulToUtcIso, todayIsoDate } from '../../utils/format'
 import { minutesOf } from './availability-utils'
+import { useToast } from '../../components/useToast'
 
 /** Adds one availability range on one day. Times are Turkey time and are sent to the API as UTC. */
 export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string; onAdded: () => void }) {
+  const toast = useToast()
   const [date, setDate] = useState('')
   const [start, setStart] = useState('')
   const [end, setEnd] = useState('')
   const [errors, setErrors] = useState<{ date?: string; start?: string; end?: string }>({})
   const [saving, setSaving] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
-  const [added, setAdded] = useState(false)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    setAdded(false)
     setApiError(null)
 
     const found: typeof errors = {}
@@ -38,7 +38,7 @@ export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string
     setSaving(true)
     try {
       await addAvailability(doctorId, { startUtc: istanbulToUtcIso(date, start), endUtc: istanbulToUtcIso(date, end) })
-      setAdded(true)
+      toast.success('Uygunluk aralığı eklendi.')
       setStart('')
       setEnd('')
       onAdded()
@@ -58,7 +58,6 @@ export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string
           <Input label="Bitiş saati" type="time" value={end} onChange={(e) => setEnd(e.target.value)} error={errors.end} />
         </div>
         <p className="text-sm text-slate-600">Saatler Türkiye saatidir.</p>
-        {added ? <Alert tone="success">Uygunluk aralığı eklendi.</Alert> : null}
         {apiError ? <Alert tone="error">{apiError}</Alert> : null}
         <Button type="submit" loading={saving}>
           Aralık ekle

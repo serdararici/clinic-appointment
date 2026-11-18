@@ -3,12 +3,14 @@ import { ROLE_LABELS } from '../auth/roles'
 import { useAuth } from '../auth/useAuth'
 import { Badge } from '../components/Badge'
 import { Card } from '../components/Card'
+import { usePageTitle } from '../utils/usePageTitle'
 
 // The home pages of the roles. They are placeholders for now: they greet the user with what the login
 // already knows (name, role) and say plainly that the real screens are still to come. No made-up data.
 
 function HomePlaceholder({ heading, children }: { heading: string; children: ReactNode }) {
   const { user } = useAuth()
+  usePageTitle('Ana sayfa')
 
   return (
     <div className="space-y-4">

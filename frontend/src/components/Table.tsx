@@ -30,6 +30,9 @@ interface TableProps<T> {
   emptyTitle?: string
   emptyDescription?: string
   emptyAction?: ReactNode
+  /** True when there are rows but the filters hide all of them: a different empty state than "no data at all". */
+  filtersHideAll?: boolean
+  onClearFilters?: () => void
 }
 
 /**
@@ -46,6 +49,8 @@ export function Table<T>({
   emptyTitle = 'Kayıt bulunamadı',
   emptyDescription,
   emptyAction,
+  filtersHideAll = false,
+  onClearFilters,
 }: TableProps<T>) {
   const frame = 'overflow-hidden rounded-lg border border-slate-200 bg-white'
 
@@ -71,6 +76,22 @@ export function Table<T>({
   }
 
   if (!rows || rows.length === 0) {
+    if (filtersHideAll && onClearFilters) {
+      return (
+        <div className={frame}>
+          <EmptyState
+            title="Filtreyle eşleşen kayıt yok"
+            description="Aramanızı veya filtreleri değiştirin."
+            action={
+              <Button variant="secondary" onClick={onClearFilters}>
+                Filtreleri temizle
+              </Button>
+            }
+          />
+        </div>
+      )
+    }
+
     return (
       <div className={frame}>
         <EmptyState title={emptyTitle} description={emptyDescription} action={emptyAction} />
