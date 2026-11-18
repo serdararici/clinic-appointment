@@ -1,35 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { GuestOnly } from './auth/GuestOnly'
+import { RequireRole } from './auth/RequireRole'
+import { homeFor } from './auth/roles'
+import { useAuth } from './auth/useAuth'
+import { Layout } from './layout/Layout'
+import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
+import { RegisterPage } from './pages/RegisterPage'
+import { AdminHome, DoctorHome, ManagerHome, PatientHome, TechnicianHome } from './pages/RoleHomes'
 
-function App() {
-  const [count, setCount] = useState(0)
-
-  return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+// "/" has no page of its own: it sends people to where they belong.
+function RootRedirect() {
+  const { user } = useAuth()
+  return <Navigate to={user ? homeFor(user.role) : '/giris'} replace />
 }
 
-export default App
+/**
+ * The routes. Paths are Turkish because they show in the address bar:
+ * /giris (login), /kayit (register), /hasta, /doktor, /personel, /yonetici, /sistem (home of each role).
+ * <RequireRole> guards each role's pages, <GuestOnly> keeps logged-in users off the login and register pages.
+ */
+export default function App() {
+  return (
+    <Routes>
+      <Route element={<Layout />}>
+        <Route index element={<RootRedirect />} />
+
+        <Route element={<GuestOnly />}>
+          <Route path="giris" element={<LoginPage />} />
+          <Route path="kayit" element={<RegisterPage />} />
+        </Route>
+
+        <Route element={<RequireRole roles={['Patient']} />}>
+          <Route path="hasta" element={<PatientHome />} />
+        </Route>
+        <Route element={<RequireRole roles={['Doctor']} />}>
+          <Route path="doktor" element={<DoctorHome />} />
+        </Route>
+        <Route element={<RequireRole roles={['HealthTechnician']} />}>
+          <Route path="personel" element={<TechnicianHome />} />
+        </Route>
+        <Route element={<RequireRole roles={['ClinicManager']} />}>
+          <Route path="yonetici" element={<ManagerHome />} />
+        </Route>
+        <Route element={<RequireRole roles={['SystemAdmin']} />}>
+          <Route path="sistem" element={<AdminHome />} />
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Route>
+    </Routes>
+  )
+}

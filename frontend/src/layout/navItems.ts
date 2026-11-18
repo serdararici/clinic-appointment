@@ -1,0 +1,15 @@
+import type { Role } from '../api/types'
+import { homeFor } from '../auth/roles'
+
+export interface NavItem {
+  to: string
+  label: string
+}
+
+/**
+ * The navbar links of each role. For now every role has just its home page; as screens are added
+ * (appointments, schedule, management lists...) they get listed here and nowhere else.
+ */
+export function navItemsFor(role: Role): NavItem[] {
+  return [{ to: homeFor(role), label: 'Ana sayfa' }]
+}

@@ -271,6 +271,30 @@ startup if it does not exist.
 - Appointment approval mechanism (pending -> confirmed/rejected).
 - At least three user roles: Patient, Doctor/Staff, Clinic/Hospital Manager.
 
+## Frontend design rules
+
+Applies to everything in `/frontend`. These rules take precedence over the general guidance of the
+frontend-design skill: use that skill for craft (spacing, states, accessibility), not to change the direction.
+Code, identifiers and comments are English; **all user-facing text is Turkish**.
+
+- **No generic AI aesthetics**: no purple or indigo gradients, no glow or floating effects, no glassmorphism,
+  no emoji, no stock illustrations, no placeholder or invented data (show real API data or an honest empty state).
+- **Palette**: primary deep slate `#0f172a` (slate-900) and teal `#0f766e` (teal-700), neutral background `#f8fafc`
+  (slate-50), crisp borders (`border-slate-200`). Status colors are used consistently everywhere: **pending amber,
+  confirmed green, rejected or cancelled red or slate**.
+- **Typography**: one clean font (Inter or the system font), high contrast, hierarchy through font weight and size
+  rather than bright colors, tabular numbers (`tabular-nums`) for times and prices.
+- **Layout**: staff and admin screens (doctor, manager, admin) are dense and efficient like Linear or Stripe: clean
+  tables, structured detail panels. The patient booking flow is calmer and roomier: a step-by-step flow with large
+  touch targets (at least 44px).
+- **Slot states**: available is neutral gray, booked is red with the text "Dolu" and struck through, selected is
+  green with a check mark. Never rely on color alone.
+- **States**: every list has loading, empty and error states in Turkish. Tables turn into card lists on phone width.
+- **Formats**: tr-TR dates and 24-hour times in Europe/Istanbul, prices as tr-TR currency with the ₺ symbol.
+- **Light theme only**, no decorative animation (subtle transitions only; a loading spinner is allowed).
+- **Libraries**: Tailwind CSS and React Router only. No component kits (no shadcn, MUI and the like); the shared
+  building blocks are our own small components in `frontend/src/components`.
+
 ## Testing
 
 - **xUnit** only. Use plain `Assert.*` calls — do **not** add FluentAssertions
