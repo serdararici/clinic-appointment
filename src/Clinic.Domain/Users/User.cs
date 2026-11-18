@@ -66,6 +66,20 @@ public abstract class User : Entity
         FullName = fullName.Trim();
     }
 
+    public const int MaxPhoneNumberLength = 30;
+
+    /// <summary>Changes only the phone number (blank clears it); at most <see cref="MaxPhoneNumberLength"/> characters.</summary>
+    public void ChangePhoneNumber(string? phoneNumber)
+    {
+        var trimmed = phoneNumber?.Trim() ?? string.Empty;
+        if (trimmed.Length > MaxPhoneNumberLength)
+        {
+            throw new ArgumentException($"The phone number cannot be longer than {MaxPhoneNumberLength} characters.", nameof(phoneNumber));
+        }
+
+        PhoneNumber = trimmed;
+    }
+
     public void UpdateContactInfo(string email, string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(email))

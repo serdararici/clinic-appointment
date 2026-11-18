@@ -8,6 +8,8 @@ export interface AuthContextValue {
   login: (email: string, password: string) => Promise<SessionUser>
   /** Clears the session. */
   logout: () => void
+  /** Shows a new name everywhere (navbar, greetings) after the user changed it in "Hesabım". */
+  updateName: (name: string) => void
 }
 
 // Kept apart from the provider component so each file exports either a component or plain values

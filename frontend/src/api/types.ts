@@ -281,3 +281,27 @@ export interface UpdateManagerRequest {
   email: string
   phoneNumber?: string
 }
+
+// ---- My account ----
+
+/** The logged-in user's own account (GET /api/account). The insurance number is set for patients only. */
+export interface Account {
+  id: string
+  fullName: string
+  email: string
+  phoneNumber: string
+  role: Role
+  insuranceNumber: string | null
+}
+
+/** The email is read-only. The insurance number only applies to patients; blank removes it. */
+export interface UpdateAccountRequest {
+  fullName: string
+  phoneNumber: string
+  insuranceNumber?: string
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string
+  newPassword: string
+}

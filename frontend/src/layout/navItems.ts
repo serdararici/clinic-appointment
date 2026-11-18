@@ -11,6 +11,10 @@ export interface NavItem {
  * (appointments, schedule, management lists...) they get listed here and nowhere else.
  */
 export function navItemsFor(role: Role): NavItem[] {
+  return [...roleItems(role), { to: '/hesabim', label: 'Hesabım' }]
+}
+
+function roleItems(role: Role): NavItem[] {
   const home = { to: homeFor(role), label: 'Ana sayfa' }
   if (role === 'Patient') {
     return [home, { to: '/hasta/randevu-al', label: 'Randevu al' }, { to: '/hasta/randevularim', label: 'Randevularım' }]

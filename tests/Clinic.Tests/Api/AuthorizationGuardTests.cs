@@ -112,6 +112,11 @@ public class AuthorizationGuardTests
         { typeof(ManagersController), nameof(ManagersController.Deactivate), "SystemAdmin" },
         { typeof(ManagersController), nameof(ManagersController.Activate), "SystemAdmin" },
 
+        // Every logged-in role: the own account
+        { typeof(AccountController), nameof(AccountController.Get), "ClinicManager,Doctor,HealthTechnician,Patient,SystemAdmin" },
+        { typeof(AccountController), nameof(AccountController.Update), "ClinicManager,Doctor,HealthTechnician,Patient,SystemAdmin" },
+        { typeof(AccountController), nameof(AccountController.ChangePassword), "ClinicManager,Doctor,HealthTechnician,Patient,SystemAdmin" },
+
         // Patient
         { typeof(AppointmentsController), nameof(AppointmentsController.Create), "Patient" },
         { typeof(ServicesController), nameof(ServicesController.PreviewPrice), "Patient" },

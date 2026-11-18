@@ -4,7 +4,7 @@ import { loginRequest } from '../api/auth'
 import { setUnauthorizedHandler } from '../api/client'
 import { AuthContext, type AuthContextValue } from './auth-context'
 import { decodeToken, isExpired, type SessionUser } from './jwt'
-import { clearToken, getToken, setToken } from './session'
+import { clearDisplayName, clearToken, getDisplayName, getToken, setDisplayName, setToken } from './session'
 
 const EXPIRED_NOTICE = 'Oturumunuz sona erdi. Lütfen yeniden giriş yapın.'
 
@@ -18,7 +18,8 @@ function restoreSession(): SessionUser | null {
     clearToken()
     return null
   }
-  return user
+  // A name changed in "Hesabım" wins over the one in the token.
+  return { ...user, name: getDisplayName(user.id) ?? user.name }
 }
 
 /**
@@ -31,6 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     clearToken()
+    clearDisplayName()
     setUser(null)
   }, [])
 
@@ -41,8 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!decoded) throw new Error('The server returned a token that could not be read.')
 
     setToken(response.token)
+    clearDisplayName() // the new token already carries the current name
     setUser(decoded)
     return decoded
+  }, [])
+
+  const updateName = useCallback((name: string) => {
+    setUser((current) => {
+      if (!current) return current
+      setDisplayName(current.id, name)
+      return { ...current, name }
+    })
   }, [])
 
   // Session ended on its own (expiry, or the API rejected the token): log out and explain on the login page.
@@ -65,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer)
   }, [expiresAt, endSession])
 
-  const value = useMemo<AuthContextValue>(() => ({ user, login, logout }), [user, login, logout])
+  const value = useMemo<AuthContextValue>(() => ({ user, login, logout, updateName }), [user, login, logout, updateName])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

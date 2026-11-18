@@ -14,6 +14,9 @@ public static class AppRoles
     public const string ClinicManager = RoleNames.ClinicManager;
     public const string SystemAdmin = RoleNames.SystemAdmin;
 
+    /// <summary>Every logged-in role (for endpoints that belong to the user themselves, such as "my account").</summary>
+    public const string AnyRole = Patient + "," + Doctor + "," + HealthTechnician + "," + ClinicManager + "," + SystemAdmin;
+
     // A comma-separated list means "any of these roles". A system administrator may use every management endpoint.
     public const string ClinicManagerOrAdmin = ClinicManager + "," + SystemAdmin;
     public const string DoctorOrManagerOrAdmin = Doctor + "," + ClinicManager + "," + SystemAdmin;

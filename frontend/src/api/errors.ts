@@ -55,6 +55,9 @@ const KNOWN_MESSAGES: ReadonlyArray<readonly [RegExp, (match: RegExpMatchArray) 
   [/organization name is required/i, () => 'Kurum adı zorunludur.'],
   [/branch name is required/i, () => 'Şube adı zorunludur.'],
   [/branch address is required/i, () => 'Şube adresi zorunludur.'],
+  [/current password is incorrect/i, () => 'Mevcut şifreniz hatalı.'],
+  [/phone number cannot be longer than (\d+)/i, (m) => `Telefon numarası en fazla ${m[1]} karakter olabilir.`],
+  [/insurance number cannot be longer than (\d+)/i, (m) => `Sigorta numarası en fazla ${m[1]} karakter olabilir.`],
   // The booking-window message is already Turkish (written for the patient), so it is shown as it is.
   [/^Randevu yalnızca bugünden itibaren.*$/, (m) => m[0]],
   [/authentication is required/i, () => 'Devam etmek için giriş yapmalısınız.'],

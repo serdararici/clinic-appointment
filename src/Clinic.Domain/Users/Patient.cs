@@ -19,6 +19,20 @@ public class Patient : User
     {
     }
 
+    public const int MaxInsuranceNumberLength = 50;
+
+    /// <summary>Sets the insurance number; blank removes it (the patient then pays the full price).</summary>
+    public void ChangeInsuranceNumber(string? insuranceNumber)
+    {
+        var trimmed = insuranceNumber?.Trim();
+        if (trimmed is { Length: > MaxInsuranceNumberLength })
+        {
+            throw new ArgumentException($"The insurance number cannot be longer than {MaxInsuranceNumberLength} characters.", nameof(insuranceNumber));
+        }
+
+        InsuranceNumber = string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
+
     public override string RoleName => "Patient";
 
     public bool HasInsurance => !string.IsNullOrWhiteSpace(InsuranceNumber);

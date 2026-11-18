@@ -2,8 +2,10 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { GuestOnly } from './auth/GuestOnly'
 import { RequireRole } from './auth/RequireRole'
 import { homeFor } from './auth/roles'
+import { ROLES } from './api/types'
 import { useAuth } from './auth/useAuth'
 import { Layout } from './layout/Layout'
+import { AccountPage } from './pages/account/AccountPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -41,6 +43,10 @@ export default function App() {
         <Route element={<GuestOnly />}>
           <Route path="giris" element={<LoginPage />} />
           <Route path="kayit" element={<RegisterPage />} />
+        </Route>
+
+        <Route element={<RequireRole roles={ROLES} />}>
+          <Route path="hesabim" element={<AccountPage />} />
         </Route>
 
         <Route element={<RequireRole roles={['Patient']} />}>
