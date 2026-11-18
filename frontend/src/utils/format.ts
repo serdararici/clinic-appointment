@@ -33,3 +33,10 @@ export function formatDateTime(iso: string): string {
 export function formatCurrency(amount: number): string {
   return currencyFormat.format(amount)
 }
+
+const isoDateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' })
+
+/** Today's date in Turkey as "YYYY-MM-DD", the form of a native date input and of the slot endpoints. */
+export function todayIsoDate(): string {
+  return isoDateFormat.format(new Date())
+}

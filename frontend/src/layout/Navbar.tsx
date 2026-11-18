@@ -13,6 +13,7 @@ function NavItemLink({ to, label, onNavigate }: { to: string; label: string; onN
   return (
     <NavLink
       to={to}
+      end
       onClick={onNavigate}
       className={({ isActive }) =>
         cx(

@@ -25,10 +25,6 @@ function HomePlaceholder({ heading, children }: { heading: string; children: Rea
   )
 }
 
-export function PatientHome() {
-  return <HomePlaceholder heading="Hasta paneli">Randevu alma ve randevularınızı görüntüleme ekranları burada yer alacak.</HomePlaceholder>
-}
-
 export function DoctorHome() {
   return <HomePlaceholder heading="Doktor paneli">Çalışma saatleriniz ve randevularınız burada yönetilecek.</HomePlaceholder>
 }

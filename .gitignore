@@ -480,3 +480,9 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Last step report written by Claude Code
+last-report.md
+
+# My notes
+notes.md
