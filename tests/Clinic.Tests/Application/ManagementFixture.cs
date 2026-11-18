@@ -117,7 +117,7 @@ internal class ManagementFixture
 
     public Doctor AddDoctor(Department department, string email = "doctor@example.com", string name = "Dr. Test", int slotMinutes = 30)
     {
-        var doctor = new Doctor(name, email, "+90-500-000-0001", department, "İç Hastalıkları", slotMinutes);
+        var doctor = new Doctor(name, email, "+90-500-000-0001", department, slotMinutes);
         Staff.Items.Add(doctor);
         return doctor;
     }

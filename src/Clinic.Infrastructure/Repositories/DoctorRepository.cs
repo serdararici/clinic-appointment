@@ -14,9 +14,6 @@ public class DoctorRepository(ClinicDbContext dbContext)
             .Include(d => d.ServicesProvided)
             .FirstOrDefaultAsync(d => d.Id == id, cancellationToken);
 
-    public async Task<IReadOnlyList<Doctor>> GetBySpecialtyAsync(string specialty, CancellationToken cancellationToken = default) =>
-        await DbSet.Where(d => d.Specialty == specialty).ToListAsync(cancellationToken);
-
     public void AddAvailability(DoctorAvailability slot) => DbContext.Set<DoctorAvailability>().Add(slot);
 
     public void RemoveAvailability(DoctorAvailability slot) => DbContext.Set<DoctorAvailability>().Remove(slot);

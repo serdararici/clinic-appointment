@@ -28,7 +28,6 @@ public class StaffService(
             request.Email,
             request.PhoneNumber ?? string.Empty,
             department,
-            request.Specialty,
             request.SlotDurationMinutes ?? StaffMember.DefaultSlotDurationMinutes);
 
         await staffRepository.AddAsync(doctor, cancellationToken);
@@ -57,7 +56,7 @@ public class StaffService(
 
     public async Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, CancellationToken cancellationToken = default)
     {
-        _ = await LoadDepartmentAsync(departmentId, cancellationToken);
+        var department = await LoadDepartmentAsync(departmentId, cancellationToken);
 
         return (await staffRepository.ListAsync(null, departmentId, cancellationToken))
             .OfType<Doctor>()
@@ -65,7 +64,7 @@ public class StaffService(
             .Select(d => new DoctorSummaryDto(
                 d.Id,
                 d.FullName,
-                d.Specialty,
+                department.Name,
                 d.SlotDurationMinutes,
                 d.ServicesProvided.OrderBy(s => s.Name).Select(Management.ServiceDto.From).ToList()))
             .ToList();
@@ -121,9 +120,6 @@ public class StaffService(
         // The role-specific field depends on the concrete type.
         switch (staff)
         {
-            case Doctor doctor:
-                doctor.ChangeSpecialty(request.Specialty ?? throw new ArgumentException("Specialty is required for a doctor.", nameof(request)));
-                break;
             case HealthTechnician technician:
                 technician.ChangeTitle(request.Title ?? throw new ArgumentException("Title is required for a technician.", nameof(request)));
                 break;
@@ -238,7 +234,6 @@ public class StaffService(
         staff.DepartmentId,
         staff.SlotDurationMinutes,
         staff.IsActive,
-        (staff as Doctor)?.Specialty,
         (staff as HealthTechnician)?.Title,
         staff.ServicesProvided.Select(s => s.Id).ToList());
 }

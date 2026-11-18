@@ -67,7 +67,7 @@ public class AppointmentServiceTests
 
     private Doctor NewDoctor(int slotDurationMinutes, string email = "doctor@example.com")
     {
-        var doctor = new Doctor("Dr. Test", email, "+90-500-000-0001", _department, "İç Hastalıkları", slotDurationMinutes);
+        var doctor = new Doctor("Dr. Test", email, "+90-500-000-0001", _department, slotDurationMinutes);
         doctor.AddService(_checkUp);
         return doctor;
     }

@@ -39,7 +39,7 @@ public class SlotServiceTests
         _checkUp = department.AddService("Genel Muayene", ServiceType.Examination, TimeSpan.FromMinutes(30), 450m);
         _xRay = _clinic.AddDepartment("Radyoloji").AddService("Röntgen", ServiceType.Diagnostic, TimeSpan.FromMinutes(20), 350m);
 
-        _doctor = new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0001", department, "İç Hastalıkları", 30);
+        _doctor = new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0001", department, 30);
         _doctor.AddService(_checkUp);
         _doctor.AddAvailability(MondayUtc.AddHours(6), MondayUtc.AddHours(9)); // 09:00-12:00 local
 

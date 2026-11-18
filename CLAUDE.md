@@ -55,7 +55,7 @@ Domain must never reference Application, Infrastructure, or Api.
   `StaffMember`, which in turn has `Doctor` and `HealthTechnician`. Shared
   identity/contact fields live in `User`; facility/department link, services,
   availability and slot duration live in `StaffMember`; role-specific data
-  (`Doctor.Specialty`, `HealthTechnician.Title`) in the leaves (inheritance +
+  (`HealthTechnician.Title`) in the leaves (inheritance +
   polymorphism, e.g. the abstract `RoleName`). The whole tree is stored in one
   `Users` table (EF Core TPH) with a `UserType` discriminator.
 - **Strategy pattern**: `IPricingStrategy` (e.g. standard vs. discounted/
@@ -79,7 +79,7 @@ HealthOrganization (Id, Name)
             └─ Service       Name, ServiceType, Duration, BasePrice
 StaffMember (abstract, : User)   ClinicFacilityId, DepartmentId, SlotDurationMinutes,
   │                              services provided, availability windows
-  ├─ Doctor                      + Specialty
+  ├─ Doctor                      (no own specialty: it is the department name)
   └─ HealthTechnician            + Title (registered only; no scheduling logic)
 Appointment   PatientId, StaffMemberId? (null = unassigned), ServiceId, start/end (UTC),
               Price, Status
@@ -232,6 +232,12 @@ and throws `ForbiddenException` (403) if not. `ICurrentUser` (read from the JWT 
 
 ### Demo accounts
 
+The sample data (`SeedCatalog`) has three branches with departments such as İç Hastalıkları (Dahiliye),
+Gastroenteroloji, Kardiyoloji, Ortopedi ve Travmatoloji, Göz Hastalıkları, Çocuk Sağlığı ve Hastalıkları, Nöroloji,
+Radyoloji and Laboratuvar. Every examination department has at least two doctors with different slot durations, and
+**every seeded doctor** has a demo login (`firstname.lastname@sakaryasehir.example` or `@marmarapoliklinik.example`).
+The table below lists only a short selection. The seed runs only on an empty database (reset `ClinicDb` to apply changes).
+
 All demo accounts use the password **`Demo123!`** and are given it at startup only if they have no password yet
 (`DbInitializer.DemoEmails`). Technicians have no demo login. The system administrator account is created at
 startup if it does not exist.
@@ -260,7 +266,7 @@ startup if it does not exist.
 
 - Organizations and their branches defined with working hours and departments.
 - Services defined with type, duration and price.
-- Doctors registered with a specialty and the services they provide; health
+- Doctors registered under a department (their specialty is the department name) and the services they provide; health
   technicians registered as staff.
 - Doctor availability slots defined; appointments can only be booked inside
   an availability slot.

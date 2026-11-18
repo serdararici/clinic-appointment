@@ -72,7 +72,8 @@ export interface Service {
 export interface DoctorSummary {
   id: string
   fullName: string
-  specialty: string
+  /** The doctor's specialty is the name of their department. */
+  departmentName: string
   slotDurationMinutes: number
   services: Service[]
 }

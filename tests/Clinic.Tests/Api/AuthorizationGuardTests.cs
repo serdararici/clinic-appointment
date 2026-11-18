@@ -89,7 +89,7 @@ public class AuthorizationGuardTests
         var department = TestData.NewDepartment();
 
         Assert.Equal(AppRoles.Patient, new Patient("P", "p@example.com", "", new DateOnly(1990, 1, 1)).RoleName);
-        Assert.Equal(AppRoles.Doctor, new Doctor("D", "d@example.com", "", department, "X").RoleName);
+        Assert.Equal(AppRoles.Doctor, new Doctor("D", "d@example.com", "", department).RoleName);
         Assert.Equal(AppRoles.HealthTechnician, new HealthTechnician("T", "t@example.com", "", department, "X").RoleName);
         Assert.Equal(AppRoles.ClinicManager, new ClinicManager("M", "m@example.com", "", Guid.NewGuid()).RoleName);
         Assert.Equal(AppRoles.SystemAdmin, new SystemAdmin("A", "a@example.com", "").RoleName);

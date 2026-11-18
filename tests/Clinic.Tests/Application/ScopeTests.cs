@@ -152,11 +152,11 @@ public class ScopeTests
     [Fact]
     public async Task Staff_CanBeCreatedOnlyInADepartmentOfTheOwnOrganization()
     {
-        await _f.StaffService().CreateDoctorAsync(_deptA.Id, new CreateDoctorRequest("Dr. Yeni", "yeni@example.com", null, "X"));
+        await _f.StaffService().CreateDoctorAsync(_deptA.Id, new CreateDoctorRequest("Dr. Yeni", "yeni@example.com", null));
         await _f.StaffService().CreateTechnicianAsync(_deptA.Id, new CreateTechnicianRequest("Teknisyen", "tekn@example.com", null, "Teknisyen"));
 
         await Assert.ThrowsAsync<ForbiddenException>(() =>
-            _f.StaffService().CreateDoctorAsync(_deptB.Id, new CreateDoctorRequest("Dr. Sizma", "s@example.com", null, "X")));
+            _f.StaffService().CreateDoctorAsync(_deptB.Id, new CreateDoctorRequest("Dr. Sizma", "s@example.com", null)));
         await Assert.ThrowsAsync<ForbiddenException>(() =>
             _f.StaffService().CreateTechnicianAsync(_deptB.Id, new CreateTechnicianRequest("Sizma", "s2@example.com", null, "X")));
     }

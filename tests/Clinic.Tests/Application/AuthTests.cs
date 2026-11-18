@@ -282,7 +282,7 @@ public class AuthServiceTests
         var branch = new ClinicFacility(organizationId, "Merkez", "Sakarya");
         var department = branch.AddDepartment("Dahiliye");
         _clinics.Items.Add(branch);
-        AddUserWithPassword(new Doctor("Dr. Hakan", "hakan@example.com", "", department, "İç Hastalıkları"));
+        AddUserWithPassword(new Doctor("Dr. Hakan", "hakan@example.com", "", department));
         AddUserWithPassword(new ClinicManager("Ayşe", "ayse@example.com", "", branch.Id));
 
         var doctor = await _auth.LoginAsync(new LoginRequest("hakan@example.com", "Demo123!"));
@@ -364,7 +364,7 @@ public class AuthServiceTests
     {
         var branch = new ClinicFacility(Guid.NewGuid(), "Merkez", "Sakarya");
         _clinics.Items.Add(branch);
-        var doctor = (Doctor)AddUserWithPassword(new Doctor("Dr. Hakan", "hakan@example.com", "", branch.AddDepartment("Dahiliye"), "İç Hastalıkları"));
+        var doctor = (Doctor)AddUserWithPassword(new Doctor("Dr. Hakan", "hakan@example.com", "", branch.AddDepartment("Dahiliye")));
         var wrongPassword = await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("hakan@example.com", "Wrong123!")));
 
         doctor.Deactivate();

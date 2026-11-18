@@ -222,23 +222,19 @@ public class ManagementRulesTests
     }
 
     [Fact]
-    public void Staff_Rename_AndRoleSpecificFields_AreValidated()
+    public void Staff_Rename_AndTechnicianTitle_AreValidated()
     {
         var doctor = TestData.NewDoctor();
         var technician = new HealthTechnician("Kemal Arslan", "kemal@example.com", "+90-500-000-0001", TestData.NewDepartment(), "Radyoloji Teknikeri");
 
         doctor.Rename("Dr. Yeni Ad");
-        doctor.ChangeSpecialty("Endokrinoloji");
         technician.ChangeTitle("Laboratuvar Teknisyeni");
 
         Assert.Equal("Dr. Yeni Ad", doctor.FullName);
-        Assert.Equal("Endokrinoloji", doctor.Specialty);
         Assert.Equal("Laboratuvar Teknisyeni", technician.Title);
 
         Assert.Throws<ArgumentException>(() => doctor.Rename(" "));
-        Assert.Throws<ArgumentException>(() => doctor.ChangeSpecialty(""));
         Assert.Throws<ArgumentException>(() => technician.ChangeTitle(" "));
-        Assert.Equal("Endokrinoloji", doctor.Specialty);
     }
 
     [Fact]

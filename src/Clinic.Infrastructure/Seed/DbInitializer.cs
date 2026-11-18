@@ -28,7 +28,7 @@ public static class DbInitializer
     public const string DemoPassword = "Demo123!";
 
     /// <summary>
-    /// The demo accounts that get <see cref="DemoPassword"/>: the patients, every doctor and the clinic managers.
+    /// The demo accounts that get <see cref="DemoPassword"/>: the patients, every seeded doctor and the clinic managers.
     /// Technicians have no demo login. Only these emails are ever given the demo password.
     /// </summary>
     public static readonly string[] DemoEmails =
@@ -38,16 +38,12 @@ public static class DbInitializer
         // Patients
         "ahmet.celik@example.com",
         "fatma.yildirim@example.com",
-        // Doctors
-        "hakan.yildiz@sakaryasehir.example",
-        "elif.sahin@sakaryasehir.example",
-        "zeynep.celik@sakaryasehir.example",
-        "burak.ozturk@sakaryasehir.example",
-        "can.aksoy@marmarapoliklinik.example",
         // Clinic managers
         "ayse.yilmaz@sakaryasehir.example",
         "mehmet.kara@sakaryasehir.example",
         "ali.erdogan@marmarapoliklinik.example",
+        // Doctors
+        .. SeedCatalog.DoctorEmails,
     ];
 
     public static void MigrateAndSeed(ClinicDbContext dbContext)
@@ -126,30 +122,26 @@ public static class DbInitializer
         var merkez = new ClinicFacility(organization.Id, "Merkez", "Korucuk Mah. Sağlık Cad. No: 1, Adapazarı / Sakarya");
         AddWeekdayHours(merkez, new TimeOnly(8, 0), new TimeOnly(17, 0));
         merkez.AddWorkingHour(DayOfWeek.Saturday, new TimeOnly(9, 0), new TimeOnly(13, 0));
-        var merkezDepartments = AddStandardDepartments(merkez, examinationPrice: 450m);
+        var merkezDepartments = AddDepartments(dbContext, merkez, SeedCatalog.Merkez);
         dbContext.ClinicFacilities.Add(merkez);
 
         dbContext.ClinicManagers.Add(new ClinicManager("Ayşe Yılmaz", "ayse.yilmaz@sakaryasehir.example", "+90-264-555-0001", merkez.Id));
-        dbContext.Doctors.Add(NewDoctor("Dr. Hakan Yıldız", "hakan.yildiz@sakaryasehir.example", "+90-264-555-0011", merkezDepartments.Dahiliye, merkezDepartments.Examination, "İç Hastalıkları", slotDurationMinutes: 30));
-        dbContext.Doctors.Add(NewDoctor("Dr. Elif Şahin", "elif.sahin@sakaryasehir.example", "+90-264-555-0012", merkezDepartments.Dahiliye, merkezDepartments.Examination, "Endokrinoloji", slotDurationMinutes: 20));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Kemal Arslan", "kemal.arslan@sakaryasehir.example", "+90-264-555-0021", merkezDepartments.Radyoloji, "Radyoloji Teknikeri"));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Gülşen Demirtaş", "gulsen.demirtas@sakaryasehir.example", "+90-264-555-0022", merkezDepartments.Radyoloji, "Radyoloji Teknikeri"));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Fatma Güneş", "fatma.gunes@sakaryasehir.example", "+90-264-555-0023", merkezDepartments.Laboratuvar, "Tıbbi Laboratuvar Teknisyeni"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Kemal Arslan", "kemal.arslan@sakaryasehir.example", "+90-264-555-0021", merkezDepartments["Radyoloji"], "Radyoloji Teknikeri"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Gülşen Demirtaş", "gulsen.demirtas@sakaryasehir.example", "+90-264-555-0022", merkezDepartments["Radyoloji"], "Radyoloji Teknikeri"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Fatma Güneş", "fatma.gunes@sakaryasehir.example", "+90-264-555-0023", merkezDepartments["Laboratuvar"], "Tıbbi Laboratuvar Teknisyeni"));
 
         // ---- Adapazarı Şubesi: weekdays 08:30-16:30 ----
         var adapazari = new ClinicFacility(organization.Id, "Adapazarı Şubesi", "Semerciler Mah. Atatürk Bulvarı No: 48, Adapazarı / Sakarya");
         AddWeekdayHours(adapazari, new TimeOnly(8, 30), new TimeOnly(16, 30));
-        var adapazariDepartments = AddStandardDepartments(adapazari, examinationPrice: 400m);
+        var adapazariDepartments = AddDepartments(dbContext, adapazari, SeedCatalog.Adapazari);
         dbContext.ClinicFacilities.Add(adapazari);
 
         dbContext.ClinicManagers.Add(new ClinicManager("Mehmet Kara", "mehmet.kara@sakaryasehir.example", "+90-264-555-0002", adapazari.Id));
-        dbContext.Doctors.Add(NewDoctor("Dr. Zeynep Çelik", "zeynep.celik@sakaryasehir.example", "+90-264-555-0031", adapazariDepartments.Dahiliye, adapazariDepartments.Examination, "İç Hastalıkları", slotDurationMinutes: 30));
-        dbContext.Doctors.Add(NewDoctor("Dr. Burak Öztürk", "burak.ozturk@sakaryasehir.example", "+90-264-555-0032", adapazariDepartments.Dahiliye, adapazariDepartments.Examination, "Gastroenteroloji", slotDurationMinutes: 20));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Mustafa Kılıç", "mustafa.kilic@sakaryasehir.example", "+90-264-555-0041", adapazariDepartments.Radyoloji, "Radyoloji Teknikeri"));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Ayten Polat", "ayten.polat@sakaryasehir.example", "+90-264-555-0042", adapazariDepartments.Laboratuvar, "Tıbbi Laboratuvar Teknisyeni"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Mustafa Kılıç", "mustafa.kilic@sakaryasehir.example", "+90-264-555-0041", adapazariDepartments["Radyoloji"], "Radyoloji Teknikeri"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Ayten Polat", "ayten.polat@sakaryasehir.example", "+90-264-555-0042", adapazariDepartments["Laboratuvar"], "Tıbbi Laboratuvar Teknisyeni"));
     }
 
-    /// <summary>A second, independent organization with a single branch and only two departments.</summary>
+    /// <summary>A second, independent organization with a single branch.</summary>
     private static void SeedMarmaraPoliklinik(ClinicDbContext dbContext)
     {
         var organization = new HealthOrganization("Marmara Poliklinik");
@@ -161,15 +153,11 @@ public static class DbInitializer
             serdivan.AddWorkingHour(day, new TimeOnly(9, 0), new TimeOnly(18, 0));
         }
 
-        var dahiliye = serdivan.AddDepartment("Dahiliye");
-        var genelMuayene = dahiliye.AddService("Genel Muayene", ServiceType.Examination, TimeSpan.FromMinutes(30), 350m);
-        var laboratuvar = serdivan.AddDepartment("Laboratuvar");
-        laboratuvar.AddService("Kan Tahlili", ServiceType.Diagnostic, TimeSpan.FromMinutes(15), 200m);
+        var departments = AddDepartments(dbContext, serdivan, SeedCatalog.Serdivan);
         dbContext.ClinicFacilities.Add(serdivan);
 
         dbContext.ClinicManagers.Add(new ClinicManager("Ali Rıza Erdoğan", "ali.erdogan@marmarapoliklinik.example", "+90-264-555-0003", serdivan.Id));
-        dbContext.Doctors.Add(NewDoctor("Dr. Can Aksoy", "can.aksoy@marmarapoliklinik.example", "+90-264-555-0051", dahiliye, genelMuayene, "İç Hastalıkları", slotDurationMinutes: 15));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Emre Korkmaz", "emre.korkmaz@marmarapoliklinik.example", "+90-264-555-0052", laboratuvar, "Tıbbi Laboratuvar Teknisyeni"));
+        dbContext.HealthTechnicians.Add(new HealthTechnician("Emre Korkmaz", "emre.korkmaz@marmarapoliklinik.example", "+90-264-555-0052", departments["Laboratuvar"], "Tıbbi Laboratuvar Teknisyeni"));
     }
 
     private static void AddWeekdayHours(ClinicFacility clinic, TimeOnly opensAt, TimeOnly closesAt)
@@ -181,32 +169,42 @@ public static class DbInitializer
     }
 
     /// <summary>
-    /// Dahiliye (one Examination service), Radyoloji (two Diagnostic services) and Laboratuvar
-    /// (one Diagnostic service). A department with a single service has it auto-selected when booking;
-    /// one with several lets the patient choose.
+    /// Creates the departments, services and doctors of a branch from the catalog. Each doctor offers the
+    /// department's Examination services. Returns the departments by name.
     /// </summary>
-    private static (Department Dahiliye, Service Examination, Department Radyoloji, Department Laboratuvar) AddStandardDepartments(
-        ClinicFacility clinic, decimal examinationPrice)
+    private static Dictionary<string, Department> AddDepartments(ClinicDbContext dbContext, ClinicFacility clinic, SeedDepartment[] catalog)
     {
-        var dahiliye = clinic.AddDepartment("Dahiliye");
-        var genelMuayene = dahiliye.AddService("Genel Muayene", ServiceType.Examination, TimeSpan.FromMinutes(30), examinationPrice);
+        var departments = new Dictionary<string, Department>();
+        var phoneNumber = 100 + dbContext.ChangeTracker.Entries<Doctor>().Count();
 
-        var radyoloji = clinic.AddDepartment("Radyoloji");
-        radyoloji.AddService("Röntgen", ServiceType.Diagnostic, TimeSpan.FromMinutes(20), 350m);
-        radyoloji.AddService("MR", ServiceType.Diagnostic, TimeSpan.FromMinutes(45), 1800m);
+        foreach (var entry in catalog)
+        {
+            var department = clinic.AddDepartment(entry.Name);
+            departments[entry.Name] = department;
 
-        var laboratuvar = clinic.AddDepartment("Laboratuvar");
-        laboratuvar.AddService("Kan Tahlili", ServiceType.Diagnostic, TimeSpan.FromMinutes(15), 250m);
+            var examinations = new List<Service>();
+            foreach (var service in entry.Services)
+            {
+                var added = department.AddService(service.Name, service.Type, TimeSpan.FromMinutes(service.DurationMinutes), service.Price);
+                if (service.Type == ServiceType.Examination)
+                {
+                    examinations.Add(added);
+                }
+            }
 
-        return (dahiliye, genelMuayene, radyoloji, laboratuvar);
-    }
+            foreach (var seedDoctor in entry.Doctors)
+            {
+                var doctor = new Doctor(seedDoctor.FullName, seedDoctor.Email, $"+90-264-555-{phoneNumber++:D4}", department, seedDoctor.SlotDurationMinutes);
+                foreach (var examination in examinations)
+                {
+                    doctor.AddService(examination);
+                }
 
-    private static Doctor NewDoctor(
-        string fullName, string email, string phone, Department department, Service service, string specialty, int slotDurationMinutes)
-    {
-        var doctor = new Doctor(fullName, email, phone, department, specialty, slotDurationMinutes);
-        doctor.AddService(service);
-        return doctor;
+                dbContext.Doctors.Add(doctor);
+            }
+        }
+
+        return departments;
     }
 
     /// <summary>

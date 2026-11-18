@@ -13,7 +13,7 @@ public class StaffMemberTests
     [Fact]
     public void SlotDuration_DefaultsToThirtyMinutes()
     {
-        var doctor = new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0000", TestData.NewDepartment(), "İç Hastalıkları");
+        var doctor = new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0000", TestData.NewDepartment());
 
         Assert.Equal(30, doctor.SlotDurationMinutes);
     }
@@ -67,7 +67,7 @@ public class StaffMemberTests
     public void StaffMember_Throws_WhenDepartmentIsMissing()
     {
         Assert.Throws<ArgumentNullException>(() =>
-            new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0000", null!, "İç Hastalıkları"));
+            new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0000", null!));
     }
 
     // ---- Services provided -----------------------------------------------------------------
@@ -97,13 +97,6 @@ public class StaffMemberTests
     }
 
     // ---- Doctor / HealthTechnician ---------------------------------------------------------
-
-    [Fact]
-    public void Doctor_Throws_WhenSpecialtyIsMissing()
-    {
-        Assert.Throws<ArgumentException>(() =>
-            new Doctor("Dr. Test", "doctor@example.com", "+90-500-000-0000", TestData.NewDepartment(), " "));
-    }
 
     [Fact]
     public void HealthTechnician_Throws_WhenTitleIsMissing()

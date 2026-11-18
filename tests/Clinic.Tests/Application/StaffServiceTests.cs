@@ -56,10 +56,9 @@ public class StaffServiceTests
         var department = NewDepartment();
 
         var dto = await _f.StaffService().CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. Hakan Yıldız", "hakan@example.com", "+90-264-555-0011", "İç Hastalıkları"));
+            new CreateDoctorRequest("Dr. Hakan Yıldız", "hakan@example.com", "+90-264-555-0011"));
 
         Assert.Equal("Doctor", dto.Role);
-        Assert.Equal("İç Hastalıkları", dto.Specialty);
         Assert.Null(dto.Title);
         Assert.Equal(department.Id, dto.DepartmentId);
         Assert.Equal(department.ClinicFacilityId, dto.BranchId); // the branch comes from the department
@@ -74,7 +73,7 @@ public class StaffServiceTests
     public async Task CreateDoctor_AcceptsAnAllowedSlotDuration_AndAMissingPhone()
     {
         var dto = await _f.StaffService().CreateDoctorAsync(NewDepartment().Id,
-            new CreateDoctorRequest("Dr. Elif Şahin", "elif@example.com", null, "Endokrinoloji", 20));
+            new CreateDoctorRequest("Dr. Elif Şahin", "elif@example.com", null, 20));
 
         Assert.Equal(20, dto.SlotDurationMinutes);
         Assert.Equal(string.Empty, dto.PhoneNumber);
@@ -87,13 +86,11 @@ public class StaffServiceTests
         var service = _f.StaffService();
 
         await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("", "x@example.com", null, "İç Hastalıkları")));          // no name
+            new CreateDoctorRequest("", "x@example.com", null)));          // no name
         await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. X", " ", null, "İç Hastalıkları")));                 // no email
+            new CreateDoctorRequest("Dr. X", " ", null)));                 // no email
         await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. X", "x@example.com", null, "")));                    // no specialty
-        await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. X", "x@example.com", null, "İç Hastalıkları", 25))); // slot not allowed
+            new CreateDoctorRequest("Dr. X", "x@example.com", null, 25))); // slot not allowed
 
         Assert.Empty(_f.Staff.Items);
         Assert.Equal(0, _f.UnitOfWork.SaveCount);
@@ -103,7 +100,7 @@ public class StaffServiceTests
     public async Task CreateDoctor_Throws_WhenTheDepartmentDoesNotExist()
     {
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _f.StaffService().CreateDoctorAsync(Guid.NewGuid(),
-            new CreateDoctorRequest("Dr. X", "x@example.com", null, "İç Hastalıkları")));
+            new CreateDoctorRequest("Dr. X", "x@example.com", null)));
     }
 
     [Fact]
@@ -116,7 +113,6 @@ public class StaffServiceTests
 
         Assert.Equal("HealthTechnician", dto.Role);
         Assert.Equal("Radyoloji Teknikeri", dto.Title);
-        Assert.Null(dto.Specialty);
         Assert.Equal(department.Id, dto.DepartmentId);
         Assert.IsType<HealthTechnician>(Assert.Single(_f.Staff.Items));
     }
@@ -138,30 +134,28 @@ public class StaffServiceTests
     // =========================================================================================
 
     [Fact]
-    public async Task Update_ChangesADoctorsNameContactAndSpecialty()
+    public async Task Update_ChangesADoctorsNameAndContact()
     {
         var doctor = _f.AddDoctor(NewDepartment());
 
         var dto = await _f.StaffService().UpdateAsync(doctor.Id,
-            new UpdateStaffRequest("Dr. Yeni Ad", "yeni@example.com", "+90-264-555-0099", "Endokrinoloji"));
+            new UpdateStaffRequest("Dr. Yeni Ad", "yeni@example.com", "+90-264-555-0099"));
 
         Assert.Equal("Dr. Yeni Ad", dto.FullName);
         Assert.Equal("yeni@example.com", dto.Email);
         Assert.Equal("+90-264-555-0099", dto.PhoneNumber);
-        Assert.Equal("Endokrinoloji", dto.Specialty);
         Assert.Equal(1, _f.UnitOfWork.SaveCount);
     }
 
     [Fact]
-    public async Task Update_ChangesATechniciansTitle_AndIgnoresTheSpecialtyThatDoesNotApply()
+    public async Task Update_ChangesATechniciansTitle()
     {
         var technician = _f.AddTechnician(NewDepartment("Radyoloji"));
 
         var dto = await _f.StaffService().UpdateAsync(technician.Id,
-            new UpdateStaffRequest("Kemal Arslan", "kemal@example.com", null, Specialty: "ignored", Title: "Kıdemli Teknisyen"));
+            new UpdateStaffRequest("Kemal Arslan", "kemal@example.com", null, Title: "Kıdemli Teknisyen"));
 
         Assert.Equal("Kıdemli Teknisyen", dto.Title);
-        Assert.Null(dto.Specialty);
     }
 
     [Fact]
@@ -171,8 +165,6 @@ public class StaffServiceTests
         var technician = _f.AddTechnician(NewDepartment("Radyoloji"), email: "t2@example.com");
         var service = _f.StaffService();
 
-        await Assert.ThrowsAsync<ArgumentException>(() => service.UpdateAsync(doctor.Id,
-            new UpdateStaffRequest("Dr. Test", "doctor@example.com", null, Specialty: null)));
         await Assert.ThrowsAsync<ArgumentException>(() => service.UpdateAsync(technician.Id,
             new UpdateStaffRequest("Kemal", "t2@example.com", null, Title: null)));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => service.UpdateAsync(Guid.NewGuid(),
@@ -277,6 +269,24 @@ public class StaffServiceTests
     }
 
     [Fact]
+    public async Task ActiveDoctors_OfADepartment_NeverIncludeDoctorsOfAnotherDepartment_AndCarryTheDepartmentNameAsSpecialty()
+    {
+        var branch = _f.AddBranch(_f.AddOrganization());
+        var internalMedicine = _f.AddDepartment(branch, "İç Hastalıkları (Dahiliye)");
+        var gastro = _f.AddDepartment(branch, "Gastroenteroloji");
+        var internalDoctor = _f.AddDoctor(internalMedicine, "i@example.com", "Dr. Dahiliye");
+        var gastroDoctor = _f.AddDoctor(gastro, "g@example.com", "Dr. Gastro");
+
+        var internalList = await _f.StaffService().ListActiveDoctorsAsync(internalMedicine.Id);
+        var gastroList = await _f.StaffService().ListActiveDoctorsAsync(gastro.Id);
+
+        Assert.Equal(internalDoctor.Id, Assert.Single(internalList).Id);
+        Assert.Equal("İç Hastalıkları (Dahiliye)", Assert.Single(internalList).DepartmentName);
+        Assert.Equal(gastroDoctor.Id, Assert.Single(gastroList).Id);
+        Assert.Equal("Gastroenteroloji", Assert.Single(gastroList).DepartmentName);
+    }
+
+    [Fact]
     public async Task ActiveDoctors_ListOnlyActiveDoctorsOfTheDepartment_WithTheirServicesAndSlotDuration()
     {
         var branch = _f.AddBranch(_f.AddOrganization());
@@ -295,7 +305,7 @@ public class StaffServiceTests
 
         var doctor = Assert.Single(doctors);
         Assert.Equal(active.Id, doctor.Id);
-        Assert.Equal("İç Hastalıkları", doctor.Specialty);
+        Assert.Equal(internalMedicine.Name, doctor.DepartmentName); // the specialty is the department name
         Assert.Equal(20, doctor.SlotDurationMinutes);
         Assert.Equal(["Genel Muayene", "Kontrol Muayenesi"], doctor.Services.Select(s => s.Name)); // by name
         Assert.Equal((ServiceType.Examination, 30, 450m),

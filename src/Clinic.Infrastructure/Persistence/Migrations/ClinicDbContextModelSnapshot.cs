@@ -312,10 +312,6 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                 {
                     b.HasBaseType("Clinic.Domain.Users.StaffMember");
 
-                    b.Property<string>("Specialty")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasDiscriminator().HasValue("Doctor");
                 });
 

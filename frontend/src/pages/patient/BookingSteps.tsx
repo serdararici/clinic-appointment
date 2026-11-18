@@ -166,7 +166,7 @@ export function DoctorStep({ departmentId, serviceId, onSelect }: { departmentId
             <ChoiceCard
               key={doctor.id}
               title={doctor.fullName}
-              description={doctor.specialty}
+              description={doctor.departmentName}
               meta={`${doctor.slotDurationMinutes} dk randevu`}
               onSelect={() => onSelect(doctor)}
             />
