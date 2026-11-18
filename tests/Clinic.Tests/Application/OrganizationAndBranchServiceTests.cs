@@ -21,6 +21,27 @@ public class OrganizationAndBranchServiceTests
     }
 
     [Fact]
+    public async Task Branch_Create_StartsWithTheDefaultWorkingHours_MondayToFriday_0800To1700()
+    {
+        var organization = _f.AddOrganization();
+
+        var dto = await _f.BranchService().CreateAsync(organization.Id, new SaveBranchRequest("Yeni Şube", "Adres"));
+
+        var branch = _f.Clinics.Items.Single(b => b.Id == dto.Id);
+        Assert.Equal(5, branch.WorkingHours.Count);
+        Assert.Equal(
+            [DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday],
+            branch.WorkingHours.Select(w => w.DayOfWeek).Order());
+        Assert.All(branch.WorkingHours, w => Assert.Equal(new TimeOnly(8, 0), w.OpensAt));
+        Assert.All(branch.WorkingHours, w => Assert.Equal(new TimeOnly(17, 0), w.ClosesAt));
+
+        // ... and the working hours endpoint returns them, Monday first.
+        var hours = await _f.BranchService().GetWorkingHoursAsync(dto.Id, null);
+        Assert.Equal(DayOfWeek.Monday, hours[0].DayOfWeek);
+        Assert.Equal(5, hours.Count);
+    }
+
+    [Fact]
     public async Task Organization_Create_Throws_WhenTheNameIsBlank_AndSavesNothing()
     {
         await Assert.ThrowsAsync<ArgumentException>(() => _f.OrganizationService().CreateAsync(new SaveOrganizationRequest(" ")));

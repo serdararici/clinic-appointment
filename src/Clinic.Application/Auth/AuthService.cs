@@ -73,8 +73,8 @@ public class AuthService(
             throw new InvalidCredentialsException();
         }
 
-        // A deactivated staff member has left: refuse with the same answer as a wrong password.
-        if (user is StaffMember { IsActive: false })
+        // A deactivated staff member or clinic manager has left: refuse with the same answer as a wrong password.
+        if (user is StaffMember { IsActive: false } or ClinicManager { IsActive: false })
         {
             throw new InvalidCredentialsException();
         }

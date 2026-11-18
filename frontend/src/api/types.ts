@@ -224,3 +224,60 @@ export interface UpdateStaffRequest {
   email: string
   phoneNumber?: string
 }
+
+// ---- Administration (system administrator) ----
+
+export interface Organization {
+  id: string
+  name: string
+}
+
+export interface Branch {
+  id: string
+  organizationId: string
+  name: string
+  address: string
+}
+
+/** An opening range of a branch on one weekday, in Turkey time ("HH:mm:ss"). */
+export interface WorkingHour {
+  id: string
+  branchId: string
+  dayOfWeek: WeekdayName
+  opensAt: string
+  closesAt: string
+}
+
+export interface AddWorkingHourRequest {
+  dayOfWeek: WeekdayName
+  /** "HH:mm". */
+  opensAt: string
+  closesAt: string
+}
+
+/** A clinic manager account with the branch and organization they work for (GET /api/managers). */
+export interface ClinicManagerAccount {
+  id: string
+  fullName: string
+  email: string
+  phoneNumber: string
+  branchId: string
+  branchName: string
+  organizationId: string
+  organizationName: string
+  isActive: boolean
+}
+
+export interface CreateManagerRequest {
+  fullName: string
+  email: string
+  /** The temporary password the manager first logs in with (at least 8 characters). */
+  password: string
+  phoneNumber?: string
+}
+
+export interface UpdateManagerRequest {
+  fullName: string
+  email: string
+  phoneNumber?: string
+}

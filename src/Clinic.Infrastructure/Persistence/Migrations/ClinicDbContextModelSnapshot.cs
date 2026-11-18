@@ -256,10 +256,16 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("ClinicFacilityId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.ToTable("Users", t =>
                         {
                             t.Property("ClinicFacilityId")
                                 .HasColumnName("ClinicManager_ClinicFacilityId");
+
+                            t.Property("IsActive")
+                                .HasColumnName("ClinicManager_IsActive");
                         });
 
                     b.HasDiscriminator().HasValue("ClinicManager");

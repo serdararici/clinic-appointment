@@ -18,6 +18,9 @@ internal class FakeUserRepository : FakeRepository<User>, IUserRepository
 
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default) =>
         Task.FromResult(Items.Any(u => string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase)));
+
+    public Task<IReadOnlyList<ClinicManager>> GetClinicManagersAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<ClinicManager>>(Items.OfType<ClinicManager>().OrderBy(m => m.FullName).ToList());
 }
 
 public class PasswordHashingTests
@@ -273,6 +276,19 @@ public class AuthServiceTests
         Assert.Equal(Now.AddHours(8), response.ExpiresAtUtc);
         var token = new JwtSecurityTokenHandler().ReadJwtToken(response.Token);
         Assert.Equal(patient.Id.ToString(), token.Subject);
+    }
+
+    [Fact]
+    public async Task Login_IsRefusedWithTheWrongPasswordAnswer_ForADeactivatedClinicManager()
+    {
+        var branch = new ClinicFacility(Guid.NewGuid(), "Merkez", "Sakarya");
+        _clinics.Items.Add(branch);
+        var manager = (ClinicManager)AddUserWithPassword(new ClinicManager("Ayşe", "ayse@example.com", "", branch.Id));
+
+        await _auth.LoginAsync(new LoginRequest("ayse@example.com", "Demo123!")); // works while active
+        manager.Deactivate();
+
+        await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("ayse@example.com", "Demo123!")));
     }
 
     [Fact]

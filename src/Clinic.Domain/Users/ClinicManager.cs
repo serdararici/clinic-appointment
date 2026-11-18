@@ -8,6 +8,13 @@ public class ClinicManager : User
 {
     public Guid ClinicFacilityId { get; private set; }
 
+    /// <summary>A deactivated manager cannot log in (the account and its history stay).</summary>
+    public bool IsActive { get; private set; } = true;
+
+    public void Deactivate() => IsActive = false;
+
+    public void Activate() => IsActive = true;
+
     public ClinicManager(string fullName, string email, string phoneNumber, Guid clinicFacilityId)
         : base(fullName, email, phoneNumber)
     {

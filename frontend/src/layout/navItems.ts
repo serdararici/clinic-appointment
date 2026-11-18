@@ -21,5 +21,8 @@ export function navItemsFor(role: Role): NavItem[] {
   if (role === 'ClinicManager') {
     return [home, { to: '/yonetici/bolumler', label: 'Bölümler' }, { to: '/yonetici/doktorlar', label: 'Doktorlar' }]
   }
+  if (role === 'SystemAdmin') {
+    return [home, { to: '/sistem/kurumlar', label: 'Kurumlar' }, { to: '/sistem/yoneticiler', label: 'Yöneticiler' }]
+  }
   return [home]
 }

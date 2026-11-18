@@ -81,7 +81,7 @@ internal class ManagementFixture
     public StaffService StaffService() =>
         new(Staff, Departments, Services, Appointments, Users, new AspNetPasswordHasher(), DefaultSchedule, UnitOfWork, Clock, Guard());
 
-    public ManagerService ManagerService() => new(Clinics, Users, new AspNetPasswordHasher(), UnitOfWork, Guard());
+    public ManagerService ManagerService() => new(Clinics, Organizations, Users, new AspNetPasswordHasher(), UnitOfWork, Guard());
 
     // ---- Builders (they add to the fakes, like data that already exists in the database) ----
 

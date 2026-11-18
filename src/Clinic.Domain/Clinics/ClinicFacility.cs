@@ -54,6 +54,24 @@ public class ClinicFacility : Entity
         return department;
     }
 
+    /// <summary>Opening time of the default working hours of a new branch (clinic local time).</summary>
+    public static readonly TimeOnly DefaultOpensAt = new(8, 0);
+
+    /// <summary>Closing time of the default working hours of a new branch (clinic local time).</summary>
+    public static readonly TimeOnly DefaultClosesAt = new(17, 0);
+
+    /// <summary>
+    /// Opens the branch Monday to Friday 08:00-17:00 (clinic local time). A branch with no working hours is closed
+    /// every day, so nobody could book anything in it; new branches start with these hours and can change them.
+    /// </summary>
+    public void AddDefaultWorkingHours()
+    {
+        for (var day = DayOfWeek.Monday; day <= DayOfWeek.Friday; day++)
+        {
+            AddWorkingHour(day, DefaultOpensAt, DefaultClosesAt);
+        }
+    }
+
     public WorkingHour AddWorkingHour(DayOfWeek dayOfWeek, TimeOnly opensAt, TimeOnly closesAt)
     {
         // Constructing first validates the range (closing after opening).

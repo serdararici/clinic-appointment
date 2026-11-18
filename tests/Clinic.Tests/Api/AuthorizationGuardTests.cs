@@ -106,6 +106,12 @@ public class AuthorizationGuardTests
         { typeof(ServicesController), nameof(ServicesController.GetSlots), null },
         { typeof(DoctorsController), nameof(DoctorsController.GetSlots), null },
 
+        // System administrator: clinic manager accounts
+        { typeof(ManagersController), nameof(ManagersController.List), "SystemAdmin" },
+        { typeof(ManagersController), nameof(ManagersController.Update), "SystemAdmin" },
+        { typeof(ManagersController), nameof(ManagersController.Deactivate), "SystemAdmin" },
+        { typeof(ManagersController), nameof(ManagersController.Activate), "SystemAdmin" },
+
         // Patient
         { typeof(AppointmentsController), nameof(AppointmentsController.Create), "Patient" },
         { typeof(ServicesController), nameof(ServicesController.PreviewPrice), "Patient" },

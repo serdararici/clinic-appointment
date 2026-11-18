@@ -99,6 +99,9 @@ Appointment   PatientId, StaffMemberId? (null = unassigned), ServiceId, start/en
   `Examination` or `Diagnostic`. The service duration is always defined by the manager.
   Validation lives in the entity: price 0 to 99,999,999.99 with at most two decimals,
   duration above zero and at most 24 hours, a known type, a non-blank name.
+- A **new branch** (`POST /api/organizations/{id}/branches`) is created with default working hours Monday-Friday
+  08:00-17:00 (`ClinicFacility.AddDefaultWorkingHours`), so doctors added to it are bookable; they can be changed with
+  the working-hours endpoints. (The seeded branches define their own hours.)
 - A branch's working hours are ranges per weekday; two ranges on the same weekday may not
   overlap (back-to-back and a lunch gap are fine).
 - `StaffMember.IsActive` (default true): a deactivated staff member keeps their history but
@@ -235,7 +238,7 @@ annotated and, if it matters, added to the role-mapping table in that test**.
 | Patient | `POST appointments`, `GET services/{id}/price-preview` (the amount this patient would pay, same pricing strategy as booking, creates nothing), `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
 | Doctor | `GET doctors/{id}/profile` (own name and department), `GET/PUT doctors/{id}/auto-schedule`, `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
 | ClinicManager | update of their organization; create / update / delete of branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject / cancel appointments |
-| SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts) |
+| SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts with a temporary password), and the manager list / edit / deactivate / activate endpoints `GET /api/managers`, `PUT managers/{id}`, `POST managers/{id}/deactivate` and `/activate` (a deactivated manager cannot log in: the same 401 as a wrong password) |
 
 Errors use the plain-text style of the rest of the API: **401** when there is no valid token (missing, bad
 signature, wrong issuer/audience, expired), **403** when the role is not allowed *or* the resource is not the

@@ -28,7 +28,3 @@ function HomePlaceholder({ heading, children }: { heading: string; children: Rea
 export function TechnicianHome() {
   return <HomePlaceholder heading="Personel paneli">Bu rol için henüz bir ekran tanımlanmadı.</HomePlaceholder>
 }
-
-export function AdminHome() {
-  return <HomePlaceholder heading="Sistem yönetimi">Kurumlar ve yönetici hesapları burada yönetilecek.</HomePlaceholder>
-}

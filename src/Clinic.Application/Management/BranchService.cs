@@ -70,6 +70,10 @@ public class BranchService(
 
         var branch = new ClinicFacility(organizationId, request.Name, request.Address);
 
+        // Without working hours a branch is closed all week and nothing in it can be booked, so it starts with
+        // Monday-Friday 08:00-17:00 (the manager or administrator can change them afterwards).
+        branch.AddDefaultWorkingHours();
+
         await clinics.AddAsync(branch, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -16,7 +16,10 @@ import { DoctorHome } from './pages/doctor/DoctorHome'
 import { DepartmentsPage } from './pages/manager/DepartmentsPage'
 import { DoctorsPage } from './pages/manager/DoctorsPage'
 import { ManagerHome } from './pages/manager/ManagerHome'
-import { AdminHome, TechnicianHome } from './pages/RoleHomes'
+import { AdminHome } from './pages/admin/AdminHome'
+import { ManagersPage } from './pages/admin/ManagersPage'
+import { OrganizationsPage } from './pages/admin/OrganizationsPage'
+import { TechnicianHome } from './pages/RoleHomes'
 
 // "/" has no page of its own: it sends people to where they belong.
 function RootRedirect() {
@@ -60,6 +63,8 @@ export default function App() {
         </Route>
         <Route element={<RequireRole roles={['SystemAdmin']} />}>
           <Route path="sistem" element={<AdminHome />} />
+          <Route path="sistem/kurumlar" element={<OrganizationsPage />} />
+          <Route path="sistem/yoneticiler" element={<ManagersPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

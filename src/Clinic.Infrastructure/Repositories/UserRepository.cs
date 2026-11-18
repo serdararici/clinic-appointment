@@ -12,6 +12,9 @@ public class UserRepository(ClinicDbContext dbContext)
     public Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default) =>
         DbSet.FirstOrDefaultAsync(u => u.Email == email, cancellationToken);
 
+    public async Task<IReadOnlyList<ClinicManager>> GetClinicManagersAsync(CancellationToken cancellationToken = default) =>
+        await DbContext.ClinicManagers.OrderBy(m => m.FullName).ToListAsync(cancellationToken);
+
     public Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken = default) =>
         DbSet.AnyAsync(u => u.Email == email, cancellationToken);
 }
