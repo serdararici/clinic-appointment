@@ -151,6 +151,21 @@ public class AppointmentService(
             confirmationPolicy.DetermineInitialStatus());
     }
 
+    public async Task<PricePreviewDto> PreviewPriceAsync(Guid serviceId, CancellationToken cancellationToken = default)
+    {
+        // The patient is the logged-in patient (from the token), exactly as when booking.
+        var patientId = guard.RequirePatientId();
+
+        var patient = await patientRepository.GetByIdAsync(patientId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Patient {patientId} was not found.");
+
+        var service = await serviceRepository.GetByIdAsync(serviceId, cancellationToken)
+            ?? throw new KeyNotFoundException($"Service {serviceId} was not found.");
+
+        // The same strategy instance that prices a booking, so the preview cannot drift from the stored price.
+        return new PricePreviewDto(service.Id, service.BasePrice, pricingStrategy.CalculatePrice(service, patient), patient.HasInsurance);
+    }
+
     public async Task ConfirmAppointmentAsync(Guid appointmentId, CancellationToken cancellationToken = default)
     {
         var appointment = await appointmentRepository.GetByIdAsync(appointmentId, cancellationToken)

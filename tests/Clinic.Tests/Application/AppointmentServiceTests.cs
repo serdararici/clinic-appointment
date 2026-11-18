@@ -718,6 +718,50 @@ public class AppointmentServiceTests
         Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
     }
 
+    // ---- Price preview ----
+
+    private static readonly InsuranceDiscountPricingStrategy Discounting = new();
+
+    [Fact]
+    public async Task PricePreview_EqualsTheStoredPrice_ForAnInsuredPatient_AndCreatesNothing()
+    {
+        var insured = new Patient("Sigortalı Hasta", "insured@example.com", "+90-500-000-0009", new DateOnly(1980, 1, 1), insuranceNumber: "SGK-1");
+        _patients.Items.Add(insured);
+        var service = CreateService(Discounting, new AutoConfirmationPolicy(), user: FakeCurrentUser.Patient(insured.Id));
+
+        var preview = await service.PreviewPriceAsync(_checkUp.Id);
+        Assert.Empty(_appointments.Items); // a preview books nothing
+
+        var booked = await service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id));
+
+        Assert.True(preview.HasInsurance);
+        Assert.Equal(300m, preview.BasePrice);
+        Assert.Equal(240m, preview.Price);
+        Assert.Equal(booked.Price, preview.Price);
+        Assert.Equal(booked.Price, _appointments.Items.Single().Price);
+    }
+
+    [Fact]
+    public async Task PricePreview_EqualsTheStoredPrice_ForAPatientWithoutInsurance()
+    {
+        var service = CreateService(Discounting, new AutoConfirmationPolicy(), user: FakeCurrentUser.Patient(_patient.Id));
+
+        var preview = await service.PreviewPriceAsync(_checkUp.Id);
+        var booked = await service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, Monday.AddHours(6), _doctor.Id));
+
+        Assert.False(preview.HasInsurance);
+        Assert.Equal(preview.BasePrice, preview.Price);
+        Assert.Equal(booked.Price, preview.Price);
+    }
+
+    [Fact]
+    public async Task PricePreview_IsForPatientsOnly_AndNeedsAKnownService()
+    {
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).PreviewPriceAsync(_checkUp.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Admin()).PreviewPriceAsync(_checkUp.Id));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => _service.PreviewPriceAsync(Guid.NewGuid()));
+    }
+
     [Fact]
     public async Task Cancel_IsAllowed_ForTheAssignedDoctor_AndThePatientThenSeesItCancelled()
     {

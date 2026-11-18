@@ -4,6 +4,9 @@ public interface IAppointmentService
 {
     Task<AppointmentDto> CreateAppointmentAsync(CreateAppointmentRequest request, CancellationToken cancellationToken = default);
 
+    /// <summary>The amount the logged-in patient would pay for a service, without creating anything.</summary>
+    Task<PricePreviewDto> PreviewPriceAsync(Guid serviceId, CancellationToken cancellationToken = default);
+
     Task ConfirmAppointmentAsync(Guid appointmentId, CancellationToken cancellationToken = default);
 
     Task RejectAppointmentAsync(Guid appointmentId, CancellationToken cancellationToken = default);

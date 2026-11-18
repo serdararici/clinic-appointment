@@ -116,6 +116,15 @@ export interface BookedAppointment {
   status: AppointmentStatus
 }
 
+/** What the logged-in patient would pay for a service (GET /api/services/{id}/price-preview). */
+export interface PricePreview {
+  serviceId: string
+  basePrice: number
+  /** The amount after the patient's insurance discount, if any. */
+  price: number
+  hasInsurance: boolean
+}
+
 export interface CreateAppointmentRequest {
   serviceId: string
   /** UTC ISO date-time ("...Z"). */

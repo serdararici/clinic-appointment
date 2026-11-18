@@ -205,7 +205,7 @@ annotated and, if it matters, added to the role-mapping table in that test**.
 | Who | May call |
 |---|---|
 | Anyone (anonymous) | `auth/register`, `auth/login`; reads of organizations, branches (and their working hours), departments, services, `departments/{id}/doctors`; slot lists (`doctors/{id}/slots`, `services/{id}/slots`) |
-| Patient | `POST appointments`, `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
+| Patient | `POST appointments`, `GET services/{id}/price-preview` (the amount this patient would pay, same pricing strategy as booking, creates nothing), `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
 | Doctor | `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
 | ClinicManager | update of their organization; create / update / delete of branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject / cancel appointments |
 | SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts) |

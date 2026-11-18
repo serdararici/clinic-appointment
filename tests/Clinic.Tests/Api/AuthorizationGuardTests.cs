@@ -108,6 +108,7 @@ public class AuthorizationGuardTests
 
         // Patient
         { typeof(AppointmentsController), nameof(AppointmentsController.Create), "Patient" },
+        { typeof(ServicesController), nameof(ServicesController.PreviewPrice), "Patient" },
         { typeof(AppointmentsController), nameof(AppointmentsController.Cancel), "ClinicManager,Doctor,Patient,SystemAdmin" },
         { typeof(PatientsController), nameof(PatientsController.GetAppointments), "Patient" },
 

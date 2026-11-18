@@ -5,6 +5,7 @@ import type {
   BranchSummary,
   CreateAppointmentRequest,
   Department,
+  PricePreview,
   DoctorSummary,
   Service,
   Slot,
@@ -31,6 +32,9 @@ export const listDoctorSlots = (doctorId: string, date: string, signal?: AbortSi
 /** Slots of a Diagnostic service for one local day. */
 export const listServiceSlots = (serviceId: string, date: string, signal?: AbortSignal) =>
   api.get<Slot[]>(`/api/services/${serviceId}/slots`, { date }, signal)
+
+export const getPricePreview = (serviceId: string, signal?: AbortSignal) =>
+  api.get<PricePreview>(`/api/services/${serviceId}/price-preview`, undefined, signal)
 
 export const createAppointment = (request: CreateAppointmentRequest) => api.post<BookedAppointment>('/api/appointments', request)
 

@@ -1,9 +1,10 @@
 import { useCallback, useState, type ReactNode } from 'react'
-import { createAppointment, listBranches } from '../../api/booking'
+import { createAppointment, getPricePreview, listBranches } from '../../api/booking'
 import { ApiError, readableMessage } from '../../api/errors'
 import type { BranchSummary, Department, DoctorSummary, Service, Slot } from '../../api/types'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
+import { Spinner } from '../../components/Spinner'
 import { Card } from '../../components/Card'
 import { LinkButton } from '../../components/LinkButton'
 import { StatusBadge } from '../../components/StatusBadge'
@@ -235,16 +236,36 @@ function SummaryDetails({ selection, startUtc, priceLabel, price }: { selection:
 }
 
 function Summary({ selection, error, submitting, onConfirm }: { selection: Selection; error: string | null; submitting: boolean; onConfirm: () => void }) {
+  const serviceId = selection.service?.id ?? ''
+  // The amount comes from the API, which prices it with the same strategy the booking uses.
+  const preview = useAsync(useCallback((signal: AbortSignal) => getPricePreview(serviceId, signal), [serviceId]))
+
   return (
     <div className="space-y-4">
       <Card>
         {selection.slot && selection.service ? (
           <SummaryDetails selection={selection} startUtc={selection.slot.startUtc} priceLabel="Hizmet bedeli" price={selection.service.basePrice} />
         ) : null}
-        <p className="mt-3 text-sm text-slate-600">Kesin tutar, sigorta durumunuza göre randevu kaydında belirlenir.</p>
+        <div className="mt-3 border-t border-slate-200 pt-3 text-base">
+          {preview.loading ? (
+            <Spinner label="Ödeyeceğiniz tutar hesaplanıyor..." />
+          ) : preview.error ? (
+            <div className="space-y-3">
+              <Alert tone="error">{preview.error}</Alert>
+              <Button variant="secondary" onClick={preview.reload}>
+                Yeniden dene
+              </Button>
+            </div>
+          ) : preview.data ? (
+            <p className="text-slate-900">
+              {preview.data.hasInsurance ? 'Sigortanıza göre ödeyeceğiniz tutar: ' : 'Sigortanız bulunmuyor. Ödeyeceğiniz tutar: '}
+              <span className="font-semibold tabular-nums">{formatCurrency(preview.data.price)}</span>
+            </p>
+          ) : null}
+        </div>
       </Card>
       {error ? <Alert tone="error">{error}</Alert> : null}
-      <Button size="lg" loading={submitting} onClick={onConfirm}>
+      <Button size="lg" loading={submitting} disabled={!preview.data} onClick={onConfirm}>
         Randevuyu onayla
       </Button>
     </div>

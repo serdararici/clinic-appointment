@@ -1,5 +1,6 @@
 using Clinic.Api.Security;
 using Microsoft.AspNetCore.Authorization;
+using Clinic.Application.Appointments;
 using Clinic.Application.Management;
 using Clinic.Application.Slots;
 using Microsoft.AspNetCore.Mvc;
@@ -12,12 +13,21 @@ namespace Clinic.Api.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/services")]
-public class ServicesController(IServiceCatalogService serviceCatalog, ISlotService slotService) : ControllerBase
+public class ServicesController(IServiceCatalogService serviceCatalog, ISlotService slotService, IAppointmentService appointmentService) : ControllerBase
 {
     [HttpGet("{serviceId:guid}")]
     [AllowAnonymous]
     public async Task<ActionResult<ServiceDto>> Get(Guid serviceId, CancellationToken cancellationToken) =>
         Ok(await serviceCatalog.GetAsync(serviceId, cancellationToken));
+
+    /// <summary>
+    /// What the logged-in patient would pay for the service (base price and the amount after their insurance
+    /// discount, if any). Creates nothing; the patient comes from the token.
+    /// </summary>
+    [HttpGet("{serviceId:guid}/price-preview")]
+    [Authorize(Roles = AppRoles.Patient)]
+    public async Task<ActionResult<PricePreviewDto>> PreviewPrice(Guid serviceId, CancellationToken cancellationToken) =>
+        Ok(await appointmentService.PreviewPriceAsync(serviceId, cancellationToken));
 
     /// <summary>409 if the type is changed while appointments exist for the service.</summary>
     [HttpPut("{serviceId:guid}")]
