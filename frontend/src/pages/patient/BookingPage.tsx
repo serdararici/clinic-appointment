@@ -9,6 +9,8 @@ import { Card } from '../../components/Card'
 import { LinkButton } from '../../components/LinkButton'
 import { StatusBadge } from '../../components/StatusBadge'
 import { StepIndicator } from '../../components/StepIndicator'
+import { useToast } from '../../components/useToast'
+import { SelectionAside, SelectionBar } from './SelectionPanel'
 import { formatCurrency, formatLongDate, formatTime } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { CHOICE_ORDER, EMPTY_SELECTION, type BookingResult, type Selection, type Step } from './booking-types'
@@ -38,6 +40,7 @@ function stepAfterService(service: Service): Step {
  */
 export function BookingPage() {
   usePageTitle('Randevu al')
+  const toast = useToast()
   const branches = useAsync(useCallback((signal: AbortSignal) => listBranches(signal), []))
 
   const [stack, setStack] = useState<Step[]>(['organization'])
@@ -51,17 +54,21 @@ export function BookingPage() {
   const push = (next: Step) => setStack((current) => [...current, next])
   const choose = (patch: Partial<Selection>) => setSelection((current) => ({ ...current, ...patch }))
 
-  const goBack = () => {
-    if (stack.length <= 1) return
-    const remaining = stack.slice(0, -1)
-    const top = remaining[remaining.length - 1]
-    // Forget what was chosen after the screen we return to (including choices made by skipped steps).
-    const topIndex = CHOICE_ORDER.findIndex(([name]) => name === top)
+  // Returns to a screen that is on the walked path, forgetting what was chosen after it (including the choices of
+  // skipped steps). Used by "Geri" (the previous screen) and by a click on a finished item of "Seçimleriniz".
+  const goTo = (target: Step) => {
+    const index = stack.lastIndexOf(target)
+    if (index < 0 || index === stack.length - 1) return
+    const targetIndex = CHOICE_ORDER.findIndex(([name]) => name === target)
     const cleared: Partial<Selection> = {}
-    for (const [, field] of CHOICE_ORDER.slice(topIndex + 1)) Object.assign(cleared, { [field]: null })
-    setStack(remaining)
+    for (const [, field] of CHOICE_ORDER.slice(targetIndex + 1)) Object.assign(cleared, { [field]: null })
+    setStack(stack.slice(0, index + 1))
     choose(cleared)
     setBookingError(null)
+  }
+
+  const goBack = () => {
+    if (stack.length > 1) goTo(stack[stack.length - 2])
   }
 
   const restart = () => {
@@ -128,6 +135,7 @@ export function BookingPage() {
       })
       setResult({ appointment, selection })
       push('done')
+      toast.success('Randevunuz oluşturuldu.')
     } catch (error) {
       setBookingError(readableMessage(error))
       // 409 / 422: the slot was taken or is no longer bookable. Go back to the slot screen, which loads fresh slots.
@@ -154,52 +162,63 @@ export function BookingPage() {
   }
   const currentIndex = Math.max(0, labels.indexOf(indicatorStep[step]))
 
+  const panel = {
+    selection,
+    organizationName: (branches.data ?? []).find((branch) => branch.organizationId === selection.organizationId)?.organizationName,
+    walked: stack,
+    onGoTo: goTo,
+    disabled: submitting,
+  }
+  const showPanel = step !== 'done'
+  // On a phone the bar appears once there is something to show.
+  const showBar = showPanel && Boolean(selection.organizationId || selection.branch)
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className={showPanel ? 'mx-auto max-w-5xl space-y-6' : 'mx-auto max-w-3xl space-y-6'}>
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Randevu al</h1>
 
-      {step !== 'done' ? <StepIndicator labels={labels} current={currentIndex} /> : null}
+      <div className={showPanel ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-8' : ''}>
+        <div className="min-w-0 space-y-6">
+          {step !== 'done' ? <StepIndicator labels={labels} current={currentIndex} /> : null}
+          {showBar ? <SelectionBar {...panel} /> : null}
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-slate-900">{HEADINGS[step]}</h2>
+          <div className="space-y-4">
+            <h2 className="text-xl font-semibold text-slate-900">{HEADINGS[step]}</h2>
 
-        {step !== 'done' && selection.branch ? (
-          <p className="text-sm text-slate-600">
-            {selection.branch.organizationName} · {selection.branch.name}
-            {selection.department ? ` · ${selection.department.name}` : ''}
-          </p>
-        ) : null}
+            {step === 'organization' ? <OrganizationStep branches={branches} onSelect={pickOrganization} /> : null}
+            {step === 'branch' && branches.data && selection.organizationId ? (
+              <BranchStep branches={branches.data} organizationId={selection.organizationId} onSelect={pickBranch} />
+            ) : null}
+            {step === 'department' && selection.branch ? <DepartmentStep branchId={selection.branch.id} onSelect={pickDepartment} /> : null}
+            {step === 'service' && selection.department ? (
+              <ServiceStep departmentId={selection.department.id} onSelect={pickService} onAutoSelect={autoPickService} />
+            ) : null}
+            {step === 'doctor' && selection.department && selection.service ? (
+              <DoctorStep departmentId={selection.department.id} serviceId={selection.service.id} selectedId={selection.doctor?.id ?? null} onSelect={pickDoctor} />
+            ) : null}
+            {step === 'slot' && selection.service ? (
+              <SlotStep
+                service={selection.service}
+                doctor={selection.doctor}
+                selected={selection.slot}
+                notice={bookingError}
+                onSelect={pickSlot}
+                onContinue={() => push('summary')}
+              />
+            ) : null}
+            {step === 'summary' ? <Summary selection={selection} error={bookingError} submitting={submitting} onConfirm={book} /> : null}
+            {step === 'done' && result ? <Done result={result} onRestart={restart} /> : null}
+          </div>
 
-        {step === 'organization' ? <OrganizationStep branches={branches} onSelect={pickOrganization} /> : null}
-        {step === 'branch' && branches.data && selection.organizationId ? (
-          <BranchStep branches={branches.data} organizationId={selection.organizationId} onSelect={pickBranch} />
-        ) : null}
-        {step === 'department' && selection.branch ? <DepartmentStep branchId={selection.branch.id} onSelect={pickDepartment} /> : null}
-        {step === 'service' && selection.department ? (
-          <ServiceStep departmentId={selection.department.id} onSelect={pickService} onAutoSelect={autoPickService} />
-        ) : null}
-        {step === 'doctor' && selection.department && selection.service ? (
-          <DoctorStep departmentId={selection.department.id} serviceId={selection.service.id} onSelect={pickDoctor} />
-        ) : null}
-        {step === 'slot' && selection.service ? (
-          <SlotStep
-            service={selection.service}
-            doctor={selection.doctor}
-            selected={selection.slot}
-            notice={bookingError}
-            onSelect={pickSlot}
-            onContinue={() => push('summary')}
-          />
-        ) : null}
-        {step === 'summary' ? <Summary selection={selection} error={bookingError} submitting={submitting} onConfirm={book} /> : null}
-        {step === 'done' && result ? <Done result={result} onRestart={restart} /> : null}
+          {stack.length > 1 && step !== 'done' ? (
+            <Button variant="secondary" size="lg" onClick={goBack} disabled={submitting}>
+              Geri
+            </Button>
+          ) : null}
+        </div>
+
+        {showPanel ? <SelectionAside {...panel} /> : null}
       </div>
-
-      {stack.length > 1 && step !== 'done' ? (
-        <Button variant="secondary" size="lg" onClick={goBack} disabled={submitting}>
-          Geri
-        </Button>
-      ) : null}
     </div>
   )
 }
@@ -208,7 +227,7 @@ function SummaryRow({ label, children }: { label: string; children: ReactNode })
   return (
     <div className="flex justify-between gap-4 py-2.5">
       <dt className="text-slate-600">{label}</dt>
-      <dd className="text-right font-medium text-slate-900">{children}</dd>
+      <dd className="min-w-0 break-words text-right font-medium text-slate-900">{children}</dd>
     </div>
   )
 }
@@ -276,17 +295,49 @@ function Summary({ selection, error, submitting, onConfirm }: { selection: Selec
 
 function Done({ result, onRestart }: { result: BookingResult; onRestart: () => void }) {
   const { appointment, selection } = result
+  const { branch, department, service, doctor } = selection
+  const headline = appointment.status === 'Confirmed' ? 'Randevunuz onaylandı.' : appointment.status === 'Pending' ? 'Randevunuz onay bekliyor.' : 'Randevunuz kaydedildi.'
+
   return (
-    <div className="space-y-4">
-      <Alert tone="success">Randevu talebiniz kaydedildi.</Alert>
-      <Card>
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <span className="text-sm text-slate-600">Durum</span>
-          <StatusBadge status={appointment.status} />
+    <div className="space-y-5">
+      <div className="flex items-center gap-4 rounded-lg border border-green-200 bg-green-50 p-4 text-green-900">
+        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-700 text-white" aria-hidden="true">
+          <svg viewBox="0 0 20 20" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
+        <div role="status">
+          <p className="text-lg font-semibold">{headline}</p>
+          <p className="text-sm">Randevu bilgileriniz aşağıda. “Randevularım” sayfasından da görebilirsiniz.</p>
         </div>
-        <SummaryDetails selection={selection} startUtc={appointment.scheduledStartUtc} priceLabel="Ücret" price={appointment.price} />
+      </div>
+
+      <Card>
+        <dl className="divide-y divide-slate-200 text-base">
+          <SummaryRow label="Kurum · Şube">
+            {branch?.organizationName} · {branch?.name}
+          </SummaryRow>
+          <SummaryRow label="Bölüm">{department?.name}</SummaryRow>
+          <SummaryRow label="Hizmet">
+            {service?.name}
+            {service ? <span className="block text-sm font-normal text-slate-600">{SERVICE_TYPE_LABELS[service.serviceType]}</span> : null}
+          </SummaryRow>
+          {doctor ? <SummaryRow label="Doktor">{doctor.fullName}</SummaryRow> : null}
+          <SummaryRow label="Tarih ve saat">
+            <span className="tabular-nums">
+              {formatLongDate(appointment.scheduledStartUtc)}, {formatTime(appointment.scheduledStartUtc)}
+            </span>
+          </SummaryRow>
+          <SummaryRow label="Ödenecek tutar">
+            <span className="tabular-nums">{formatCurrency(appointment.price)}</span>
+          </SummaryRow>
+          <SummaryRow label="Durum">
+            <StatusBadge status={appointment.status} />
+          </SummaryRow>
+        </dl>
       </Card>
-      <div className="flex flex-wrap gap-3">
+
+      <div className="flex flex-col gap-3 sm:flex-row">
         <LinkButton to="/hasta/randevularim" size="lg">
           Randevularım
         </LinkButton>

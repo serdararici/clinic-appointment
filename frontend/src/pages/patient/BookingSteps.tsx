@@ -4,14 +4,15 @@ import type { BranchSummary, Department, DoctorSummary, Service, Slot } from '..
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { ChoiceCard } from '../../components/ChoiceCard'
+import { DoctorCard } from './DoctorCard'
 import { EmptyState } from '../../components/EmptyState'
 import { Input } from '../../components/Input'
 import { Spinner } from '../../components/Spinner'
-import { BOOKING_WINDOW_DAYS, bookingWindow } from '../../utils/booking-window'
-import { formatCurrency, formatLongDate } from '../../utils/format'
+import { BOOKING_WINDOW_DAYS, addDays, bookingWindow } from '../../utils/booking-window'
+import { formatCurrency, formatLongDate, formatTime } from '../../utils/format'
 import { useAsync, type AsyncState } from '../../utils/useAsync'
 import { SERVICE_TYPE_LABELS } from './labels'
-import { SlotGrid } from './SlotGrid'
+import { SlotGrid, SlotLegend, SlotSkeleton } from './SlotGrid'
 
 // One component per step of the booking flow. Each loads its own list (with loading, error and empty states)
 // and reports the patient's choice upward; BookingPage decides what comes next.
@@ -29,14 +30,17 @@ function ListState<T>({
   state,
   emptyTitle,
   emptyDescription,
+  loading,
   children,
 }: {
   state: AsyncState<T[]>
   emptyTitle: string
   emptyDescription?: string
+  /** Shown while loading instead of the spinner (the slot grid uses a skeleton). */
+  loading?: ReactNode
   children: (items: T[]) => ReactNode
 }) {
-  if (state.loading) return <Loading />
+  if (state.loading) return loading ?? <Loading />
   if (state.error) {
     return (
       <div className="space-y-3">
@@ -151,7 +155,7 @@ export function ServiceStep({ departmentId, onSelect, onAutoSelect }: ServiceSte
   )
 }
 
-export function DoctorStep({ departmentId, serviceId, onSelect }: { departmentId: string; serviceId: string; onSelect: (doctor: DoctorSummary) => void }) {
+export function DoctorStep({ departmentId, serviceId, selectedId, onSelect }: { departmentId: string; serviceId: string; selectedId: string | null; onSelect: (doctor: DoctorSummary) => void }) {
   // Only doctors who offer the chosen service.
   const state = useAsync(
     useCallback(
@@ -162,15 +166,9 @@ export function DoctorStep({ departmentId, serviceId, onSelect }: { departmentId
   return (
     <ListState state={state} emptyTitle="Bu hizmeti veren doktor bulunmuyor" emptyDescription="Başka bir hizmet veya bölüm seçmeyi deneyin.">
       {(doctors) => (
-        <div className="space-y-3">
+        <div className="grid gap-3 sm:grid-cols-2">
           {doctors.map((doctor) => (
-            <ChoiceCard
-              key={doctor.id}
-              title={doctor.fullName}
-              description={doctor.departmentName}
-              meta={`${doctor.slotDurationMinutes} dk randevu`}
-              onSelect={() => onSelect(doctor)}
-            />
+            <DoctorCard key={doctor.id} doctor={doctor} selected={doctor.id === selectedId} onSelect={() => onSelect(doctor)} />
           ))}
         </div>
       )}
@@ -189,48 +187,79 @@ interface SlotStepProps {
   onContinue: () => void
 }
 
+/** A slot's hour in Turkey time (the grid is grouped by it). */
+const hourOf = (slot: Slot) => Number(formatTime(slot.startUtc).slice(0, 2))
+
 export function SlotStep({ service, doctor, selected, notice, onSelect, onContinue }: SlotStepProps) {
   // Patients can book from today up to BOOKING_WINDOW_DAYS days ahead (the API enforces the same window).
   const { min, max } = bookingWindow()
+  const tomorrow = addDays(min, 1)
   const [date, setDate] = useState(min)
 
   const serviceId = service.id
   const doctorId = doctor?.id ?? null
-  const state = useAsync(
-    useCallback(
-      (signal: AbortSignal) => (doctorId ? listDoctorSlots(doctorId, date, signal) : listServiceSlots(serviceId, date, signal)),
-      [doctorId, serviceId, date],
-    ),
+  const loadSlots = useCallback(
+    (day: string) => (signal: AbortSignal) => (doctorId ? listDoctorSlots(doctorId, day, signal) : listServiceSlots(serviceId, day, signal)),
+    [doctorId, serviceId],
   )
+  const loadDay = useCallback((signal: AbortSignal) => loadSlots(date)(signal), [loadSlots, date])
+  const loadToday = useCallback((signal: AbortSignal) => loadSlots(min)(signal), [loadSlots, min])
+  const state = useAsync(loadDay)
+  // Today's slots are checked on their own: "Bugün" is disabled once nothing is left today.
+  const today = useAsync(loadToday)
+  const todayFull = today.data !== undefined && !today.data.some((slot) => slot.status === 'Available')
 
   const hasAvailable = state.data?.some((slot) => slot.status === 'Available') ?? false
+
+  const chip = (label: string, day: string, disabled: boolean) => (
+    <Button variant={date === day ? 'primary' : 'secondary'} size="lg" aria-pressed={date === day} disabled={disabled} onClick={() => setDate(day)}>
+      {label}
+    </Button>
+  )
 
   return (
     <div className="space-y-5">
       {notice ? <Alert tone="error">{notice}</Alert> : null}
 
-      <div className="max-w-xs">
-        <Input
-          label="Tarih"
-          type="date"
-          size="lg"
-          min={min}
-          max={max}
-          hint={`En fazla ${BOOKING_WINDOW_DAYS} gün sonrasına randevu alabilirsiniz.`}
-          value={date}
-          onChange={(event) => {
-            // An empty value (the field was cleared) or a date outside the window is not queried.
-            if (event.target.value >= min && event.target.value <= max) setDate(event.target.value)
-          }}
-        />
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-full sm:w-auto sm:min-w-56">
+          <Input
+            label="Tarih"
+            type="date"
+            size="lg"
+            min={min}
+            max={max}
+            hint={`En fazla ${BOOKING_WINDOW_DAYS} gün sonrasına randevu alabilirsiniz.`}
+            value={date}
+            onChange={(event) => {
+              // An empty value (the field was cleared) or a date outside the window is not queried.
+              if (event.target.value >= min && event.target.value <= max) setDate(event.target.value)
+            }}
+          />
+        </div>
+        <div className="flex gap-2 sm:pb-6">
+          {chip('Bugün', min, todayFull)}
+          {tomorrow <= max ? chip('Yarın', tomorrow, false) : null}
+        </div>
       </div>
 
       <div className="space-y-3">
         <h2 className="text-base font-semibold text-slate-900">{formatLongDate(`${date}T12:00:00+03:00`)}</h2>
-        <ListState state={state} emptyTitle="Bu tarihte uygun saat yok" emptyDescription="Başka bir tarih seçmeyi deneyin.">
+        <ListState state={state} loading={<SlotSkeleton />} emptyTitle="Bu tarihte uygun saat yok" emptyDescription="Başka bir tarih seçmeyi deneyin.">
           {(slots) => (
-            <div className="space-y-3">
-              <SlotGrid slots={slots} selectedStartUtc={selected?.startUtc ?? null} onSelect={onSelect} />
+            <div className="space-y-4">
+              {[
+                { title: 'Sabah', items: slots.filter((slot) => hourOf(slot) < 12) },
+                { title: 'Öğleden sonra', items: slots.filter((slot) => hourOf(slot) >= 12) },
+              ]
+                .filter((group) => group.items.length > 0)
+                .map((group) => (
+                  <section key={group.title} aria-label={group.title} className="space-y-2">
+                    <h3 className="text-sm font-semibold text-slate-700">{group.title}</h3>
+                    <SlotGrid slots={group.items} selectedStartUtc={selected?.startUtc ?? null} onSelect={onSelect} />
+                  </section>
+                ))}
+              <SlotLegend />
               {!hasAvailable ? <Alert tone="info">Bu tarihte boş saat kalmadı. Başka bir tarih seçmeyi deneyin.</Alert> : null}
             </div>
           )}
