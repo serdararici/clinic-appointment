@@ -40,3 +40,8 @@ const isoDateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, ye
 export function todayIsoDate(): string {
   return isoDateFormat.format(new Date())
 }
+
+/** "Sakarya Şehir Hastanesi · Merkez": where an appointment is (organization and branch). */
+export function formatPlace(place: { organizationName: string; branchName: string }): string {
+  return `${place.organizationName} · ${place.branchName}`
+}

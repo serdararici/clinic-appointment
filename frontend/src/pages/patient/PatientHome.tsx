@@ -9,7 +9,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { LinkButton } from '../../components/LinkButton'
 import { Spinner } from '../../components/Spinner'
 import { StatusBadge } from '../../components/StatusBadge'
-import { formatCurrency, formatLongDate, formatTime } from '../../utils/format'
+import { formatCurrency, formatLongDate, formatPlace, formatTime } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { sortUpcoming } from './appointment-utils'
 
@@ -63,8 +63,9 @@ export function PatientHome() {
               <StatusBadge status={next.status} />
             </div>
             <p className="text-slate-700">
-              {next.serviceName} · {next.branchName}
+              {next.serviceName}
             </p>
+            <p className="text-slate-700">{formatPlace(next)}</p>
             <p className="text-sm text-slate-600">
               {next.staffMemberName ?? 'Doktor atanmadı'} · <span className="tabular-nums">{formatCurrency(next.price)}</span>
             </p>

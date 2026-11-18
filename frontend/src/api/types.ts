@@ -95,6 +95,7 @@ export interface AppointmentDetail {
   patientName: string
   staffMemberId: string | null
   staffMemberName: string | null
+  organizationName: string
   branchName: string
   serviceId: string
   serviceName: string

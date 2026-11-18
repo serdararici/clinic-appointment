@@ -23,6 +23,7 @@ public class AppointmentService(
     IPatientRepository patientRepository,
     IServiceRepository serviceRepository,
     IClinicFacilityRepository clinicFacilityRepository,
+    IHealthOrganizationRepository organizationRepository,
     IPricingStrategy pricingStrategy,
     IConfirmationPolicy confirmationPolicy,
     IUnitOfWork unitOfWork,
@@ -244,13 +245,26 @@ public class AppointmentService(
 
         // The branch is the one that owns the service's department (also true for examinations).
         var branchNames = new Dictionary<Guid, string>();
+        var organizationNames = new Dictionary<Guid, string>();
+        var organizationNamesByService = new Dictionary<Guid, string>();
         foreach (var service in services.Values)
         {
             var branch = await clinicFacilityRepository.GetByServiceIdAsync(service.Id, cancellationToken);
-            if (branch is not null)
+            if (branch is null)
             {
-                branchNames[service.Id] = branch.Name;
+                continue;
             }
+
+            branchNames[service.Id] = branch.Name;
+
+            // Look each organization up once, however many of its branches and appointments the list has.
+            if (!organizationNames.ContainsKey(branch.OrganizationId))
+            {
+                var organization = await organizationRepository.GetByIdAsync(branch.OrganizationId, cancellationToken);
+                organizationNames[branch.OrganizationId] = organization?.Name ?? string.Empty;
+            }
+
+            organizationNamesByService[service.Id] = organizationNames[branch.OrganizationId];
         }
 
         return appointments
@@ -264,6 +278,7 @@ public class AppointmentService(
                     patients.TryGetValue(a.PatientId, out var patient) ? patient.FullName : string.Empty,
                     a.StaffMemberId,
                     a.StaffMemberId is { } staffId && staffNames.TryGetValue(staffId, out var staffName) ? staffName : null,
+                    organizationNamesByService.GetValueOrDefault(a.ServiceId, string.Empty),
                     branchNames.GetValueOrDefault(a.ServiceId, string.Empty),
                     a.ServiceId,
                     service?.Name ?? string.Empty,

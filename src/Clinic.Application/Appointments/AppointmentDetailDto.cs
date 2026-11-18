@@ -4,7 +4,7 @@ using Clinic.Domain.Enums;
 namespace Clinic.Application.Appointments;
 
 /// <summary>
-/// An appointment as shown in a patient's or doctor's list: who (patient, staff member), where (branch),
+/// An appointment as shown in a patient's or doctor's list: who (patient, staff member), where (organization and branch),
 /// what (service), when, the price and the status. <paramref name="StaffMemberId"/> and
 /// <paramref name="StaffMemberName"/> are null for unassigned (diagnostic) appointments.
 /// </summary>
@@ -14,6 +14,7 @@ public record AppointmentDetailDto(
     string PatientName,
     Guid? StaffMemberId,
     string? StaffMemberName,
+    string OrganizationName,
     string BranchName,
     Guid ServiceId,
     string ServiceName,

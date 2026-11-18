@@ -28,7 +28,9 @@ public class AppointmentServiceTests
     private readonly FakeClinicFacilityRepository _clinics = new();
     private readonly FakeUnitOfWork _unitOfWork = new();
 
-    private readonly ClinicFacility _clinic = new(Guid.NewGuid(), "Merkez", "Test Address");
+    private readonly HealthOrganization _organization = new("Sakarya Şehir Hastanesi");
+    private readonly FakeHealthOrganizationRepository _organizations;
+    private readonly ClinicFacility _clinic;
     private readonly Department _department;
     private readonly Service _checkUp;
     private readonly Service _followUp;
@@ -40,6 +42,9 @@ public class AppointmentServiceTests
 
     public AppointmentServiceTests()
     {
+        _clinic = new(_organization.Id, "Merkez", "Test Address");
+        _organizations = new FakeHealthOrganizationRepository(_clinics);
+        _organizations.Items.Add(_organization);
         for (var day = DayOfWeek.Monday; day <= DayOfWeek.Friday; day++)
         {
             _clinic.AddWorkingHour(day, new TimeOnly(8, 0), new TimeOnly(17, 0));
@@ -73,7 +78,7 @@ public class AppointmentServiceTests
     }
 
     private AppointmentService CreateService(IPricingStrategy pricing, IConfirmationPolicy policy, DateTime? now = null, ICurrentUser? user = null) =>
-        new(_appointments, _doctors, _patients, _services, _clinics, pricing, policy, _unitOfWork,
+        new(_appointments, _doctors, _patients, _services, _clinics, _organizations, pricing, policy, _unitOfWork,
             new FixedTimeProvider(now ?? LongAgo),
             new AccessGuard(
                 user ?? FakeCurrentUser.Patient(_patient.Id),
@@ -564,6 +569,7 @@ public class AppointmentServiceTests
         Assert.Null(list[0].StaffMemberId);
         Assert.Null(list[0].StaffMemberName);      // unassigned
         Assert.Equal("Pat Ient", list[0].PatientName);
+        Assert.Equal("Sakarya Şehir Hastanesi", list[0].OrganizationName);
         Assert.Equal("Merkez", list[0].BranchName);
         Assert.Equal(350m, list[0].Price);
         Assert.Equal(AppointmentStatus.Confirmed, list[0].Status);
@@ -573,6 +579,7 @@ public class AppointmentServiceTests
         Assert.Equal("Genel Muayene", list[1].ServiceName);
         Assert.Equal(_doctor.Id, list[1].StaffMemberId);
         Assert.Equal("Dr. Test", list[1].StaffMemberName);
+        Assert.Equal("Sakarya Şehir Hastanesi", list[1].OrganizationName);
         Assert.Equal("Merkez", list[1].BranchName);
         Assert.Equal(AppointmentStatus.Cancelled, list[1].Status); // every status is listed
     }
@@ -618,6 +625,7 @@ public class AppointmentServiceTests
         Assert.Equal(300m, only.Price);
         Assert.Equal("Dr. Test", only.StaffMemberName);
         Assert.Equal("Pat Ient", only.PatientName);
+        Assert.Equal("Sakarya Şehir Hastanesi", only.OrganizationName);
         Assert.Equal("Merkez", only.BranchName);
         await Assert.ThrowsAsync<ForbiddenException>(() => doctorService.GetByDoctorAsync(Guid.NewGuid())); // not their own id
     }
