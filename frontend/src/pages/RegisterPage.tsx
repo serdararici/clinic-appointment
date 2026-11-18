@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { registerRequest } from '../api/auth'
 import { readableMessage } from '../api/errors'
 import { Alert } from '../components/Alert'
+import { todayIsoDate } from '../utils/format'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { Input } from '../components/Input'
@@ -42,8 +43,8 @@ function validate(values: FormValues, today: string): FormErrors {
 
 export function RegisterPage() {
   const navigate = useNavigate()
-  // "YYYY-MM-DD" in the visitor's own calendar; the native date input needs this format for its max value.
-  const today = new Date().toLocaleDateString('en-CA')
+  // "YYYY-MM-DD" in Turkey (the same helper as everywhere else); the native date input needs this format for its max value.
+  const today = todayIsoDate()
 
   const [values, setValues] = useState<FormValues>({
     fullName: '',

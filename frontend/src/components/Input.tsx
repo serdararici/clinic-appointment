@@ -25,7 +25,7 @@ export function Input({ label, hint, error, size = 'md', id, className, required
           'block w-full rounded-md border bg-white px-3 text-slate-900 placeholder:text-slate-400',
           'focus:border-teal-700 disabled:bg-slate-100 disabled:text-slate-500',
           error ? 'border-red-600' : 'border-slate-300',
-          size === 'lg' ? 'min-h-11 text-base' : 'h-10 text-sm',
+          size === 'lg' ? 'min-h-11 text-base' : 'min-h-11 text-base sm:h-10 sm:min-h-0 sm:text-sm',
           className,
         )}
         {...rest}

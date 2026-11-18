@@ -45,6 +45,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, danger = fa
     <Modal
       open={open}
       onClose={close}
+      dismissible={!busy}
       title={title}
       footer={
         <>

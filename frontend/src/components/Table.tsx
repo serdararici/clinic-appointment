@@ -84,7 +84,8 @@ export function Table<T>({
   return (
     <div className={frame}>
       {/* Tablet and desktop: a real table. */}
-      <table className="hidden w-full text-left text-sm md:table">
+      <div className="hidden overflow-x-auto md:block">
+      <table className="w-full min-w-max text-left text-sm">
         <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-600">
           <tr>
             {columns.map((column) => (
@@ -106,6 +107,7 @@ export function Table<T>({
           ))}
         </tbody>
       </table>
+      </div>
 
       {/* Phone: one card per row, label and value pairs. */}
       <ul className="divide-y divide-slate-200 md:hidden">

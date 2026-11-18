@@ -11,7 +11,7 @@ const variants: Record<ButtonVariant, string> = {
 }
 
 const sizes: Record<ButtonSize, string> = {
-  md: 'h-10 px-4 text-sm',
+  md: 'min-h-11 px-4 text-sm sm:h-10 sm:min-h-0',
   lg: 'min-h-11 px-6 text-base', // min-h-11 = 44px: the touch target of the patient flow
 }
 

@@ -23,23 +23,25 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
 
 export function DoctorFormModal({ open, departments, doctor, onClose, onSaved }: DoctorFormModalProps) {
+  const [busy, setBusy] = useState(false)
   return (
     <Modal
       open={open}
       onClose={onClose}
+      dismissible={!busy}
       title={doctor ? 'Doktoru düzenle' : 'Doktor ekle'}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             Vazgeç
           </Button>
-          <Button type="submit" form="doctor-form">
+          <Button type="submit" form="doctor-form" loading={busy}>
             Kaydet
           </Button>
         </>
       }
     >
-      {open ? <DoctorForm departments={departments} doctor={doctor} onSaved={onSaved} /> : null}
+      {open ? <DoctorForm departments={departments} doctor={doctor} onSaved={onSaved} onBusy={setBusy} /> : null}
     </Modal>
   )
 }
@@ -48,7 +50,7 @@ export function DoctorFormModal({ open, departments, doctor, onClose, onSaved }:
  * Add a doctor (name, email, temporary password, department) or edit one (name, email, phone, slot duration).
  * A doctor cannot be moved to another department here, and their availability is managed by the doctor.
  */
-function DoctorForm({ departments, doctor, onSaved }: { departments: readonly Department[]; doctor: StaffMember | null; onSaved: () => void }) {
+function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: readonly Department[]; doctor: StaffMember | null; onSaved: () => void; onBusy: (busy: boolean) => void }) {
   const [name, setName] = useState(doctor?.fullName ?? '')
   const [email, setEmail] = useState(doctor?.email ?? '')
   const [phone, setPhone] = useState(doctor?.phoneNumber ?? '')
@@ -70,6 +72,7 @@ function DoctorForm({ departments, doctor, onSaved }: { departments: readonly De
     setErrors(found)
     if (Object.keys(found).length > 0) return
 
+    onBusy(true)
     try {
       if (doctor) {
         await updateStaff(doctor.id, { fullName: name.trim(), email: email.trim(), phoneNumber: phone.trim() })
@@ -86,6 +89,8 @@ function DoctorForm({ departments, doctor, onSaved }: { departments: readonly De
       onSaved()
     } catch (caught) {
       setApiError(readableMessage(caught))
+    } finally {
+      onBusy(false)
     }
   }
 

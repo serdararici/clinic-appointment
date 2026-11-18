@@ -25,28 +25,30 @@ interface NameFormModalProps {
  * the modal is open, so it always starts with the given values.
  */
 export function NameFormModal(props: NameFormModalProps) {
+  const [busy, setBusy] = useState(false)
   return (
     <Modal
       open={props.open}
       onClose={props.onClose}
+      dismissible={!busy}
       title={props.title}
       footer={
         <>
-          <Button variant="secondary" onClick={props.onClose}>
+          <Button variant="secondary" onClick={props.onClose} disabled={busy}>
             Vazgeç
           </Button>
-          <Button type="submit" form="name-form">
+          <Button type="submit" form="name-form" loading={busy}>
             Kaydet
           </Button>
         </>
       }
     >
-      {props.open ? <NameForm {...props} /> : null}
+      {props.open ? <NameForm {...props} onBusy={setBusy} /> : null}
     </Modal>
   )
 }
 
-function NameForm({ nameLabel, addressLabel, initialName, initialAddress = '', nameRequiredMessage, addressRequiredMessage, onSubmit }: NameFormModalProps) {
+function NameForm({ nameLabel, addressLabel, initialName, initialAddress = '', nameRequiredMessage, addressRequiredMessage, onSubmit, onBusy }: NameFormModalProps & { onBusy: (busy: boolean) => void }) {
   const [name, setName] = useState(initialName)
   const [address, setAddress] = useState(initialAddress)
   const [errors, setErrors] = useState<{ name?: string; address?: string }>({})
@@ -60,10 +62,13 @@ function NameForm({ nameLabel, addressLabel, initialName, initialAddress = '', n
     if (addressLabel && !address.trim()) found.address = addressRequiredMessage
     setErrors(found)
     if (Object.keys(found).length > 0) return
+    onBusy(true)
     try {
       await onSubmit(name.trim(), address.trim())
     } catch (caught) {
       setApiError(readableMessage(caught))
+    } finally {
+      onBusy(false)
     }
   }
 

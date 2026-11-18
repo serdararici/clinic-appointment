@@ -52,7 +52,7 @@ export function AvailabilityList({ doctorId, rows, loading, error, slotDurationM
   const columns: Column<Availability>[] = [
     { key: 'date', header: 'Tarih', primary: true, cell: (row) => <span className="tabular-nums">{formatDate(row.startUtc)}</span> },
     { key: 'time', header: 'Saat aralığı', cell: (row) => <span className="tabular-nums">{formatTime(row.startUtc)} – {formatTime(row.endUtc)}</span> },
-    { key: 'slots', header: 'Randevu aralığı', align: 'right', cell: (row) => slotCount(rangeMinutes(row), slotDurationMinutes) },
+    { key: 'slots', header: 'Randevu sayısı', align: 'right', cell: (row) => slotCount(rangeMinutes(row), slotDurationMinutes) },
     {
       key: 'actions',
       header: '',

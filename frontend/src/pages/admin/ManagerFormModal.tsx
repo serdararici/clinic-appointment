@@ -21,29 +21,31 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const MIN_PASSWORD_LENGTH = 8
 
 export function ManagerFormModal({ open, branches, manager, onClose, onSaved }: ManagerFormModalProps) {
+  const [busy, setBusy] = useState(false)
   return (
     <Modal
       open={open}
       onClose={onClose}
+      dismissible={!busy}
       title={manager ? 'Yöneticiyi düzenle' : 'Yönetici ekle'}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             Vazgeç
           </Button>
-          <Button type="submit" form="manager-form">
+          <Button type="submit" form="manager-form" loading={busy}>
             Kaydet
           </Button>
         </>
       }
     >
-      {open ? <ManagerForm branches={branches} manager={manager} onSaved={onSaved} /> : null}
+      {open ? <ManagerForm branches={branches} manager={manager} onSaved={onSaved} onBusy={setBusy} /> : null}
     </Modal>
   )
 }
 
 /** Add a clinic manager (name, email, temporary password, branch) or edit one (name, email, phone). */
-function ManagerForm({ branches, manager, onSaved }: { branches: readonly BranchSummary[]; manager: ClinicManagerAccount | null; onSaved: () => void }) {
+function ManagerForm({ branches, manager, onSaved, onBusy }: { branches: readonly BranchSummary[]; manager: ClinicManagerAccount | null; onSaved: () => void; onBusy: (busy: boolean) => void }) {
   const [name, setName] = useState(manager?.fullName ?? '')
   const [email, setEmail] = useState(manager?.email ?? '')
   const [phone, setPhone] = useState(manager?.phoneNumber ?? '')
@@ -64,12 +66,15 @@ function ManagerForm({ branches, manager, onSaved }: { branches: readonly Branch
     setErrors(found)
     if (Object.keys(found).length > 0) return
 
+    onBusy(true)
     try {
       if (manager) await updateManager(manager.id, { fullName: name.trim(), email: email.trim(), phoneNumber: phone.trim() })
       else await createManager(branchId, { fullName: name.trim(), email: email.trim(), password, phoneNumber: phone.trim() || undefined })
       onSaved()
     } catch (caught) {
       setApiError(readableMessage(caught))
+    } finally {
+      onBusy(false)
     }
   }
 

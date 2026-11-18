@@ -24,23 +24,25 @@ const DEFAULT_EXAMINATION_MINUTES = 30
 const MAX_PRICE = 99_999_999.99
 
 export function ServiceFormModal({ open, departmentId, service, onClose, onSaved }: ServiceFormModalProps) {
+  const [busy, setBusy] = useState(false)
   return (
     <Modal
       open={open}
       onClose={onClose}
+      dismissible={!busy}
       title={service ? 'Hizmeti düzenle' : 'Hizmet ekle'}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={onClose} disabled={busy}>
             Vazgeç
           </Button>
-          <Button type="submit" form="service-form">
+          <Button type="submit" form="service-form" loading={busy}>
             Kaydet
           </Button>
         </>
       }
     >
-      {open ? <ServiceForm departmentId={departmentId} service={service} onSaved={onSaved} /> : null}
+      {open ? <ServiceForm departmentId={departmentId} service={service} onSaved={onSaved} onBusy={setBusy} /> : null}
     </Modal>
   )
 }
@@ -53,7 +55,7 @@ function parsePrice(text: string): number | null {
   return value <= MAX_PRICE ? value : null
 }
 
-function ServiceForm({ departmentId, service, onSaved }: { departmentId: string; service: Service | null; onSaved: () => void }) {
+function ServiceForm({ departmentId, service, onSaved, onBusy }: { departmentId: string; service: Service | null; onSaved: () => void; onBusy: (busy: boolean) => void }) {
   const [name, setName] = useState(service?.name ?? '')
   const [type, setType] = useState<ServiceType>(service?.serviceType ?? 'Examination')
   const [duration, setDuration] = useState(String(service && service.serviceType === 'Diagnostic' ? service.durationMinutes : 20))
@@ -82,12 +84,15 @@ function ServiceForm({ departmentId, service, onSaved }: { departmentId: string;
       durationMinutes: type === 'Diagnostic' ? minutes : (service?.durationMinutes ?? DEFAULT_EXAMINATION_MINUTES),
       basePrice: amount,
     }
+    onBusy(true)
     try {
       if (service) await updateService(service.id, request)
       else await createService(departmentId, request)
       onSaved()
     } catch (caught) {
       setApiError(readableMessage(caught))
+    } finally {
+      onBusy(false)
     }
   }
 
