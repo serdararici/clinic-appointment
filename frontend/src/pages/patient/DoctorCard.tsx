@@ -1,7 +1,7 @@
 import type { DoctorSummary } from '../../api/types'
 import { Badge } from '../../components/Badge'
 import { cx } from '../../utils/cx'
-import { avatarToneOf, initialsOf } from './avatar'
+import { avatarToneOf, initialsOf } from '../../utils/avatar'
 
 interface DoctorCardProps {
   doctor: DoctorSummary

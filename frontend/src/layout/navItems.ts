@@ -11,7 +11,8 @@ export interface NavItem {
  * (appointments, schedule, management lists...) they get listed here and nowhere else.
  */
 export function navItemsFor(role: Role): NavItem[] {
-  return [...roleItems(role), { to: '/hesabim', label: 'Hesabım' }]
+  // "Hesabım" is in the account menu (and the phone menu), not among the page links.
+  return roleItems(role)
 }
 
 function roleItems(role: Role): NavItem[] {

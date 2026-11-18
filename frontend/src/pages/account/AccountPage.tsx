@@ -20,7 +20,7 @@ export function AccountPage() {
   const account = saved ?? state.data
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="max-w-3xl space-y-5">
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Hesabım</h1>
         {account ? <Badge tone="teal">{ROLE_LABELS[account.role]}</Badge> : null}

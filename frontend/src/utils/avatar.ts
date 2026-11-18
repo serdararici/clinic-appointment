@@ -26,3 +26,8 @@ export function avatarToneOf(fullName: string): string {
   for (const char of fullName) hash = (hash * 31 + char.codePointAt(0)!) >>> 0
   return AVATAR_TONES[hash % AVATAR_TONES.length]
 }
+
+/** The first name for the navbar ("Dr. Hakan Yıldız" gives "Hakan"). */
+export function firstNameOf(fullName: string): string {
+  return fullName.replace(/^\s*dr\.?\s+/i, '').split(/\s+/).filter(Boolean)[0] ?? fullName
+}

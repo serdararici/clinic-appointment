@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { LogoMark } from '../components/LogoMark'
 
 const FEATURES = ['Hastalar birkaç adımda randevu alır.', 'Doktorlar kendi çalışma takvimini yönetir.', 'Klinikler tek yerden yönetilir.']
 const TAGLINE = 'Randevu alın, takviminizi ve kliniğinizi tek yerden yönetin.'
@@ -8,17 +9,6 @@ function Check() {
     <svg viewBox="0 0 20 20" className="mt-0.5 h-5 w-5 shrink-0 text-teal-300" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
       <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
-  )
-}
-
-// A plain geometric mark (a cross in a rounded square); it stands for no real organization.
-function Mark() {
-  return (
-    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-teal-700 text-white" aria-hidden="true">
-      <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
-        <path d="M10 4v12M4 10h12" />
-      </svg>
-    </span>
   )
 }
 
@@ -49,7 +39,7 @@ export function AuthLayout({ title, subtitle, children, footer, demo }: AuthLayo
         <div className="absolute -bottom-28 -left-20 h-80 w-80 rounded-full bg-teal-700/25" aria-hidden="true" />
 
         <div className="relative flex items-center gap-3">
-          <Mark />
+          <LogoMark className="h-9 w-9" />
           <span className="text-lg font-semibold tracking-tight">Klinik Randevu</span>
         </div>
 
@@ -75,7 +65,7 @@ export function AuthLayout({ title, subtitle, children, footer, demo }: AuthLayo
           <header className="relative overflow-hidden bg-slate-900 px-4 py-5 text-white lg:hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-slate-900 to-teal-800" aria-hidden="true" />
             <div className="relative flex items-center gap-3">
-              <Mark />
+              <LogoMark className="h-9 w-9" />
               <div>
                 <p className="text-base font-semibold leading-tight tracking-tight">Klinik Randevu</p>
                 <p className="text-sm text-slate-300">{TAGLINE}</p>

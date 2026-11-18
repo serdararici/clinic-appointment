@@ -174,7 +174,7 @@ export function BookingPage() {
   const showBar = showPanel && Boolean(selection.organizationId || selection.branch)
 
   return (
-    <div className={showPanel ? 'mx-auto max-w-5xl space-y-6' : 'mx-auto max-w-3xl space-y-6'}>
+    <div className={showPanel ? 'space-y-6' : 'max-w-3xl space-y-6'}>
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Randevu al</h1>
 
       <div className={showPanel ? 'lg:grid lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start lg:gap-8' : ''}>

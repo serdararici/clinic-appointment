@@ -37,7 +37,7 @@ export function PatientHome() {
   const next = state.data ? sortUpcoming(state.data, now)[0] : undefined
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="max-w-3xl space-y-6">
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Merhaba, {user?.name}</h1>
 
       <div className="grid gap-4 sm:grid-cols-2">
