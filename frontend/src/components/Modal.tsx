@@ -39,7 +39,7 @@ export function Modal({ open, onClose, title, children, footer, dismissible = tr
       onClick={(event) => {
         if (event.target === event.currentTarget && dismissible) onClose()
       }}
-      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-lg border border-slate-200 bg-white p-0 text-slate-900 backdrop:bg-slate-900/40"
+      className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-sm p-0 text-slate-900 backdrop:bg-slate-900/40"
     >
       <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-3">
         <h2 className="text-base font-semibold">{title}</h2>

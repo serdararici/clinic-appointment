@@ -83,7 +83,7 @@ function ItemList({ selection, organizationName, walked, onGoTo, disabled }: Sel
 /** Desktop (lg and up): a sticky side panel "Seçimleriniz". A finished item is a button that goes back to its step. */
 export function SelectionAside(props: SelectionPanelProps) {
   return (
-    <aside aria-label="Seçimleriniz" className="hidden self-start rounded-lg border border-slate-200 bg-white p-4 lg:sticky lg:top-6 lg:block">
+    <aside aria-label="Seçimleriniz" className="hidden self-start rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-6 lg:block">
       <h2 className="mb-2 px-1 text-base font-semibold text-slate-900">Seçimleriniz</h2>
       <ItemList {...props} />
     </aside>
@@ -94,7 +94,7 @@ export function SelectionAside(props: SelectionPanelProps) {
 export function SelectionBar(props: SelectionPanelProps) {
   const chosen = buildItems(props.selection, props.organizationName, props.walked).filter((item) => item.value).length
   return (
-    <details className="rounded-lg border border-slate-200 bg-white lg:hidden">
+    <details className="rounded-xl border border-slate-200 bg-white shadow-sm lg:hidden">
       <summary className="flex min-h-11 cursor-pointer items-center justify-between gap-3 px-4 py-2 text-sm font-semibold text-slate-900">
         <span>Seçimleriniz</span>
         <span className="font-normal tabular-nums text-slate-600">{chosen} seçim</span>

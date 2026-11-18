@@ -1,4 +1,6 @@
 import type { Slot } from '../../api/types'
+import { Check } from 'lucide-react'
+import { Icon } from '../../components/Icon'
 import { cx } from '../../utils/cx'
 import { formatTime } from '../../utils/format'
 
@@ -36,9 +38,7 @@ export function SlotGrid({ slots, selectedStartUtc, onSelect }: SlotGridProps) {
             >
               <span className={cx('flex items-center gap-1', slot.status === 'Booked' && 'line-through')}>
                 {selected ? (
-                  <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                    <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Icon icon={Check} size={16} />
                 ) : null}
                 {formatTime(slot.startUtc)}
               </span>
@@ -64,9 +64,7 @@ export function SlotLegend() {
       </li>
       <li className="flex items-center gap-2">
         <span className={cx(box, 'border-green-700 bg-green-700 text-white')}>
-          <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="3" aria-hidden="true">
-            <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Icon icon={Check} size={12} />
           09:30
         </span>
         Seçili

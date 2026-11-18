@@ -1,11 +1,12 @@
 import { ROLE_LABELS } from '../auth/roles'
 import { Card } from '../components/Card'
 import { DEMO_ACCOUNTS, DEMO_PASSWORD } from './demo-accounts-data'
+import { Users } from 'lucide-react'
 
 /** A hint on the login page: pick a demo account to fill in the form. */
 export function DemoAccounts({ onPick }: { onPick: (email: string, password: string) => void }) {
   return (
-    <Card title="Demo hesapları">
+    <Card title="Demo hesapları" icon={Users}>
       <p className="mb-3 text-sm text-slate-600">
         Denemek için bir hesap seçin. Tüm hesapların şifresi{' '}
         <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-slate-900">{DEMO_PASSWORD}</code> şeklindedir.

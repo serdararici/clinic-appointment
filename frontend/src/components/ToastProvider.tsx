@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { CircleAlert, CircleCheck, X } from 'lucide-react'
 import { cx } from '../utils/cx'
+import { Icon } from './Icon'
 import { ToastContext, type ToastApi, type ToastVariant } from './toast-context'
 
 const AUTO_DISMISS_MS = 4000
@@ -16,16 +18,8 @@ const styles: Record<ToastVariant, string> = {
 }
 
 // The icon says "done" or "problem" too, so the variant is never carried by color alone.
-function Icon({ variant }: { variant: ToastVariant }) {
-  return variant === 'success' ? (
-    <svg viewBox="0 0 20 20" className="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-      <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ) : (
-    <svg viewBox="0 0 20 20" className="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-      <path d="M10 5v6M10 14.5v.5" strokeLinecap="round" />
-    </svg>
-  )
+function ToastIcon({ variant }: { variant: ToastVariant }) {
+  return <Icon icon={variant === 'success' ? CircleCheck : CircleAlert} size={20} className="mt-px" />
 }
 
 /**
@@ -72,9 +66,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={cx('pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-lg border px-4 py-3 text-sm shadow-md sm:w-auto sm:min-w-72', styles[toast.variant])}
+            className={cx('pointer-events-auto flex w-full max-w-sm items-start gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm sm:w-auto sm:min-w-72', styles[toast.variant])}
           >
-            <Icon variant={toast.variant} />
+            <ToastIcon variant={toast.variant} />
             <p className="flex-1">{toast.message}</p>
             <button
               type="button"
@@ -82,9 +76,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               aria-label="Bildirimi kapat"
               className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md hover:bg-black/5 sm:-m-1 sm:h-8 sm:w-8"
             >
-              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path d="m5 5 10 10M15 5 5 15" strokeLinecap="round" />
-              </svg>
+              <Icon icon={X} size={16} />
             </button>
           </div>
         ))}

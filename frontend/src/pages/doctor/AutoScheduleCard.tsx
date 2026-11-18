@@ -9,6 +9,7 @@ import { BOOKING_WINDOW_DAYS } from '../../utils/booking-window'
 import { cx } from '../../utils/cx'
 import { useAsync } from '../../utils/useAsync'
 import { useToast } from '../../components/useToast'
+import { Repeat } from 'lucide-react'
 
 /**
  * The switch of the automatic work schedule. While it is on, the API keeps the next 14 days filled with the default
@@ -40,7 +41,7 @@ export function AutoScheduleCard({ doctorId, onChanged }: { doctorId: string; on
   }
 
   return (
-    <Card title="Otomatik çalışma takvimi">
+    <Card title="Otomatik çalışma takvimi" icon={Repeat}>
       <div className="space-y-4">
         {enabled === undefined ? (
           state.error ? (

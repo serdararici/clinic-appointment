@@ -9,6 +9,7 @@ import { LinkButton } from '../../components/LinkButton'
 import { Spinner } from '../../components/Spinner'
 import { useAsync } from '../../utils/useAsync'
 import { usePageTitle } from '../../utils/usePageTitle'
+import { Building2 } from 'lucide-react'
 
 interface Summary {
   organizationName: string
@@ -58,7 +59,7 @@ export function ManagerHome() {
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Merhaba, {user?.name}</h1>
 
-      <Card title={state.data ? `${state.data.organizationName} · ${state.data.branchName}` : 'Şubeniz'}>
+      <Card icon={Building2} title={state.data ? `${state.data.organizationName} · ${state.data.branchName}` : 'Şubeniz'}>
         {state.loading ? (
           <Spinner label="Yükleniyor..." />
         ) : state.error ? (

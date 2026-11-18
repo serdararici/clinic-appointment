@@ -11,6 +11,7 @@ import { formatLongDate, formatTime } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { sortToday, sortUpcoming } from '../patient/appointment-utils'
 import { usePageTitle } from '../../utils/usePageTitle'
+import { CalendarClock } from 'lucide-react'
 
 const todayColumns: Column<AppointmentDetail>[] = [
   { key: 'time', header: 'Saat', primary: true, cell: (row) => <span className="font-medium tabular-nums">{formatTime(row.scheduledStartUtc)}</span> },
@@ -62,7 +63,7 @@ export function DoctorHome() {
         />
       </section>
 
-      <Card title="Yaklaşan randevular">
+      <Card title="Yaklaşan randevular" icon={CalendarClock}>
         {appointments.loading || appointments.error ? (
           <p className="text-sm text-slate-600">{appointments.error ?? 'Yükleniyor...'}</p>
         ) : (

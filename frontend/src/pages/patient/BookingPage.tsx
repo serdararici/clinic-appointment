@@ -17,6 +17,8 @@ import { CHOICE_ORDER, EMPTY_SELECTION, type BookingResult, type Selection, type
 import { BranchStep, DepartmentStep, DoctorStep, OrganizationStep, ServiceStep, SlotStep } from './BookingSteps'
 import { SERVICE_TYPE_LABELS } from './labels'
 import { usePageTitle } from '../../utils/usePageTitle'
+import { Check } from 'lucide-react'
+import { Icon } from '../../components/Icon'
 
 const HEADINGS: Record<Step, string> = {
   organization: 'Kurum seçin',
@@ -302,9 +304,7 @@ function Done({ result, onRestart }: { result: BookingResult; onRestart: () => v
     <div className="space-y-5">
       <div className="flex items-center gap-4 rounded-lg border border-green-200 bg-green-50 p-4 text-green-900">
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-700 text-white" aria-hidden="true">
-          <svg viewBox="0 0 20 20" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.4">
-            <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          <Icon icon={Check} size={24} />
         </span>
         <div role="status">
           <p className="text-lg font-semibold">{headline}</p>

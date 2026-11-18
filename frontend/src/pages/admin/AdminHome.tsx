@@ -9,6 +9,7 @@ import { LinkButton } from '../../components/LinkButton'
 import { Spinner } from '../../components/Spinner'
 import { useAsync } from '../../utils/useAsync'
 import { usePageTitle } from '../../utils/usePageTitle'
+import { Activity } from 'lucide-react'
 
 interface Counts {
   organizations: number
@@ -51,7 +52,7 @@ export function AdminHome() {
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Merhaba, {user?.name}</h1>
 
-      <Card title="Sistem özeti">
+      <Card title="Sistem özeti" icon={Activity}>
         {state.loading ? (
           <Spinner label="Yükleniyor..." />
         ) : state.error ? (

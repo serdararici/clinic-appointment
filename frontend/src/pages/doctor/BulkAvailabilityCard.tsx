@@ -9,6 +9,7 @@ import { Input } from '../../components/Input'
 import { isoDateOf, todayIsoDate } from '../../utils/format'
 import { DEFAULT_WEEKDAYS, WEEKDAYS, minutesOf, previewBulk, type TimeWindow } from './availability-utils'
 import { useToast } from '../../components/useToast'
+import { CalendarRange } from 'lucide-react'
 
 interface BulkAvailabilityCardProps {
   doctorId: string
@@ -116,7 +117,7 @@ export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }:
   }
 
   return (
-    <Card title="Toplu uygunluk ekle">
+    <Card title="Toplu uygunluk ekle" icon={CalendarRange}>
       <form onSubmit={submit} noValidate className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Başlangıç tarihi" type="date" min={todayIsoDate()} value={fromDate} onChange={(e) => setFromDate(e.target.value)} error={errors.from} />

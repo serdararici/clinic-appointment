@@ -1,4 +1,6 @@
 import { cx } from '../utils/cx'
+import { Check } from 'lucide-react'
+import { Icon } from './Icon'
 
 interface StepIndicatorProps {
   labels: readonly string[]
@@ -31,9 +33,7 @@ export function StepIndicator({ labels, current }: StepIndicatorProps) {
                 )}
               >
                 {done ? (
-                  <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
-                    <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Icon icon={Check} size={16} />
                 ) : (
                   index + 1
                 )}

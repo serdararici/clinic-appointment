@@ -8,6 +8,7 @@ import { Input } from '../../components/Input'
 import { istanbulToUtcIso, todayIsoDate } from '../../utils/format'
 import { minutesOf } from './availability-utils'
 import { useToast } from '../../components/useToast'
+import { CalendarPlus } from 'lucide-react'
 
 /** Adds one availability range on one day. Times are Turkey time and are sent to the API as UTC. */
 export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string; onAdded: () => void }) {
@@ -50,7 +51,7 @@ export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string
   }
 
   return (
-    <Card title="Tek aralık ekle">
+    <Card title="Tek aralık ekle" icon={CalendarPlus}>
       <form onSubmit={submit} noValidate className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-3">
           <Input label="Tarih" type="date" min={todayIsoDate()} value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />

@@ -325,21 +325,34 @@ Code, identifiers and comments are English; **all user-facing text is Turkish**.
 
 - **No generic AI aesthetics**: no purple or indigo gradients, no glow or floating effects, no glassmorphism,
   no emoji, no stock illustrations, no placeholder or invented data (show real API data or an honest empty state).
+- **Avoid the template look**: no colored circle or tile behind every icon; no row of three identical cards with
+  icon, title and blurb; no oversized hero icons; **one accent color only** (teal); hierarchy through size, weight
+  and spacing; real data wherever something is shown.
 - **Palette**: primary deep slate `#0f172a` (slate-900) and teal `#0f766e` (teal-700), neutral background `#f8fafc`
   (slate-50), crisp borders (`border-slate-200`). Status colors are used consistently everywhere: **pending amber,
   confirmed green, rejected or cancelled red or slate**.
+- **Soft surfaces**: cards are `rounded-xl` with a slate-200 border and a light shadow (`shadow-sm`, nothing heavier);
+  a very light slate or teal tint is allowed on card headers and selected areas. The shared `Card`, `Table`,
+  `ChoiceCard`, `FilterBar` and `Modal` all use this surface, the same on every role's pages.
+- **Gradients**: a subtle teal-to-slate gradient is allowed **only in brand areas** (the login/register panel, a page
+  header band), never elsewhere and never purple.
+- **Icons**: only through **lucide-react** (an icon set, not a component kit) and the shared `Icon` component (18px by
+  default, 16 to 20px next to labels, stroke 1.75, `aria-hidden`). An icon always sits next to text that says the same
+  thing; it is never the only signal. The logo mark (`LogoMark`, the favicon's cross) stays our own SVG. Empty states
+  may use a simple geometric SVG drawn by us.
 - **Typography**: one clean font (Inter or the system font), high contrast, hierarchy through font weight and size
   rather than bright colors, tabular numbers (`tabular-nums`) for times and prices.
-- **Layout**: staff and admin screens (doctor, manager, admin) are dense and efficient like Linear or Stripe: clean
-  tables, structured detail panels. The patient booking flow is calmer and roomier: a step-by-step flow with large
-  touch targets (at least 44px).
+- **Layout**: staff and admin screens (doctor, manager, admin) stay dense and efficient like Linear or Stripe: clean
+  tables, structured detail panels. Patient pages may be warmer and richer; the booking flow is calmer and roomier: a
+  step-by-step flow with large touch targets (at least 44px).
 - **Slot states**: available is neutral gray, booked is red with the text "Dolu" and struck through, selected is
   green with a check mark. Never rely on color alone.
 - **States**: every list has loading, empty and error states in Turkish. Tables turn into card lists on phone width.
 - **Formats**: tr-TR dates and 24-hour times in Europe/Istanbul, prices as tr-TR currency with the ₺ symbol.
-- **Light theme only**, no decorative animation (subtle transitions only; a loading spinner is allowed).
-- **Libraries**: Tailwind CSS and React Router only. No component kits (no shadcn, MUI and the like); the shared
-  building blocks are our own small components in `frontend/src/components`.
+- **Light theme only. Motion**: short transitions on hover, focus, menus and toasts only; no looping or decorative
+  animation (a loading spinner and a loading skeleton are allowed).
+- **Libraries**: Tailwind CSS, React Router and lucide-react (icons only). No component kits or other UI libraries
+  (no shadcn, MUI and the like); the shared building blocks are our own small components in `frontend/src/components`.
 
 ## Testing
 

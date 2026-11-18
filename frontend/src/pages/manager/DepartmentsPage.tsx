@@ -18,6 +18,7 @@ import { DepartmentFormModal } from './DepartmentFormModal'
 import { ServiceFormModal } from './ServiceFormModal'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { useToast } from '../../components/useToast'
+import { Hospital } from 'lucide-react'
 
 interface DepartmentWithServices {
   department: Department
@@ -108,6 +109,7 @@ export function DepartmentsPage() {
           <Card
             key={department.id}
             title={department.name}
+            icon={Hospital}
             flush
             actions={
               <span className="flex flex-wrap gap-2">
@@ -133,7 +135,7 @@ export function DepartmentsPage() {
           </Card>
         ))
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <EmptyState title="Henüz bölüm yok" description="“Bölüm ekle” ile ilk bölümü oluşturun." />
         </div>
       )}

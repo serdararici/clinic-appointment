@@ -1,15 +1,13 @@
 import type { ReactNode } from 'react'
+import { ChevronDown, CircleCheck } from 'lucide-react'
+import { Icon } from '../components/Icon'
 import { LogoMark } from '../components/LogoMark'
 
 const FEATURES = ['Hastalar birkaç adımda randevu alır.', 'Doktorlar kendi çalışma takvimini yönetir.', 'Klinikler tek yerden yönetilir.']
 const TAGLINE = 'Randevu alın, takviminizi ve kliniğinizi tek yerden yönetin.'
 
 function Check() {
-  return (
-    <svg viewBox="0 0 20 20" className="mt-0.5 h-5 w-5 shrink-0 text-teal-300" fill="none" stroke="currentColor" strokeWidth="2.2" aria-hidden="true">
-      <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
+  return <Icon icon={CircleCheck} size={20} className="mt-0.5 text-teal-300" />
 }
 
 interface AuthLayoutProps {
@@ -87,9 +85,7 @@ export function AuthLayout({ title, subtitle, children, footer, demo }: AuthLayo
           {demo ? (
             <a href="#demo-hesaplari" className="flex items-center justify-center gap-1.5 pb-6 text-sm text-slate-600 hover:text-slate-900">
               Demo hesapları için aşağı kaydırın
-              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <path d="m5 8 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Icon icon={ChevronDown} size={16} />
             </a>
           ) : null}
         </div>

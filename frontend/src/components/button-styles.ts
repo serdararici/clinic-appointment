@@ -18,7 +18,7 @@ const sizes: Record<ButtonSize, string> = {
 /** The classes shared by <Button> and <LinkButton>, so a link can look exactly like a button. */
 export function buttonClasses(variant: ButtonVariant, size: ButtonSize, extra?: string): string {
   return cx(
-    'inline-flex items-center justify-center gap-2 rounded-md font-medium transition-colors',
+    'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors duration-150',
     'disabled:cursor-not-allowed disabled:opacity-50',
     variants[variant],
     sizes[size],

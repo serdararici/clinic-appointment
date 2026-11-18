@@ -1,8 +1,10 @@
 import { useEffect, useId, useRef, useState } from 'react'
+import { ChevronDown, LogOut, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { SessionUser } from '../auth/jwt'
 import { ROLE_LABELS } from '../auth/roles'
 import { Badge } from '../components/Badge'
+import { Icon } from '../components/Icon'
 import { avatarToneOf, firstNameOf, initialsOf } from '../utils/avatar'
 import { cx } from '../utils/cx'
 
@@ -89,13 +91,11 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
       >
         <UserAvatar name={user.name} className="h-8 w-8" />
         <span className="max-w-36 truncate">{firstNameOf(user.name)}</span>
-        <svg viewBox="0 0 20 20" className={cx('h-4 w-4 text-slate-500 transition-transform', open && 'rotate-180')} fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-          <path d="m5 8 5 5 5-5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Icon icon={ChevronDown} size={16} className={cx('text-slate-500 transition-transform duration-150', open && 'rotate-180')} />
       </button>
 
       {open ? (
-        <div id={panelId} className="absolute right-0 z-40 mt-2 w-72 rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div id={panelId} className="absolute right-0 z-40 mt-2 w-72 rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex items-start gap-3 border-b border-slate-200 p-4">
             <UserAvatar name={user.name} />
             <UserIdentity user={user} />
@@ -104,8 +104,9 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
             <Link
               to="/hesabim"
               onClick={() => setOpen(false)}
-              className="flex min-h-10 items-center rounded-md px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+              className="flex min-h-10 items-center gap-2.5 rounded-md px-3 text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
             >
+              <Icon icon={UserRound} className="text-slate-500" />
               Hesabım
             </Link>
             <button
@@ -114,8 +115,9 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
                 setOpen(false)
                 onLogout()
               }}
-              className="flex min-h-10 w-full items-center rounded-md px-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+              className="flex min-h-10 w-full items-center gap-2.5 rounded-md px-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-100 hover:text-slate-900"
             >
+              <Icon icon={LogOut} className="text-slate-500" />
               Çıkış yap
             </button>
           </div>

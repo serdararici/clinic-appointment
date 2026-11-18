@@ -4,6 +4,7 @@ import { Alert } from './Alert'
 import { Button } from './Button'
 import { EmptyState } from './EmptyState'
 import { Spinner } from './Spinner'
+import { FilterX, RotateCw, SearchX } from 'lucide-react'
 
 export interface Column<T> {
   key: string
@@ -52,7 +53,7 @@ export function Table<T>({
   filtersHideAll = false,
   onClearFilters,
 }: TableProps<T>) {
-  const frame = 'overflow-hidden rounded-lg border border-slate-200 bg-white'
+  const frame = 'overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm'
 
   if (loading) {
     return (
@@ -67,7 +68,7 @@ export function Table<T>({
       <div className={cx(frame, 'space-y-3 p-4')}>
         <Alert tone="error">{error}</Alert>
         {onRetry ? (
-          <Button variant="secondary" onClick={onRetry}>
+          <Button variant="secondary" icon={RotateCw} onClick={onRetry}>
             Yeniden dene
           </Button>
         ) : null}
@@ -80,10 +81,11 @@ export function Table<T>({
       return (
         <div className={frame}>
           <EmptyState
+            icon={SearchX}
             title="Filtreyle eşleşen kayıt yok"
             description="Aramanızı veya filtreleri değiştirin."
             action={
-              <Button variant="secondary" onClick={onClearFilters}>
+              <Button variant="secondary" icon={FilterX} onClick={onClearFilters}>
                 Filtreleri temizle
               </Button>
             }

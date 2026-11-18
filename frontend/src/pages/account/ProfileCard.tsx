@@ -8,6 +8,7 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { useToast } from '../../components/useToast'
+import { UserRound } from 'lucide-react'
 
 const MAX_PHONE_LENGTH = 30
 const MAX_INSURANCE_LENGTH = 50
@@ -56,7 +57,7 @@ export function ProfileCard({ account, onSaved }: { account: Account; onSaved: (
   }
 
   return (
-    <Card title="Kişisel bilgiler">
+    <Card title="Kişisel bilgiler" icon={UserRound}>
       <form onSubmit={submit} noValidate className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <Input label="Ad soyad" value={name} onChange={(event) => setName(event.target.value)} error={errors.name} />

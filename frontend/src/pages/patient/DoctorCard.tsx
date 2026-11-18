@@ -2,6 +2,8 @@ import type { DoctorSummary } from '../../api/types'
 import { Badge } from '../../components/Badge'
 import { cx } from '../../utils/cx'
 import { avatarToneOf, initialsOf } from '../../utils/avatar'
+import { CircleCheck } from 'lucide-react'
+import { Icon } from '../../components/Icon'
 
 interface DoctorCardProps {
   doctor: DoctorSummary
@@ -22,7 +24,7 @@ export function DoctorCard({ doctor, selected, onSelect }: DoctorCardProps) {
       onClick={onSelect}
       aria-pressed={selected}
       className={cx(
-        'flex min-h-20 w-full items-center gap-4 rounded-lg border bg-white px-4 py-3 text-left transition-colors',
+        'flex min-h-20 w-full items-center gap-4 rounded-xl border bg-white px-4 py-3 text-left shadow-sm transition-colors duration-150',
         selected ? 'border-2 border-teal-700 bg-teal-50' : 'border-slate-200 hover:border-teal-700 hover:bg-teal-50',
       )}
     >
@@ -37,9 +39,7 @@ export function DoctorCard({ doctor, selected, onSelect }: DoctorCardProps) {
         </span>
       </span>
       {selected ? (
-        <svg viewBox="0 0 20 20" className="h-6 w-6 shrink-0 text-teal-700" fill="none" stroke="currentColor" strokeWidth="2.4" aria-hidden="true">
-          <path d="M4 10.5 8 14.5 16 6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+        <Icon icon={CircleCheck} size={22} className="text-teal-700" />
       ) : null}
       {selected ? <span className="sr-only">(seçili)</span> : null}
     </button>

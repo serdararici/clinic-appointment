@@ -17,6 +17,8 @@ import { AppointmentCalendar } from './AppointmentCalendar'
 import { isActive, sortPast, sortUpcoming } from './appointment-utils'
 import { ServiceLabel } from './ServiceLabel'
 import { usePatientAppointments } from './usePatientAppointments'
+import { CalendarClock, CalendarDays, CalendarPlus, ChartColumn, ClipboardList, History, ShieldCheck, type LucideIcon } from 'lucide-react'
+import { Icon } from '../../components/Icon'
 
 /** Grey bars in the shape of a card's content while it loads. */
 function Skeleton({ lines = 3 }: { lines?: number }) {
@@ -31,12 +33,12 @@ function Skeleton({ lines = 3 }: { lines?: number }) {
 
 function QuickActions() {
   return (
-    <Card title="Hızlı işlemler">
+    <Card title="Hızlı işlemler" icon={CalendarPlus}>
       <div className="flex flex-col gap-3">
-        <LinkButton to="/hasta/randevu-al" size="lg">
+        <LinkButton to="/hasta/randevu-al" size="lg" icon={CalendarPlus}>
           Randevu al
         </LinkButton>
-        <LinkButton to="/hasta/randevularim" variant="secondary" size="lg">
+        <LinkButton to="/hasta/randevularim" variant="secondary" size="lg" icon={ClipboardList}>
           Randevularım
         </LinkButton>
       </div>
@@ -47,7 +49,7 @@ function QuickActions() {
 /** The "Sıradaki randevunuz" card, unchanged in content. */
 function NextAppointment({ next }: { next: AppointmentDetail | undefined }) {
   return (
-    <Card title="Sıradaki randevunuz">
+    <Card title="Sıradaki randevunuz" icon={CalendarClock}>
       {next ? (
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
@@ -75,10 +77,13 @@ function NextAppointment({ next }: { next: AppointmentDetail | undefined }) {
   )
 }
 
-function Counter({ label, value, hint }: { label: string; value: ReactNode; hint: string }) {
+function Counter({ label, value, hint, icon }: { label: string; value: ReactNode; hint: string; icon: LucideIcon }) {
   return (
     <div className="space-y-0.5">
-      <dt className="text-sm text-slate-600">{label}</dt>
+      <dt className="flex items-center gap-1.5 text-sm text-slate-600">
+        <Icon icon={icon} size={16} className="text-slate-400" />
+        {label}
+      </dt>
       <dd className="text-3xl font-semibold tabular-nums text-slate-900">{value}</dd>
       <dd className="text-xs text-slate-500">{hint}</dd>
     </div>
@@ -89,7 +94,7 @@ function Counter({ label, value, hint }: { label: string; value: ReactNode; hint
 function InsuranceCard() {
   const account = useAsync(useCallback((signal: AbortSignal) => getAccount(signal), []))
   return (
-    <Card title="Sigorta">
+    <Card title="Sigorta" icon={ShieldCheck}>
       {account.loading ? (
         <Skeleton lines={2} />
       ) : account.error ? (
@@ -144,10 +149,10 @@ export function PatientHome() {
 
   const main = state.loading ? (
     <>
-      <Card title="Sıradaki randevunuz">
+      <Card title="Sıradaki randevunuz" icon={CalendarClock}>
         <Skeleton />
       </Card>
-      <Card title="Takvim">
+      <Card title="Takvim" icon={CalendarDays}>
         <Skeleton lines={6} />
       </Card>
     </>
@@ -163,6 +168,7 @@ export function PatientHome() {
   ) : appointments && appointments.length === 0 ? (
     <Card>
       <EmptyState
+        icon={CalendarDays}
         title="Henüz randevunuz yok"
         description="İlk randevunuzu birkaç adımda alabilirsiniz. Aldığınız randevular burada ve takvimde görünür."
         action={
@@ -175,7 +181,7 @@ export function PatientHome() {
   ) : appointments ? (
     <>
       <NextAppointment next={next} />
-      <Card title="Takvim">
+      <Card title="Takvim" icon={CalendarDays}>
         <AppointmentCalendar appointments={appointments} today={today} initialDay={next ? isoDateOf(next.scheduledStartUtc) : today} />
       </Card>
     </>
@@ -200,12 +206,12 @@ export function PatientHome() {
           <div className="hidden lg:block">
             <QuickActions />
           </div>
-          <Card title="Randevu özeti">
+          <Card title="Randevu özeti" icon={ChartColumn}>
             {counts ? (
               <dl className="grid grid-cols-3 gap-4">
-                <Counter label="Yaklaşan" value={counts.upcoming} hint="aktif randevu" />
-                <Counter label="Bu ay" value={counts.thisMonth} hint="iptal hariç" />
-                <Counter label="Geçmiş" value={counts.past} hint="tümü" />
+                <Counter label="Yaklaşan" icon={CalendarClock} value={counts.upcoming} hint="aktif randevu" />
+                <Counter label="Bu ay" icon={CalendarDays} value={counts.thisMonth} hint="iptal hariç" />
+                <Counter label="Geçmiş" icon={History} value={counts.past} hint="tümü" />
               </dl>
             ) : state.error ? (
               <p className="text-sm text-slate-600">Randevular yüklenemedi.</p>

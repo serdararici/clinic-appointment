@@ -15,6 +15,7 @@ import { NameFormModal } from './NameFormModal'
 import { WorkingHoursModal } from './WorkingHoursModal'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { useToast } from '../../components/useToast'
+import { Building2 } from 'lucide-react'
 
 interface BranchRow {
   branch: BranchSummary
@@ -109,6 +110,7 @@ export function OrganizationsPage() {
           <Card
             key={organization.id}
             title={organization.name}
+            icon={Building2}
             flush
             actions={
               <span className="flex flex-wrap gap-2">
@@ -134,7 +136,7 @@ export function OrganizationsPage() {
           </Card>
         ))
       ) : (
-        <div className="rounded-lg border border-slate-200 bg-white">
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <EmptyState title="Henüz kurum yok" description="“Kurum ekle” ile ilk kurumu oluşturun." />
         </div>
       )}

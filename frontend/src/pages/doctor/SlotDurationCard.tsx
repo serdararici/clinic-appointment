@@ -7,6 +7,7 @@ import { Card } from '../../components/Card'
 import { Select } from '../../components/Select'
 import { SLOT_DURATIONS } from './availability-utils'
 import { useToast } from '../../components/useToast'
+import { Timer } from 'lucide-react'
 
 interface SlotDurationCardProps {
   doctorId: string
@@ -40,7 +41,7 @@ export function SlotDurationCard({ doctorId, current, onSaved }: SlotDurationCar
   }
 
   return (
-    <Card title="Randevu süresi">
+    <Card title="Randevu süresi" icon={Timer}>
       <div className="space-y-4">
         <p className="text-sm text-slate-700">
           Şu anki randevu süreniz: <span className="font-semibold tabular-nums text-slate-900">{current} dakika</span>

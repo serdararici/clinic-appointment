@@ -13,6 +13,7 @@ import { formatCurrency, formatLongDate, formatTime } from '../../utils/format'
 import { useAsync, type AsyncState } from '../../utils/useAsync'
 import { SERVICE_TYPE_LABELS } from './labels'
 import { SlotGrid, SlotLegend, SlotSkeleton } from './SlotGrid'
+import { Building2, Hospital, MapPin, Microscope, Stethoscope } from 'lucide-react'
 
 // One component per step of the booking flow. Each loads its own list (with loading, error and empty states)
 // and reports the patient's choice upward; BookingPage decides what comes next.
@@ -53,7 +54,7 @@ function ListState<T>({
   }
   if (!state.data || state.data.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white">
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <EmptyState title={emptyTitle} description={emptyDescription} />
       </div>
     )
@@ -80,6 +81,7 @@ export function OrganizationStep({ branches, onSelect }: { branches: AsyncState<
           {list.map(([id, organization]) => (
             <ChoiceCard
               key={id}
+              icon={Building2}
               title={organization.name}
               description={organization.branchCount === 1 ? '1 şube' : `${organization.branchCount} şube`}
               onSelect={() => onSelect(id)}
@@ -97,7 +99,7 @@ export function BranchStep({ branches, organizationId, onSelect }: { branches: B
       {branches
         .filter((branch) => branch.organizationId === organizationId)
         .map((branch) => (
-          <ChoiceCard key={branch.id} title={branch.name} description={branch.address} onSelect={() => onSelect(branch)} />
+          <ChoiceCard key={branch.id} icon={MapPin} title={branch.name} description={branch.address} onSelect={() => onSelect(branch)} />
         ))}
     </div>
   )
@@ -110,7 +112,7 @@ export function DepartmentStep({ branchId, onSelect }: { branchId: string; onSel
       {(departments) => (
         <div className="space-y-3">
           {departments.map((department) => (
-            <ChoiceCard key={department.id} title={department.name} onSelect={() => onSelect(department)} />
+            <ChoiceCard key={department.id} icon={Hospital} title={department.name} onSelect={() => onSelect(department)} />
           ))}
         </div>
       )}
@@ -143,6 +145,7 @@ export function ServiceStep({ departmentId, onSelect, onAutoSelect }: ServiceSte
           {services.map((service) => (
             <ChoiceCard
               key={service.id}
+              icon={service.serviceType === 'Examination' ? Stethoscope : Microscope}
               title={service.name}
               description={`${SERVICE_TYPE_LABELS[service.serviceType]} · ${service.durationMinutes} dk`}
               meta={formatCurrency(service.basePrice)}

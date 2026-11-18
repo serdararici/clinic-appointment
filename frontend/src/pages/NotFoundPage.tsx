@@ -6,7 +6,7 @@ import { usePageTitle } from '../utils/usePageTitle'
 export function NotFoundPage() {
   usePageTitle('Sayfa bulunamadı')
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       <EmptyState
         title="Sayfa bulunamadı"
         description="Aradığınız sayfa mevcut değil veya taşınmış olabilir."

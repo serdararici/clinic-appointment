@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Icon } from '../../components/Icon'
 import type { AppointmentDetail } from '../../api/types'
 import { StatusBadge } from '../../components/StatusBadge'
 import { cx } from '../../utils/cx'
@@ -17,11 +19,7 @@ interface AppointmentCalendarProps {
 }
 
 function Chevron({ direction }: { direction: 'left' | 'right' }) {
-  return (
-    <svg viewBox="0 0 20 20" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d={direction === 'left' ? 'm12 5-5 5 5 5' : 'm8 5 5 5-5 5'} strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  )
+  return <Icon icon={direction === 'left' ? ChevronLeft : ChevronRight} size={20} />
 }
 
 /**

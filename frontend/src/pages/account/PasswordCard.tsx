@@ -6,6 +6,7 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { useToast } from '../../components/useToast'
+import { KeyRound } from 'lucide-react'
 
 // The same limits as registration (the API checks them too).
 const MIN_PASSWORD_LENGTH = 8
@@ -49,7 +50,7 @@ export function PasswordCard() {
   }
 
   return (
-    <Card title="Şifre değiştir">
+    <Card title="Şifre değiştir" icon={KeyRound}>
       <form onSubmit={submit} noValidate className="max-w-md space-y-4">
         <Input label="Mevcut şifre" type="password" autoComplete="current-password" value={current} onChange={(event) => setCurrent(event.target.value)} error={errors.current} />
         <Input
