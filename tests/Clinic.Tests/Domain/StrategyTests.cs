@@ -49,14 +49,39 @@ public class StrategyTests
     {
         IConfirmationPolicy policy = new AutoConfirmationPolicy();
 
-        Assert.Equal(AppointmentStatus.Confirmed, policy.DetermineInitialStatus());
+        Assert.Equal(AppointmentStatus.Confirmed, policy.DetermineInitialStatus(null));
     }
 
     [Fact]
-    public void ManagerApprovalConfirmationPolicy_ReturnsPending()
+    public void ApprovalRequiredConfirmationPolicy_ReturnsPending()
     {
-        IConfirmationPolicy policy = new ManagerApprovalConfirmationPolicy();
+        IConfirmationPolicy policy = new ApprovalRequiredConfirmationPolicy();
 
-        Assert.Equal(AppointmentStatus.Pending, policy.DetermineInitialStatus());
+        Assert.Equal(AppointmentStatus.Pending, policy.DetermineInitialStatus(null));
+    }
+
+    // ---- DoctorPreferenceConfirmationPolicy: each doctor chooses ----
+
+    private static IConfirmationPolicy DoctorPreference() =>
+        new DoctorPreferenceConfirmationPolicy(new AutoConfirmationPolicy(), new ApprovalRequiredConfirmationPolicy());
+
+    [Fact]
+    public void DoctorPreferencePolicy_ConfirmsABookingWithoutADoctor()
+    {
+        Assert.Equal(AppointmentStatus.Confirmed, DoctorPreference().DetermineInitialStatus(null));
+    }
+
+    [Fact]
+    public void DoctorPreferencePolicy_ConfirmsWhenTheDoctorAutoConfirms_AndIsPendingWhenTheyApprove()
+    {
+        var doctor = TestData.NewDoctor();
+        Assert.True(doctor.AutoConfirmAppointments); // on by default
+        Assert.Equal(AppointmentStatus.Confirmed, DoctorPreference().DetermineInitialStatus(doctor));
+
+        doctor.SetAutoConfirm(false);
+        Assert.Equal(AppointmentStatus.Pending, DoctorPreference().DetermineInitialStatus(doctor));
+
+        doctor.SetAutoConfirm(true);
+        Assert.Equal(AppointmentStatus.Confirmed, DoctorPreference().DetermineInitialStatus(doctor));
     }
 }

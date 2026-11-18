@@ -6,10 +6,10 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Spinner } from '../../components/Spinner'
 import { BOOKING_WINDOW_DAYS } from '../../utils/booking-window'
-import { cx } from '../../utils/cx'
 import { useAsync } from '../../utils/useAsync'
 import { useToast } from '../../components/useToast'
 import { Repeat } from 'lucide-react'
+import { Switch } from '../../components/Switch'
 
 /**
  * The switch of the automatic work schedule. While it is on, the API keeps the next 14 days filled with the default
@@ -56,20 +56,7 @@ export function AutoScheduleCard({ doctorId, onChanged }: { doctorId: string; on
           )
         ) : (
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={enabled}
-              aria-label="Otomatik çalışma takvimi"
-              disabled={saving}
-              onClick={toggle}
-              className={cx(
-                'relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50',
-                enabled ? 'bg-teal-700' : 'bg-slate-300',
-              )}
-            >
-              <span className={cx('absolute top-0.5 h-6 w-6 rounded-full bg-white transition-all', enabled ? 'left-[1.375rem]' : 'left-0.5')} />
-            </button>
+            <Switch checked={enabled} onChange={toggle} label="Otomatik çalışma takvimi" disabled={saving} />
             <span className="text-sm font-medium text-slate-900">{enabled ? 'Açık' : 'Kapalı'}</span>
             {saving ? <Spinner label="" /> : null}
           </div>

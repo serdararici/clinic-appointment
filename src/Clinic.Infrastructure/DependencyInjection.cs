@@ -47,7 +47,12 @@ public static class DependencyInjection
         // Default strategy implementations (Strategy pattern); swap these registrations
         // to change pricing/approval behavior without touching AppointmentService.
         services.AddScoped<IPricingStrategy, InsuranceDiscountPricingStrategy>();
-        services.AddScoped<IConfirmationPolicy, AutoConfirmationPolicy>();
+
+        // Confirmation: each doctor chooses between auto-confirming and approving appointments themselves. To switch the
+        // whole system back to auto-confirm, register AutoConfirmationPolicy as IConfirmationPolicy here instead.
+        services.AddScoped<AutoConfirmationPolicy>();
+        services.AddScoped<ApprovalRequiredConfirmationPolicy>();
+        services.AddScoped<IConfirmationPolicy, DoctorPreferenceConfirmationPolicy>();
 
         return services;
     }

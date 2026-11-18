@@ -73,6 +73,8 @@ const KNOWN_MESSAGES: ReadonlyArray<readonly [RegExp, (match: RegExpMatchArray) 
   [/belongs to another organization/i, () => 'Bu kayıt başka bir kuruma ait.'],
   [/endtime must be after starttime/i, () => 'Bitiş saati başlangıç saatinden sonra olmalıdır.'],
   [/^email is required/i, () => 'E-posta zorunludur.'],
+  [/cannot confirm an appointment in status/i, () => 'Yalnızca onay bekleyen randevular onaylanabilir.'],
+  [/cannot reject an appointment in status/i, () => 'Yalnızca onay bekleyen randevular reddedilebilir.'],
   // The booking-window message is already Turkish (written for the patient), so it is shown as it is.
   [/^Randevu yalnızca bugünden itibaren.*$/, (m) => m[0]],
   [/authentication is required/i, () => 'Devam etmek için giriş yapmalısınız.'],

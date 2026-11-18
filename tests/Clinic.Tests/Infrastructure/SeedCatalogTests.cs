@@ -29,6 +29,16 @@ public class SeedCatalogTests
     }
 
     [Fact]
+    public void ExactlyOneSeededDoctor_ApprovesAppointmentsHimself_ForTheApprovalDemo()
+    {
+        var approvers = Branches.SelectMany(b => b).SelectMany(d => d.Doctors).Where(d => !d.AutoConfirm).ToList();
+
+        var doctor = Assert.Single(approvers);
+        Assert.Equal("kemal.aslan@sakaryasehir.example", doctor.Email);
+        Assert.Contains(SeedCatalog.Merkez.Single(d => d.Name == "Kardiyoloji").Doctors, d => d.Email == doctor.Email);
+    }
+
+    [Fact]
     public void DepartmentsWithoutExaminationServices_HaveNoDoctors()
     {
         foreach (var department in Branches.SelectMany(b => b).Where(d => d.Services.All(s => s.Type == ServiceType.Diagnostic)))

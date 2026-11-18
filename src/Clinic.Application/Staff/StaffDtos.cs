@@ -20,7 +20,9 @@ public record StaffDto(
 public record DoctorSummaryDto(Guid Id, string FullName, string DepartmentName, int SlotDurationMinutes, IReadOnlyList<ServiceDto> Services);
 
 /// <summary>The logged-in doctor's own profile: name, department (their specialty is the department name) and slot duration.</summary>
-public record DoctorProfileDto(Guid Id, string FullName, Guid DepartmentId, string DepartmentName, int SlotDurationMinutes);
+public record DoctorProfileDto(Guid Id, string FullName, Guid DepartmentId, string DepartmentName, int SlotDurationMinutes, bool AutoConfirmAppointments);
+
+public record SetAutoConfirmRequest(bool Enabled);
 
 /// <summary>
 /// Input DTO for registering a doctor. <paramref name="Password"/> is the temporary password the doctor logs in with

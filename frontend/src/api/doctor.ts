@@ -40,3 +40,12 @@ export const getAutoSchedule = (doctorId: string, signal?: AbortSignal) =>
 /** Turning it on fills the booking window with the default hours right away. */
 export const setAutoSchedule = (doctorId: string, enabled: boolean) =>
   api.put<AutoSchedule>(`/api/doctors/${doctorId}/auto-schedule`, { enabled })
+
+/** The doctor chooses whether new appointments are confirmed at once or wait for their approval. */
+export const setAutoConfirm = (doctorId: string, enabled: boolean) =>
+  api.put<DoctorProfile>(`/api/doctors/${doctorId}/auto-confirm`, { enabled })
+
+/** Only a Pending appointment can be confirmed or rejected (409 otherwise). */
+export const confirmAppointment = (appointmentId: string) => api.post<void>(`/api/appointments/${appointmentId}/confirm`)
+
+export const rejectAppointment = (appointmentId: string) => api.post<void>(`/api/appointments/${appointmentId}/reject`)

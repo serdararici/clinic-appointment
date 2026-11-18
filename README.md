@@ -47,6 +47,15 @@ All demo accounts use the password **`Demo123!`**.
 | Doctor | `hakan.yildiz@sakaryasehir.example`, `elif.sahin@sakaryasehir.example`, `zeynep.celik@sakaryasehir.example`, `burak.ozturk@sakaryasehir.example`, `can.aksoy@marmarapoliklinik.example` |
 | Patient | `ahmet.celik@example.com`, `fatma.yildirim@example.com` |
 
+### Demo of the appointment approval flow
+
+Every doctor decides whether new appointments are confirmed at once (the default) or wait for their approval. In the
+seed data exactly one doctor approves appointments himself: **`kemal.aslan@sakaryasehir.example`** (Dr. Kemal Aslan,
+Kardiyoloji, Merkez). To see the flow: log in as a patient and book a Kardiyoloji examination with Dr. Kemal Aslan (it
+shows "Onay bekliyor"), then log in as him and open **Randevular > Bekleyen** to "Onayla" or "Reddet" it; the patient
+then sees "Onaylandı" or "Reddedildi". Doctors change the setting on their Randevular page ("Randevu onayı").
+The seed only runs on an empty database, so an existing `ClinicDb` must be dropped to apply this change.
+
 ## Production note
 
 The committed `appsettings.json` contains a **development-only** JWT signing key. In any real deployment override it

@@ -142,6 +142,8 @@ export interface DoctorProfile {
   departmentId: string
   departmentName: string
   slotDurationMinutes: number
+  /** True: new appointments are confirmed at once; false: they wait for the doctor's approval. */
+  autoConfirmAppointments: boolean
 }
 
 // ---- Availability ----

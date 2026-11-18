@@ -1,3 +1,4 @@
+using Clinic.Application.Auth;
 using Clinic.Application.Exceptions;
 using Clinic.Application.Staff;
 using Clinic.Domain.Enums;
@@ -399,6 +400,54 @@ public class StaffServiceTests
 
         Assert.Equal(doctor.Id, (await _f.StaffService().GetAsync(doctor.Id)).Id);
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _f.StaffService().GetAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task AutoConfirm_IsOnByDefault_CanBeSwitchedByTheOwnDoctor_AndShowsInTheProfile()
+    {
+        var doctor = _f.AddDoctor(NewDepartment(), "own@example.com", "Dr. Kendi");
+        _f.CurrentUser = FakeCurrentUser.Doctor(doctor.Id);
+        var service = _f.StaffService();
+
+        Assert.True((await service.GetDoctorProfileAsync(doctor.Id)).AutoConfirmAppointments);
+
+        var off = await service.SetAutoConfirmAsync(doctor.Id, false);
+        Assert.False(off.AutoConfirmAppointments);
+        Assert.False(doctor.AutoConfirmAppointments);
+        Assert.False((await service.GetDoctorProfileAsync(doctor.Id)).AutoConfirmAppointments);
+
+        Assert.True((await service.SetAutoConfirmAsync(doctor.Id, true)).AutoConfirmAppointments);
+    }
+
+    [Fact]
+    public async Task AutoConfirm_TurningItOn_DoesNotTouchAppointmentsThatAreAlreadyPending()
+    {
+        var doctor = _f.AddDoctor(NewDepartment(), "own@example.com", "Dr. Kendi");
+        doctor.SetAutoConfirm(false);
+        var pending = new Clinic.Domain.Appointments.Appointment(
+            Guid.NewGuid(), doctor.Id, Guid.NewGuid(), DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(1).AddMinutes(30), 100m, AppointmentStatus.Pending);
+        _f.Appointments.Items.Add(pending);
+        _f.CurrentUser = FakeCurrentUser.Doctor(doctor.Id);
+
+        await _f.StaffService().SetAutoConfirmAsync(doctor.Id, true);
+
+        Assert.Equal(AppointmentStatus.Pending, pending.Status);
+    }
+
+    [Fact]
+    public async Task AutoConfirm_IsOwnDoctorOnly()
+    {
+        var department = NewDepartment();
+        var doctor = _f.AddDoctor(department, "own@example.com", "Dr. Kendi");
+        var other = _f.AddDoctor(department, "other@example.com", "Dr. Baska");
+
+        foreach (var caller in new ICurrentUser[] { FakeCurrentUser.Doctor(other.Id), FakeCurrentUser.Patient(Guid.NewGuid()), FakeCurrentUser.Manager(department.ClinicFacilityId), FakeCurrentUser.Admin(), FakeCurrentUser.Anonymous() })
+        {
+            _f.CurrentUser = caller;
+            await Assert.ThrowsAsync<ForbiddenException>(() => _f.StaffService().SetAutoConfirmAsync(doctor.Id, false));
+        }
+
+        Assert.True(doctor.AutoConfirmAppointments);
     }
 
     [Fact]

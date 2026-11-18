@@ -61,8 +61,8 @@ Domain must never reference Application, Infrastructure, or Api.
   polymorphism, e.g. the abstract `RoleName`). The whole tree is stored in one
   `Users` table (EF Core TPH) with a `UserType` discriminator.
 - **Strategy pattern**: `IPricingStrategy` (e.g. standard vs. discounted/
-  insurance pricing for a service) and `IConfirmationPolicy` (e.g. auto-confirm
-  vs. manager-approval-required appointment confirmation).
+  insurance pricing for a service) and `IConfirmationPolicy` (auto-confirm,
+  approval-required, and the per-doctor choice, see "Appointment approval").
 - **Repository pattern**: generic `IRepository<T>` plus focused repository
   interfaces (e.g. `IAppointmentRepository`, `IDoctorRepository`) implemented
   in Infrastructure against EF Core.
@@ -124,6 +124,17 @@ for examinations, `doctorId`).
   the branch's service grid, ends by closing time, and is stored **unassigned**
   (`StaffMemberId` is null). No two active appointments may overlap for the same service
   in the same branch (a service belongs to one branch through its department).
+- **Appointment approval** (per doctor): `Doctor.AutoConfirmAppointments` (default true). `IConfirmationPolicy.DetermineInitialStatus(Doctor?)`
+  is implemented by `AutoConfirmationPolicy` (Confirmed), `ApprovalRequiredConfirmationPolicy` (Pending) and
+  `DoctorPreferenceConfirmationPolicy`, which is the registered one: a booking without a doctor (Diagnostic) or with a
+  doctor who auto-confirms gets Confirmed, otherwise Pending. Switching the whole system back to auto-confirm is a
+  one-line change in `DependencyInjection` (register `AutoConfirmationPolicy` as `IConfirmationPolicy`). The assigned
+  doctor confirms or rejects a **Pending** appointment with `POST /api/appointments/{id}/confirm` / `/reject` (managers
+  of the organization and admins may too; another doctor and patients get 403); anything not Pending is **409**.
+  A rejected appointment frees the slot and the patient sees "Reddedildi". `PUT /api/doctors/{id}/auto-confirm`
+  (`{ "enabled": bool }`, doctor only, own id) changes the setting; turning it on does not touch appointments that are
+  already Pending. `GET doctors/{id}/profile` includes `autoConfirmAppointments`. The seed has exactly one doctor with it
+  off: **Dr. Kemal Aslan** (`kemal.aslan@sakaryasehir.example`, Kardiyoloji, Merkez), for demonstrating the flow.
 - "Active" means not cancelled and not rejected; pending and confirmed appointments hold
   their time. Pricing and confirmation always go through the strategies, for both types.
 
@@ -246,7 +257,7 @@ annotated and, if it matters, added to the role-mapping table in that test**.
 | Anyone (anonymous) | `auth/register`, `auth/login`; reads of organizations, branches (and their working hours), departments, services, `departments/{id}/doctors`; slot lists (`doctors/{id}/slots`, `services/{id}/slots`) |
 | Every logged-in role | **my account** (the user is always the one in the token, no id parameter): `GET /api/account` (id, full name, email, phone, role, and the insurance number for patients), `PUT /api/account` (full name and phone, for patients also the insurance number; the **email cannot be changed**), `PUT /api/account/password` (`currentPassword`, `newPassword`; a wrong current password is **400** "The current password is incorrect.", not 401; the new password follows the registration rules and is stored hashed) |
 | Patient | `POST appointments`, `GET services/{id}/price-preview` (the amount this patient would pay, same pricing strategy as booking, creates nothing), `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
-| Doctor | `GET doctors/{id}/profile` (own name and department), `GET/PUT doctors/{id}/auto-schedule`, `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
+| Doctor | `GET doctors/{id}/profile` (own name and department), `GET/PUT doctors/{id}/auto-schedule`, `PUT doctors/{id}/auto-confirm`, `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
 | ClinicManager | update of their organization; create / update / delete of branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject / cancel appointments |
 | SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts with a temporary password), and the manager list / edit / deactivate / activate endpoints `GET /api/managers`, `PUT managers/{id}`, `POST managers/{id}/deactivate` and `/activate` (a deactivated manager cannot log in: the same 401 as a wrong password) |
 

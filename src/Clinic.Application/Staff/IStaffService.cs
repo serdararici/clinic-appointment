@@ -12,6 +12,9 @@ public interface IStaffService
     /// <summary>The logged-in doctor's own name and department (403 for anyone else's id).</summary>
     Task<DoctorProfileDto> GetDoctorProfileAsync(Guid doctorId, CancellationToken cancellationToken = default);
 
+    /// <summary>The doctor switches their own appointment approval: on = new appointments are confirmed at once, off = they wait as Pending.</summary>
+    Task<DoctorProfileDto> SetAutoConfirmAsync(Guid doctorId, bool enabled, CancellationToken cancellationToken = default);
+
     Task<StaffDto> GetAsync(Guid staffId, CancellationToken cancellationToken = default);
 
     /// <summary>Staff of a branch and/or department (null means any), ordered by name; inactive staff are included.</summary>

@@ -21,6 +21,15 @@ public class DoctorsController(
     IStaffService staffService,
     IAutoScheduleService autoScheduleService) : ControllerBase
 {
+    /// <summary>
+    /// The doctor switches the approval of their appointments (own id only). On: new appointments are confirmed at once.
+    /// Off: they wait as Pending for the doctor. Appointments that are already Pending are not touched.
+    /// </summary>
+    [HttpPut("auto-confirm")]
+    [Authorize(Roles = AppRoles.Doctor)]
+    public async Task<ActionResult<DoctorProfileDto>> SetAutoConfirm(Guid doctorId, SetAutoConfirmRequest request, CancellationToken cancellationToken) =>
+        Ok(await staffService.SetAutoConfirmAsync(doctorId, request.Enabled, cancellationToken));
+
     /// <summary>Whether the doctor's automatic work schedule is on.</summary>
     [HttpGet("auto-schedule")]
     [Authorize(Roles = AppRoles.Doctor)]

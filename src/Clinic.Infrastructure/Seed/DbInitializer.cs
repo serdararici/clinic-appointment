@@ -188,6 +188,8 @@ public static class DbInitializer
                     doctor.AddService(examination);
                 }
 
+                doctor.SetAutoConfirm(seedDoctor.AutoConfirm);
+
                 dbContext.Doctors.Add(doctor);
             }
         }

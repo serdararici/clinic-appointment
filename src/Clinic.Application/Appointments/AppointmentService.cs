@@ -125,7 +125,7 @@ public class AppointmentService(
         return new Appointment(
             patient.Id, doctor.Id, service.Id, start, end,
             pricingStrategy.CalculatePrice(service, patient),
-            confirmationPolicy.DetermineInitialStatus());
+            confirmationPolicy.DetermineInitialStatus(doctor));
     }
 
     /// <summary>Diagnostic: no staff member; a slot of the service's fixed duration inside the branch's hours.</summary>
@@ -157,7 +157,7 @@ public class AppointmentService(
         return new Appointment(
             patient.Id, null, service.Id, start, end,
             pricingStrategy.CalculatePrice(service, patient),
-            confirmationPolicy.DetermineInitialStatus());
+            confirmationPolicy.DetermineInitialStatus(null));
     }
 
     public async Task<PricePreviewDto> PreviewPriceAsync(Guid serviceId, CancellationToken cancellationToken = default)

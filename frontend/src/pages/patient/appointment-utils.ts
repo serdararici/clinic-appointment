@@ -28,3 +28,13 @@ export function sortToday(list: readonly AppointmentDetail[]): AppointmentDetail
   const today = todayIsoDate()
   return list.filter((appointment) => isActive(appointment) && isoDateOf(appointment.scheduledStartUtc) === today).sort(byStart)
 }
+
+/** Pending appointments that have not finished yet (waiting for the doctor's decision), nearest first. */
+export function sortPending(list: readonly AppointmentDetail[], now: number): AppointmentDetail[] {
+  return list.filter((appointment) => appointment.status === 'Pending' && isUpcoming(appointment, now)).sort(byStart)
+}
+
+/** Confirmed appointments that have not finished yet, nearest first (the doctor's "Yaklaşan" tab). */
+export function sortConfirmedUpcoming(list: readonly AppointmentDetail[], now: number): AppointmentDetail[] {
+  return list.filter((appointment) => appointment.status === 'Confirmed' && isUpcoming(appointment, now)).sort(byStart)
+}

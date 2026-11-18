@@ -130,6 +130,7 @@ public class AuthorizationGuardTests
         { typeof(DoctorsController), nameof(DoctorsController.GetAppointments), "Doctor" },
         { typeof(DoctorsController), nameof(DoctorsController.GetProfile), "Doctor" },
         { typeof(DoctorsController), nameof(DoctorsController.GetAutoSchedule), "Doctor" },
+        { typeof(DoctorsController), nameof(DoctorsController.SetAutoConfirm), "Doctor" },
         { typeof(DoctorsController), nameof(DoctorsController.SetAutoSchedule), "Doctor" },
 
         // Doctor or clinic manager

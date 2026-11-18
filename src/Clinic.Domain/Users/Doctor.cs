@@ -18,6 +18,14 @@ public class Doctor : StaffMember
 
     public void SetAutoSchedule(bool enabled) => AutoScheduleEnabled = enabled;
 
+    /// <summary>
+    /// Whether new appointments with this doctor are confirmed at once (true, the default) or wait as Pending for the
+    /// doctor's approval. Changing it never touches appointments that already exist.
+    /// </summary>
+    public bool AutoConfirmAppointments { get; private set; } = true;
+
+    public void SetAutoConfirm(bool enabled) => AutoConfirmAppointments = enabled;
+
     public Doctor(
         string fullName,
         string email,

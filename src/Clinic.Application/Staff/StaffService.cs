@@ -106,7 +106,21 @@ public class StaffService(
             ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
         var department = await LoadDepartmentAsync(doctor.DepartmentId, cancellationToken);
 
-        return new DoctorProfileDto(doctor.Id, doctor.FullName, department.Id, department.Name, doctor.SlotDurationMinutes);
+        return new DoctorProfileDto(doctor.Id, doctor.FullName, department.Id, department.Name, doctor.SlotDurationMinutes, doctor.AutoConfirmAppointments);
+    }
+
+    public async Task<DoctorProfileDto> SetAutoConfirmAsync(Guid doctorId, bool enabled, CancellationToken cancellationToken = default)
+    {
+        guard.EnsureOwnDoctor(doctorId);
+
+        var doctor = await LoadAsync(doctorId, cancellationToken) as Doctor
+            ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
+
+        // Only future bookings are affected: appointments that are already Pending stay Pending.
+        doctor.SetAutoConfirm(enabled);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return await GetDoctorProfileAsync(doctorId, cancellationToken);
     }
 
     public async Task<StaffDto> GetAsync(Guid staffId, CancellationToken cancellationToken = default)

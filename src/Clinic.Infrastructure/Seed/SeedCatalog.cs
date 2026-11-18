@@ -3,7 +3,7 @@ using Clinic.Domain.Enums;
 namespace Clinic.Infrastructure.Seed;
 
 /// <summary>A doctor of the sample data. The specialty is not stored: it is the name of the department.</summary>
-public sealed record SeedDoctor(string FullName, string Email, int SlotDurationMinutes);
+public sealed record SeedDoctor(string FullName, string Email, int SlotDurationMinutes, bool AutoConfirm = true);
 
 /// <summary>A service of the sample data (the type decides whether the patient picks a doctor).</summary>
 public sealed record SeedService(string Name, ServiceType Type, int DurationMinutes, decimal Price);
@@ -24,7 +24,7 @@ public static class SeedCatalog
 
     private static SeedService Diagnostic(string name, int minutes, decimal price) => new(name, ServiceType.Diagnostic, minutes, price);
 
-    private static SeedDoctor Doctor(string name, string email, int slotMinutes) => new(name, email, slotMinutes);
+    private static SeedDoctor Doctor(string name, string email, int slotMinutes, bool autoConfirm = true) => new(name, email, slotMinutes, autoConfirm);
 
     private const string Sakarya = "@sakaryasehir.example";
     private const string Marmara = "@marmarapoliklinik.example";
@@ -44,7 +44,8 @@ public static class SeedCatalog
         ]),
         new("Kardiyoloji", [Exam("Genel Muayene", 30, 600m), Diagnostic("EKG", 15, 300m), Diagnostic("Ekokardiyografi", 30, 900m)],
         [
-            Doctor("Dr. Kemal Aslan", "kemal.aslan" + Sakarya, 30),
+            // The one demo doctor who approves appointments himself: new bookings with him wait as Pending.
+            Doctor("Dr. Kemal Aslan", "kemal.aslan" + Sakarya, 30, autoConfirm: false),
             Doctor("Dr. Neslihan Koç", "neslihan.koc" + Sakarya, 15),
         ]),
         // One service only: the booking flow selects it automatically.

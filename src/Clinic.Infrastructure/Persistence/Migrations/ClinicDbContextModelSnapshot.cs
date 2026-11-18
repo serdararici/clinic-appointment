@@ -318,6 +318,9 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                 {
                     b.HasBaseType("Clinic.Domain.Users.StaffMember");
 
+                    b.Property<bool>("AutoConfirmAppointments")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("AutoScheduleEnabled")
                         .HasColumnType("bit");
 

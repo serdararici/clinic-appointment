@@ -9,9 +9,10 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { Table, type Column } from '../../components/Table'
 import { formatLongDate, formatTime } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
-import { sortToday, sortUpcoming } from '../patient/appointment-utils'
+import { sortPending, sortToday, sortUpcoming } from '../patient/appointment-utils'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { CalendarClock } from 'lucide-react'
+import { Check, ClipboardCheck } from 'lucide-react'
 
 const todayColumns: Column<AppointmentDetail>[] = [
   { key: 'time', header: 'Saat', primary: true, cell: (row) => <span className="font-medium tabular-nums">{formatTime(row.scheduledStartUtc)}</span> },
@@ -32,6 +33,7 @@ export function DoctorHome() {
   const today = appointments.data ? sortToday(appointments.data) : undefined
   const upcoming = appointments.data ? sortUpcoming(appointments.data, now) : undefined
   const next = upcoming?.[0]
+  const waiting = appointments.data ? sortPending(appointments.data, now).length : 0
 
   return (
     <div className="space-y-5">
@@ -45,6 +47,20 @@ export function DoctorHome() {
           Tüm randevular
         </LinkButton>
       </div>
+
+      {waiting > 0 ? (
+        <Card title="Bekleyen onaylar" icon={ClipboardCheck}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-slate-700">
+              <span className="text-2xl font-semibold tabular-nums text-slate-900">{waiting}</span>
+              <span className="ml-2">randevu onayınızı bekliyor.</span>
+            </p>
+            <LinkButton to="/doktor/randevular?tab=bekleyen" icon={Check}>
+              Onayla veya reddet
+            </LinkButton>
+          </div>
+        </Card>
+      ) : null}
 
       <section aria-labelledby="today-heading" className="space-y-3">
         <h2 id="today-heading" className="text-base font-semibold text-slate-900">
