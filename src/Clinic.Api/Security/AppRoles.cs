@@ -18,4 +18,5 @@ public static class AppRoles
     public const string ClinicManagerOrAdmin = ClinicManager + "," + SystemAdmin;
     public const string DoctorOrManagerOrAdmin = Doctor + "," + ClinicManager + "," + SystemAdmin;
     public const string PatientOrManagerOrAdmin = Patient + "," + ClinicManager + "," + SystemAdmin;
+    public const string PatientOrDoctorOrManagerOrAdmin = Patient + "," + Doctor + "," + ClinicManager + "," + SystemAdmin;
 }

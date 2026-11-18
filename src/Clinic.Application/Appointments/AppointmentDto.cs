@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Clinic.Domain.Enums;
 
 namespace Clinic.Application.Appointments;
@@ -14,4 +15,4 @@ public record AppointmentDto(
     DateTime ScheduledStartUtc,
     DateTime ScheduledEndUtc,
     decimal Price,
-    AppointmentStatus Status);
+    [property: JsonConverter(typeof(JsonStringEnumConverter))] AppointmentStatus Status);

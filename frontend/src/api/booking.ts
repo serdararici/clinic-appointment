@@ -1,7 +1,6 @@
 import { api } from './client'
 import type {
   AppointmentDetail,
-  AppointmentStatus,
   BookedAppointment,
   BranchSummary,
   CreateAppointmentRequest,
@@ -33,19 +32,7 @@ export const listDoctorSlots = (doctorId: string, date: string, signal?: AbortSi
 export const listServiceSlots = (serviceId: string, date: string, signal?: AbortSignal) =>
   api.get<Slot[]>(`/api/services/${serviceId}/slots`, { date }, signal)
 
-// The booking response carries the status as a number (the enum is not written as a name there), while
-// the list sends names. Both are mapped to the same names so the screens only deal with one form.
-const STATUS_BY_NUMBER: readonly AppointmentStatus[] = ['Pending', 'Confirmed', 'Rejected', 'Cancelled']
-
-function normalizeStatus(status: unknown): AppointmentStatus {
-  if (typeof status === 'number') return STATUS_BY_NUMBER[status] ?? 'Pending'
-  return status as AppointmentStatus
-}
-
-export async function createAppointment(request: CreateAppointmentRequest): Promise<BookedAppointment> {
-  const created = await api.post<BookedAppointment>('/api/appointments', request)
-  return { ...created, status: normalizeStatus(created.status) }
-}
+export const createAppointment = (request: CreateAppointmentRequest) => api.post<BookedAppointment>('/api/appointments', request)
 
 export const listPatientAppointments = (patientId: string, signal?: AbortSignal) =>
   api.get<AppointmentDetail[]>(`/api/patients/${patientId}/appointments`, undefined, signal)

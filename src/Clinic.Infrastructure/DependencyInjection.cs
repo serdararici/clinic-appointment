@@ -47,7 +47,7 @@ public static class DependencyInjection
         // Default strategy implementations (Strategy pattern); swap these registrations
         // to change pricing/approval behavior without touching AppointmentService.
         services.AddScoped<IPricingStrategy, InsuranceDiscountPricingStrategy>();
-        services.AddScoped<IConfirmationPolicy, ManagerApprovalConfirmationPolicy>();
+        services.AddScoped<IConfirmationPolicy, AutoConfirmationPolicy>();
 
         return services;
     }

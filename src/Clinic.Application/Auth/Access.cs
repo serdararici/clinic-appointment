@@ -169,9 +169,19 @@ public class AccessGuard(ICurrentUser user, IClinicFacilityRepository clinics, I
         await EnsureAppointmentOrganizationAsync(appointment, cancellationToken);
     }
 
-    /// <summary>Who may cancel: the appointment's patient, a manager of its organization, or an admin.</summary>
+    /// <summary>Who may cancel: the appointment's patient, its assigned doctor, a manager of its organization, or an admin.</summary>
     public async Task EnsureCanCancelAsync(Appointment appointment, CancellationToken cancellationToken = default)
     {
+        if (user.Role == RoleNames.Doctor)
+        {
+            if (appointment.StaffMemberId is null || appointment.StaffMemberId != user.UserId)
+            {
+                throw new ForbiddenException("You can only cancel appointments assigned to you.");
+            }
+
+            return;
+        }
+
         if (user.Role == RoleNames.Patient)
         {
             if (appointment.PatientId != user.UserId)

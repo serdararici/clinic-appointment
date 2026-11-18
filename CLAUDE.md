@@ -206,7 +206,7 @@ annotated and, if it matters, added to the role-mapping table in that test**.
 |---|---|
 | Anyone (anonymous) | `auth/register`, `auth/login`; reads of organizations, branches (and their working hours), departments, services, `departments/{id}/doctors`; slot lists (`doctors/{id}/slots`, `services/{id}/slots`) |
 | Patient | `POST appointments`, `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
-| Doctor | `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject |
+| Doctor | `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
 | ClinicManager | update of their organization; create / update / delete of branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject / cancel appointments |
 | SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts) |
 
@@ -221,8 +221,8 @@ and throws `ForbiddenException` (403) if not. `ICurrentUser` (read from the JWT 
 
 - **Patient**: books only for themselves (the patient id comes from the token; a `patientId` in the body is ignored),
   reads only their own appointment list, cancels only their own appointments.
-- **Doctor**: only their own availability (list, add, bulk, delete), slot duration and appointment list; confirms or
-  rejects only appointments assigned to them (never an unassigned diagnostic one).
+- **Doctor**: only their own availability (list, add, bulk, delete), slot duration and appointment list; confirms,
+  rejects or cancels only appointments assigned to them (never an unassigned diagnostic one).
 - **ClinicManager**: only resources of the **organization in their token**: that organization, its branches, working
   hours, departments, services and staff, and the appointments of its branches (confirm, reject, cancel). A staff list
   without a filter shows only their organization's staff. Creating or deleting organizations and creating manager

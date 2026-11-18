@@ -705,15 +705,39 @@ public class AppointmentServiceTests
     // ---- Cancel: the patient's own, or a manager of the appointment's organization, or an admin ----
 
     [Fact]
-    public async Task Cancel_IsRefused_ForAnotherPatient_AndForADoctor()
+    public async Task Cancel_IsRefused_ForAnotherPatient_AndForAnotherDoctor()
     {
         var dto = await BookExaminationAsync(Monday.AddHours(6));
         var other = AddOtherPatient();
+        var colleague = NewDoctor(slotDurationMinutes: 30, email: "colleague@example.com");
+        _doctors.Items.Add(colleague);
 
         await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Patient(other.Id)).CancelAppointmentAsync(dto.Id));
-        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).CancelAppointmentAsync(dto.Id));
+        await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(colleague.Id)).CancelAppointmentAsync(dto.Id));
 
         Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+    }
+
+    [Fact]
+    public async Task Cancel_IsAllowed_ForTheAssignedDoctor_AndThePatientThenSeesItCancelled()
+    {
+        var dto = await BookExaminationAsync(Monday.AddHours(6));
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+
+        await ServiceFor(FakeCurrentUser.Doctor(_doctor.Id)).CancelAppointmentAsync(dto.Id);
+
+        var list = await ServiceFor(FakeCurrentUser.Patient(_patient.Id)).GetByPatientAsync(_patient.Id);
+        Assert.Equal(AppointmentStatus.Cancelled, Assert.Single(list).Status);
+    }
+
+    [Fact]
+    public async Task BookingResult_SerializesTheStatusAsItsName()
+    {
+        var dto = await BookExaminationAsync(Monday.AddHours(6));
+
+        var json = System.Text.Json.JsonSerializer.Serialize(dto);
+
+        Assert.Contains("\"Status\":\"Confirmed\"", json);
     }
 
     [Fact]

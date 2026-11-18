@@ -108,7 +108,7 @@ public class AuthorizationGuardTests
 
         // Patient
         { typeof(AppointmentsController), nameof(AppointmentsController.Create), "Patient" },
-        { typeof(AppointmentsController), nameof(AppointmentsController.Cancel), "ClinicManager,Patient,SystemAdmin" },
+        { typeof(AppointmentsController), nameof(AppointmentsController.Cancel), "ClinicManager,Doctor,Patient,SystemAdmin" },
         { typeof(PatientsController), nameof(PatientsController.GetAppointments), "Patient" },
 
         // Doctor: own availability and appointment list
