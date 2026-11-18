@@ -16,7 +16,8 @@ public class SlotServiceTests
 {
     private static readonly DateOnly Monday = new(2026, 3, 2);
     private static readonly DateTime MondayUtc = new(2026, 3, 2, 0, 0, 0, DateTimeKind.Utc);
-    private static readonly DateTime LongAgo = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    /// <summary>The default test clock: Sunday 2026-03-01 (03:00 local), so the test dates lie inside the booking window.</summary>
+    private static readonly DateTime LongAgo = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
 
     private readonly FakeDoctorRepository _doctors = new();
     private readonly FakeServiceRepository _services = new();
@@ -53,6 +54,42 @@ public class SlotServiceTests
 
     private Appointment Booking(Guid? staffId, Guid serviceId, DateTime start, DateTime end) =>
         new(Guid.NewGuid(), staffId, serviceId, start, end, 100m, AppointmentStatus.Pending);
+
+    // ---- Booking window (today to today + 14 days) -----------------------------------------
+
+    [Fact]
+    public async Task ExaminationSlots_AreEmpty_OutsideTheBookingWindow_ButListedInsideIt()
+    {
+        var inside = MondayUtc.AddDays(11).AddHours(6);   // Friday 2026-03-13, today + 12
+        var outside = MondayUtc.AddDays(14).AddHours(6);  // Monday 2026-03-16, today + 15
+        _doctor.AddAvailability(inside, inside.AddHours(3));
+        _doctor.AddAvailability(outside, outside.AddHours(3));
+
+        Assert.NotEmpty(await CreateService().GetExaminationSlotsAsync(_doctor.Id, new DateOnly(2026, 3, 13)));
+        Assert.Empty(await CreateService().GetExaminationSlotsAsync(_doctor.Id, new DateOnly(2026, 3, 16)));
+        Assert.Empty(await CreateService().GetExaminationSlotsAsync(_doctor.Id, new DateOnly(2026, 2, 28))); // before today
+    }
+
+    [Fact]
+    public async Task ExaminationSlots_IncludeTodayAndTheLastWindowDay()
+    {
+        // The clock is Monday 2026-03-02 local 03:00: today is the 2nd, the last bookable date is the 16th.
+        var lastDay = MondayUtc.AddDays(14).AddHours(6);
+        _doctor.AddAvailability(lastDay, lastDay.AddHours(3));
+        var now = MondayUtc;
+
+        Assert.NotEmpty(await CreateService(now).GetExaminationSlotsAsync(_doctor.Id, Monday));
+        Assert.NotEmpty(await CreateService(now).GetExaminationSlotsAsync(_doctor.Id, new DateOnly(2026, 3, 16)));
+        Assert.Empty(await CreateService(now).GetExaminationSlotsAsync(_doctor.Id, new DateOnly(2026, 3, 17)));
+    }
+
+    [Fact]
+    public async Task DiagnosticSlots_AreEmpty_OutsideTheBookingWindow()
+    {
+        Assert.NotEmpty(await CreateService().GetDiagnosticSlotsAsync(_xRay.Id, new DateOnly(2026, 3, 13)));
+        Assert.Empty(await CreateService().GetDiagnosticSlotsAsync(_xRay.Id, new DateOnly(2026, 3, 16)));
+        Assert.Empty(await CreateService().GetDiagnosticSlotsAsync(_xRay.Id, new DateOnly(2026, 2, 27)));
+    }
 
     // ---- Examination slots ---------------------------------------------------------------
 

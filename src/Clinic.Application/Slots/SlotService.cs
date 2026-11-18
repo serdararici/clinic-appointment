@@ -26,6 +26,12 @@ public class SlotService(
             return [];
         }
 
+        // Patients can only see and book the rolling window (today to today + 14 days).
+        if (!BookingRules.IsWithinWindow(localDate, timeProvider.GetUtcNow().UtcDateTime))
+        {
+            return [];
+        }
+
         var clinic = await clinicFacilityRepository.GetByIdAsync(doctor.ClinicFacilityId, cancellationToken)
             ?? throw new KeyNotFoundException($"Clinic {doctor.ClinicFacilityId} was not found.");
 
@@ -43,6 +49,11 @@ public class SlotService(
         if (service.ServiceType != ServiceType.Diagnostic)
         {
             throw new ArgumentException("Only diagnostic services have a service slot grid; book examinations through a doctor's slots.", nameof(serviceId));
+        }
+
+        if (!BookingRules.IsWithinWindow(localDate, timeProvider.GetUtcNow().UtcDateTime))
+        {
+            return [];
         }
 
         var clinic = await clinicFacilityRepository.GetByServiceIdAsync(service.Id, cancellationToken)

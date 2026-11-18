@@ -19,7 +19,7 @@ public class AppointmentServiceTests
     private static readonly DateTime Saturday = new(2026, 3, 7, 0, 0, 0, DateTimeKind.Utc);
 
     /// <summary>The test clock sits before every test date, so nothing is "in the past" unless a test says so.</summary>
-    private static readonly DateTime LongAgo = new(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+    private static readonly DateTime LongAgo = new(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc); // Sunday before the test Monday
 
     private readonly FakeAppointmentRepository _appointments = new();
     private readonly FakeDoctorRepository _doctors = new();
@@ -730,6 +730,37 @@ public class AppointmentServiceTests
         await Assert.ThrowsAsync<ForbiddenException>(() => ServiceFor(FakeCurrentUser.Doctor(colleague.Id)).CancelAppointmentAsync(dto.Id));
 
         Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+    }
+
+    // ---- Booking window (today to today + 14 days) ----
+
+    [Fact]
+    public async Task Booking_IsRefused_OutsideTheBookingWindow_AndAllowedOnTheLastDay()
+    {
+        // The clock is Monday 2026-03-02 (local 03:00): the last bookable date is Monday 2026-03-16.
+        var now = Monday;
+        _doctor.AddAvailability(Monday.AddDays(7), Monday.AddDays(20));
+        var service = CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), now);
+
+        var lastDay = Monday.AddDays(14).AddHours(6);   // 09:00 local on the 16th
+        var tooLate = Monday.AddDays(15).AddHours(6);   // 09:00 local on the 17th
+
+        var booked = await service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, lastDay, _doctor.Id));
+        Assert.Equal(lastDay, booked.ScheduledStartUtc);
+
+        var error = await Assert.ThrowsAsync<OutsideBookingWindowException>(() =>
+            service.CreateAppointmentAsync(new CreateAppointmentRequest(_checkUp.Id, tooLate, _doctor.Id)));
+        Assert.Contains("14 gün", error.Message); // a Turkish message for the patient
+        Assert.Single(_appointments.Items);
+    }
+
+    [Fact]
+    public async Task DiagnosticBooking_IsRefused_OutsideTheBookingWindow()
+    {
+        var service = CreateService(new StandardPricingStrategy(), new AutoConfirmationPolicy(), Monday);
+
+        await Assert.ThrowsAsync<OutsideBookingWindowException>(() =>
+            service.CreateAppointmentAsync(new CreateAppointmentRequest(_xRay.Id, Monday.AddDays(15).AddHours(5))));
     }
 
     // ---- Price preview ----

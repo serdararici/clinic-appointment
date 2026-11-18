@@ -41,9 +41,16 @@ public class AppointmentService(
 
         // Same definition as the slot list: a slot that has already started is Past. A start exactly
         // at "now" is still allowed, so the list and the booking agree.
-        if (start < timeProvider.GetUtcNow().UtcDateTime)
+        var now = timeProvider.GetUtcNow().UtcDateTime;
+        if (start < now)
         {
             throw new PastBookingException(start);
+        }
+
+        // Only the rolling window (today to today + 14 days, clinic calendar days) can be booked.
+        if (!BookingRules.IsWithinWindow(BookingRules.Today(start), now))
+        {
+            throw new OutsideBookingWindowException();
         }
 
         var patient = await patientRepository.GetByIdAsync(patientId, cancellationToken)

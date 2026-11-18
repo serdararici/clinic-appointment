@@ -312,6 +312,9 @@ namespace Clinic.Infrastructure.Persistence.Migrations
                 {
                     b.HasBaseType("Clinic.Domain.Users.StaffMember");
 
+                    b.Property<bool>("AutoScheduleEnabled")
+                        .HasColumnType("bit");
+
                     b.HasDiscriminator().HasValue("Doctor");
                 });
 

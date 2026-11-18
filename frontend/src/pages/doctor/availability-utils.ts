@@ -37,22 +37,27 @@ export interface BulkPreview {
   slots: number
 }
 
+/** A daily time window, "HH:mm" to "HH:mm" (Turkey time). */
+export interface TimeWindow {
+  start: string
+  end: string
+}
+
 /**
  * What a bulk request would create, worked out in the browser for the preview line: the matching weekdays in the
- * date range that have not started yet (the API skips started days), times in Turkey local time. Days that overlap
- * an existing range are only known to the API, so the preview is an upper bound.
+ * date range, and for each of them the windows that have not started yet (the API skips started windows), times in
+ * Turkey local time. Days that overlap an existing range are only known to the API, so the preview is an upper bound.
  */
 export function previewBulk(
   fromDate: string,
   toDate: string,
   weekdays: readonly WeekdayName[],
-  startTime: string,
-  endTime: string,
+  windows: readonly TimeWindow[],
   slotDurationMinutes: number,
   now: number,
 ): BulkPreview {
-  const rangeMinutes = minutesOf(endTime) - minutesOf(startTime)
-  if (!fromDate || !toDate || !startTime || !endTime || rangeMinutes <= 0 || weekdays.length === 0) return { days: 0, slots: 0 }
+  const valid = windows.filter((window) => window.start && window.end && minutesOf(window.end) > minutesOf(window.start))
+  if (!fromDate || !toDate || valid.length === 0 || valid.length < windows.length || weekdays.length === 0) return { days: 0, slots: 0 }
 
   const selected = new Set(WEEKDAYS.filter((day) => weekdays.includes(day.name)).map((day) => day.index))
   const [fy, fm, fd] = fromDate.split('-').map(Number)
@@ -60,14 +65,21 @@ export function previewBulk(
   const last = Date.UTC(ty, tm - 1, td)
 
   let days = 0
+  let slots = 0
   // Walk the calendar dates (UTC arithmetic on the date parts only, so no time-zone shifts).
   for (let cursor = Date.UTC(fy, fm - 1, fd), guard = 0; cursor <= last && guard < 400; cursor += 86_400_000, guard++) {
     const date = new Date(cursor)
     if (!selected.has(date.getUTCDay())) continue
     const iso = date.toISOString().slice(0, 10)
-    if (new Date(istanbulToUtcIso(iso, startTime)).getTime() < now) continue
-    days++
+
+    let dayHasRange = false
+    for (const window of valid) {
+      if (new Date(istanbulToUtcIso(iso, window.start)).getTime() < now) continue
+      dayHasRange = true
+      slots += slotCount(minutesOf(window.end) - minutesOf(window.start), slotDurationMinutes)
+    }
+    if (dayHasRange) days++
   }
 
-  return { days, slots: days * slotCount(rangeMinutes, slotDurationMinutes) }
+  return { days, slots }
 }

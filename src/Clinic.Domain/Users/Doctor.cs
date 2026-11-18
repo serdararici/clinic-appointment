@@ -10,6 +10,14 @@ namespace Clinic.Domain.Users;
 /// </summary>
 public class Doctor : StaffMember
 {
+    /// <summary>
+    /// Whether the default work schedule (weekdays 09:00-12:00 and 13:00-16:00) is kept filled in automatically
+    /// for the booking window. On by default; a doctor turns it off for a custom schedule or a long leave.
+    /// </summary>
+    public bool AutoScheduleEnabled { get; private set; } = true;
+
+    public void SetAutoSchedule(bool enabled) => AutoScheduleEnabled = enabled;
+
     public Doctor(
         string fullName,
         string email,

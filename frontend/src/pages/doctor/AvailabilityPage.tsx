@@ -4,7 +4,9 @@ import { useAuth } from '../../auth/useAuth'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { Spinner } from '../../components/Spinner'
+import { BOOKING_WINDOW_DAYS } from '../../utils/booking-window'
 import { useAsync } from '../../utils/useAsync'
+import { AutoScheduleCard } from './AutoScheduleCard'
 import { AvailabilityList } from './AvailabilityList'
 import { BulkAvailabilityCard } from './BulkAvailabilityCard'
 import { SingleAvailabilityCard } from './SingleAvailabilityCard'
@@ -30,6 +32,7 @@ export function AvailabilityPage() {
   return (
     <div className="space-y-5">
       <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Uygunluk</h1>
+      <Alert tone="info">Hastalar yalnızca önümüzdeki {BOOKING_WINDOW_DAYS} gün için randevu alabilir ve uygun saatleri görebilir.</Alert>
 
       {slotDuration === undefined ? (
         profile.error ? (
@@ -47,6 +50,7 @@ export function AvailabilityPage() {
       ) : (
         <>
           <SlotDurationCard doctorId={doctorId} current={slotDuration} onSaved={setSavedDuration} />
+          <AutoScheduleCard doctorId={doctorId} onChanged={availability.reload} />
           <div className="grid gap-5 lg:grid-cols-2">
             <SingleAvailabilityCard doctorId={doctorId} onAdded={availability.reload} />
             <BulkAvailabilityCard doctorId={doctorId} slotDurationMinutes={slotDuration} onAdded={availability.reload} />

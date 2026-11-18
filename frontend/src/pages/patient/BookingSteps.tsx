@@ -7,7 +7,8 @@ import { ChoiceCard } from '../../components/ChoiceCard'
 import { EmptyState } from '../../components/EmptyState'
 import { Input } from '../../components/Input'
 import { Spinner } from '../../components/Spinner'
-import { formatCurrency, formatLongDate, todayIsoDate } from '../../utils/format'
+import { BOOKING_WINDOW_DAYS, bookingWindow } from '../../utils/booking-window'
+import { formatCurrency, formatLongDate } from '../../utils/format'
 import { useAsync, type AsyncState } from '../../utils/useAsync'
 import { SERVICE_TYPE_LABELS } from './labels'
 import { SlotGrid } from './SlotGrid'
@@ -189,8 +190,9 @@ interface SlotStepProps {
 }
 
 export function SlotStep({ service, doctor, selected, notice, onSelect, onContinue }: SlotStepProps) {
-  const today = todayIsoDate()
-  const [date, setDate] = useState(today)
+  // Patients can book from today up to BOOKING_WINDOW_DAYS days ahead (the API enforces the same window).
+  const { min, max } = bookingWindow()
+  const [date, setDate] = useState(min)
 
   const serviceId = service.id
   const doctorId = doctor?.id ?? null
@@ -212,11 +214,13 @@ export function SlotStep({ service, doctor, selected, notice, onSelect, onContin
           label="Tarih"
           type="date"
           size="lg"
-          min={today}
+          min={min}
+          max={max}
+          hint={`En fazla ${BOOKING_WINDOW_DAYS} gün sonrasına randevu alabilirsiniz.`}
           value={date}
           onChange={(event) => {
-            // An empty value (the field was cleared) or a date before today is not queried.
-            if (event.target.value >= today) setDate(event.target.value)
+            // An empty value (the field was cleared) or a date outside the window is not queried.
+            if (event.target.value >= min && event.target.value <= max) setDate(event.target.value)
           }}
         />
       </div>

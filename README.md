@@ -19,6 +19,10 @@ dotnet run --project src/Clinic.Api --launch-profile http
 The API listens on `http://localhost:5268`. On startup it creates the `ClinicDb` LocalDB database, applies the
 migrations and seeds Turkish demo data, so no manual database step is needed.
 
+Doctors work an automatic default schedule (weekdays 09:00-12:00 and 13:00-16:00, Turkey time), which the API keeps
+filled for the next 14 days: once at startup and then every 6 hours (`DefaultSchedule:IntervalHours`). Patients can only
+book from today up to 14 days ahead. A doctor can switch the automatic schedule off on the availability page.
+
 In Development, an interactive API reference is available at **http://localhost:5268/scalar**. Log in with
 `POST /api/auth/login`, copy the `token` from the response and paste it into the Bearer field to try protected endpoints.
 

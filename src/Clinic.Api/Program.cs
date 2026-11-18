@@ -31,6 +31,9 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IAppointmentService, AppointmentService>();
 builder.Services.AddScoped<IDoctorAvailabilityService, DoctorAvailabilityService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IDefaultScheduleService, DefaultScheduleService>();
+builder.Services.AddScoped<IAutoScheduleService, AutoScheduleService>();
+builder.Services.AddHostedService<Clinic.Api.DefaultScheduleWorker>();
 builder.Services.AddScoped<IOrganizationService, OrganizationService>();
 builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
@@ -58,6 +61,10 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ClinicDbContext>();
     DbInitializer.MigrateAndSeed(dbContext);
+
+    // Fill the booking window with the default schedule for every automatic-schedule doctor (today included).
+    await scope.ServiceProvider.GetRequiredService<IDefaultScheduleService>()
+        .EnsureForAllAsync(scope.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow().UtcDateTime);
 }
 
 // Configure the HTTP request pipeline.

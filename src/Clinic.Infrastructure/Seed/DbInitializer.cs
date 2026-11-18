@@ -11,17 +11,6 @@ namespace Clinic.Infrastructure.Seed;
 /// <summary>Applies pending migrations and seeds sample data, run once on application startup.</summary>
 public static class DbInitializer
 {
-    /// <summary>How many days ahead (starting tomorrow) availability is seeded.</summary>
-    public const int AvailabilityHorizonDays = 14;
-
-    // Every seeded doctor works the same two local-time blocks on weekdays; all of them fall
-    // inside the seeded branches' working hours.
-    private static readonly (TimeOnly From, TimeOnly To)[] DoctorWindows =
-    [
-        (new TimeOnly(9, 0), new TimeOnly(12, 0)),
-        (new TimeOnly(13, 0), new TimeOnly(16, 0)),
-    ];
-
     public const string AdminEmail = "admin@clinic.example";
 
     /// <summary>The password of every demo account (documented in CLAUDE.md; for local demos only).</summary>
@@ -53,7 +42,6 @@ public static class DbInitializer
         SeedCoreData(dbContext);
         SeedSystemAdmin(dbContext);
         SeedDemoAccounts(dbContext);
-        SeedAvailability(dbContext, DateTime.UtcNow);
     }
 
     /// <summary>Makes sure the demo system administrator exists (runs on every start; creates it only once).</summary>
@@ -205,68 +193,5 @@ public static class DbInitializer
         }
 
         return departments;
-    }
-
-    /// <summary>
-    /// Gives each doctor availability for the next <see cref="AvailabilityHorizonDays"/> days,
-    /// but only if that doctor has no future availability at all. Runs on every startup, so it must be
-    /// idempotent, and it must not resurrect ranges a manager deleted: once a doctor has any future
-    /// range, the seed leaves their schedule alone.
-    /// </summary>
-    public static void SeedAvailability(ClinicDbContext dbContext, DateTime utcNow)
-    {
-        var firstDay = DateOnly.FromDateTime(ClinicTimeZone.ToLocal(utcNow)).AddDays(1);
-
-        var doctors = dbContext.Doctors
-            .Include(d => d.AvailabilitySlots)
-            .ToList();
-
-        foreach (var doctor in doctors)
-        {
-            // A range that has not ended yet counts as future availability.
-            if (doctor.AvailabilitySlots.Any(s => s.EndUtc > utcNow))
-            {
-                continue;
-            }
-
-            foreach (var (from, to) in DoctorWindows)
-            {
-                foreach (var (startUtc, endUtc) in BuildWeekdayWindows(firstDay, AvailabilityHorizonDays, from, to))
-                {
-                    var slot = doctor.AddAvailability(startUtc, endUtc);
-
-                    // Slots have client-generated Guid ids, so tell EF explicitly that they are new.
-                    dbContext.Set<DoctorAvailability>().Add(slot);
-                }
-            }
-        }
-
-        dbContext.SaveChanges();
-    }
-
-    /// <summary>
-    /// Builds UTC ranges for the clinic-local time window [from, to) on each weekday
-    /// within <paramref name="days"/> days starting at <paramref name="firstLocalDay"/>.
-    /// </summary>
-    public static IReadOnlyList<(DateTime StartUtc, DateTime EndUtc)> BuildWeekdayWindows(
-        DateOnly firstLocalDay, int days, TimeOnly from, TimeOnly to)
-    {
-        var result = new List<(DateTime, DateTime)>();
-
-        for (var offset = 0; offset < days; offset++)
-        {
-            var day = firstLocalDay.AddDays(offset);
-            if (day.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-            {
-                continue;
-            }
-
-            // Window times are Turkey wall-clock times; storage stays in UTC.
-            result.Add((
-                ClinicTimeZone.ToUtc(day.ToDateTime(from)),
-                ClinicTimeZone.ToUtc(day.ToDateTime(to))));
-        }
-
-        return result;
     }
 }

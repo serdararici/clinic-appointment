@@ -36,6 +36,9 @@ internal class FakeDoctorRepository : FakeRepository<Doctor>, IDoctorRepository
     public List<DoctorAvailability> AddedSlots { get; } = [];
     public List<DoctorAvailability> RemovedSlots { get; } = [];
 
+    public Task<IReadOnlyList<Doctor>> GetAutoScheduleDoctorsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<Doctor>>(Items.Where(d => d.AutoScheduleEnabled && d.IsActive).ToList());
+
     public void AddAvailability(DoctorAvailability slot) => AddedSlots.Add(slot);
 
     public void RemoveAvailability(DoctorAvailability slot) => RemovedSlots.Add(slot);

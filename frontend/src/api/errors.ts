@@ -34,6 +34,8 @@ const KNOWN_MESSAGES: ReadonlyArray<readonly [RegExp, (match: RegExpMatchArray) 
   [/at least one weekday is required/i, () => 'En az bir gün seçin.'],
   [/availability range that still has active appointments/i, () => 'Bu aralıkta aktif randevular olduğu için silinemez. Önce randevuları iptal edin.'],
   [/slot duration must be one of/i, () => 'Randevu süresi 10, 15, 20, 30 veya 60 dakika olmalıdır.'],
+  // The booking-window message is already Turkish (written for the patient), so it is shown as it is.
+  [/^Randevu yalnızca bugünden itibaren.*$/, (m) => m[0]],
   [/authentication is required/i, () => 'Devam etmek için giriş yapmalısınız.'],
 ]
 

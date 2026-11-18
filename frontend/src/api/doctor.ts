@@ -2,6 +2,7 @@ import { api } from './client'
 import type {
   AddAvailabilityRequest,
   AppointmentDetail,
+  AutoSchedule,
   Availability,
   BulkAvailabilityRequest,
   BulkAvailabilityResult,
@@ -32,3 +33,10 @@ export const deleteAvailability = (doctorId: string, availabilityId: string) =>
 /** The doctor changes their own slot duration (10, 15, 20, 30 or 60 minutes). */
 export const setSlotDuration = (doctorId: string, slotDurationMinutes: number) =>
   api.put<{ staffId: string; slotDurationMinutes: number }>(`/api/staff/${doctorId}/slot-duration`, { slotDurationMinutes })
+
+export const getAutoSchedule = (doctorId: string, signal?: AbortSignal) =>
+  api.get<AutoSchedule>(`/api/doctors/${doctorId}/auto-schedule`, undefined, signal)
+
+/** Turning it on fills the booking window with the default hours right away. */
+export const setAutoSchedule = (doctorId: string, enabled: boolean) =>
+  api.put<AutoSchedule>(`/api/doctors/${doctorId}/auto-schedule`, { enabled })

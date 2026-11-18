@@ -44,8 +44,10 @@ Domain must never reference Application, Infrastructure, or Api.
 
 - EF Core migrations are applied automatically on application startup
   (`db.Database.Migrate()`), followed by idempotent seeding of sample data
-  (organizations, branches, departments, services, staff, patients, managers,
-  and a rolling 14-day weekday availability schedule for doctors).
+  (organizations, branches, departments, services, staff, patients and managers).
+  Doctor availability is not seeded directly: right after the seed, and then every 6 hours
+  (`DefaultScheduleWorker`, `DefaultSchedule:IntervalHours`), `IDefaultScheduleService` fills the default work
+  schedule for every doctor who has `AutoScheduleEnabled` (see "Booking window and automatic schedule").
 - Do not require a manual `dotnet ef database update` step for local dev —
   running the API should be enough to get a working, seeded database.
 
@@ -141,6 +143,26 @@ return **all** slots with `startUtc`, `endUtc`, and `status` = `Available` | `Bo
   list, so a slot starting exactly now is still bookable. "Now" comes from `TimeProvider`.
 - A deactivated doctor cannot be booked (409).
 
+### Booking window and automatic schedule
+
+- **Booking window**: patients can only book from today up to today + 14 days (Europe/Istanbul calendar days,
+  both ends included). The number lives in one place, `BookingRules.WindowDays` (Domain); the frontend mirrors it in
+  `BOOKING_WINDOW_DAYS`. The slot endpoints return **no slots** outside the window (a date in the past included),
+  and booking outside it is **422** with the Turkish message "Randevu yalnızca bugünden itibaren 14 gün içindeki
+  tarihler için alınabilir." (`OutsideBookingWindowException`).
+- **Automatic schedule**: `Doctor.AutoScheduleEnabled` (default true). The default schedule is weekdays only,
+  09:00-12:00 and 13:00-16:00 clinic time (12:00-13:00 is the lunch break), `DefaultSchedule.Windows`. A window is cut
+  to whole slots of the doctor's slot duration (all allowed durations divide the 3-hour windows).
+- `IDefaultScheduleService.EnsureDefaultAvailabilityAsync(doctorId, utcNow)` adds the default windows for every weekday
+  from max(today, the day after the doctor's last existing availability day) up to today + 14 days. It only extends
+  **forward**: days the doctor removed before their last availability day stay closed (a day off), but if the doctor
+  deletes the *last* days while the switch is on, they come back. It does nothing for a doctor with the switch off (or
+  deactivated) and is idempotent. `EnsureForAllAsync` does the same for all auto-schedule doctors; it runs at startup and
+  every 6 hours. The future "create doctor" flow should call `EnsureDefaultAvailabilityAsync` so a new doctor has
+  availability immediately.
+- `GET` / `PUT /api/doctors/{id}/auto-schedule` (`{ "enabled": true }`, doctor only, own id): reads and sets the switch;
+  switching it on fills the window right away.
+
 ## Management API
 
 Create, read, update, list and delete, under the existing layering (controller -> Application
@@ -206,7 +228,7 @@ annotated and, if it matters, added to the role-mapping table in that test**.
 |---|---|
 | Anyone (anonymous) | `auth/register`, `auth/login`; reads of organizations, branches (and their working hours), departments, services, `departments/{id}/doctors`; slot lists (`doctors/{id}/slots`, `services/{id}/slots`) |
 | Patient | `POST appointments`, `GET services/{id}/price-preview` (the amount this patient would pay, same pricing strategy as booking, creates nothing), `GET patients/{id}/appointments`, `POST appointments/{id}/cancel` |
-| Doctor | `GET doctors/{id}/profile` (own name and department), `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
+| Doctor | `GET doctors/{id}/profile` (own name and department), `GET/PUT doctors/{id}/auto-schedule`, `doctors/{id}/availability` (list, add, bulk, delete), `GET doctors/{id}/appointments`, `PUT staff/{id}/slot-duration`, confirm / reject / cancel (own appointments) |
 | ClinicManager | update of their organization; create / update / delete of branches, working hours, departments, services and staff (including activate / deactivate, offered services, `GET staff`), `PUT staff/{id}/slot-duration`, confirm / reject / cancel appointments |
 | SystemAdmin | everything a ClinicManager can do, across all organizations, plus **create and delete organizations** and **`POST branches/{id}/managers`** (creating ClinicManager accounts) |
 

@@ -146,6 +146,12 @@ export interface DoctorProfile {
 
 // ---- Availability ----
 
+/** The doctor's automatic work schedule switch (GET/PUT /api/doctors/{id}/auto-schedule). */
+export interface AutoSchedule {
+  doctorId: string
+  enabled: boolean
+}
+
 /** One availability range of a doctor (UTC). */
 export interface Availability {
   id: string

@@ -18,8 +18,21 @@ public class DoctorsController(
     IDoctorAvailabilityService availabilityService,
     ISlotService slotService,
     IAppointmentService appointmentService,
-    IStaffService staffService) : ControllerBase
+    IStaffService staffService,
+    IAutoScheduleService autoScheduleService) : ControllerBase
 {
+    /// <summary>Whether the doctor's automatic work schedule is on.</summary>
+    [HttpGet("auto-schedule")]
+    [Authorize(Roles = AppRoles.Doctor)]
+    public async Task<ActionResult<AutoScheduleDto>> GetAutoSchedule(Guid doctorId, CancellationToken cancellationToken) =>
+        Ok(await autoScheduleService.GetAsync(doctorId, cancellationToken));
+
+    /// <summary>Switches the doctor's automatic work schedule on or off (on fills the booking window right away).</summary>
+    [HttpPut("auto-schedule")]
+    [Authorize(Roles = AppRoles.Doctor)]
+    public async Task<ActionResult<AutoScheduleDto>> SetAutoSchedule(Guid doctorId, SetAutoScheduleRequest request, CancellationToken cancellationToken) =>
+        Ok(await autoScheduleService.SetAsync(doctorId, request.Enabled, cancellationToken));
+
     /// <summary>The doctor's own name and department (for the doctor's home page).</summary>
     [HttpGet("profile")]
     [Authorize(Roles = AppRoles.Doctor)]
