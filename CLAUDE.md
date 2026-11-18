@@ -224,6 +224,15 @@ Delete rules (409 with a message when violated):
   environment variable `Jwt__Key`. The app refuses to start with a missing or too-short key.
 - A **deactivated** staff member cannot log in (the same 401 as a wrong password).
 
+### Stale tokens
+
+A token is signed and valid for 8 hours, but its user can be deleted (for example a reset database) or deactivated in
+that time. After the signature, issuer, audience and expiry are validated, `OnTokenValidated` runs
+`TokenUserValidation` / `IUserStatusChecker`: the user in the `sub` claim must still exist and `User.CanSignIn` must be
+true (false only for deactivated staff and clinic managers; patients have no flag). Otherwise the answer is **401** with the
+usual "The token is invalid or has expired." text, so the frontend ends the session. This is **one primary-key lookup of
+the user per authenticated request**. The role still comes from the token, as before.
+
 ### Access rules (JWT bearer, role-based)
 
 Every token is validated for signature, issuer, audience and expiry (`AddJwtAuthentication`). Every controller action

@@ -24,6 +24,8 @@ public abstract class StaffMember : User
     /// </summary>
     public bool IsActive { get; private set; } = true;
 
+    public override bool CanSignIn => IsActive;
+
     private readonly List<Service> _servicesProvided = [];
     public IReadOnlyCollection<Service> ServicesProvided => _servicesProvided.AsReadOnly();
 

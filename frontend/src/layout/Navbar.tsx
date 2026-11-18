@@ -39,7 +39,7 @@ export function Navbar() {
   function handleLogout() {
     closeMenu()
     logout()
-    navigate('/giris')
+    navigate('/giris', { replace: true })
   }
 
   // Escape closes the phone menu.

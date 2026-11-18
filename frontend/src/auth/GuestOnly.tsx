@@ -1,11 +1,12 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { homeFor } from './roles'
+import { returnPathFor } from './roles'
 import { useAuth } from './useAuth'
 
 /**
- * For the login and register pages. Someone who is logged in is sent on: to the page they originally asked for
- * (the route guard passes it as `from`), or else to their own home page. This is also what moves a user away
- * from the login page right after a successful login.
+ * For the login and register pages. Someone who is logged in is sent on right away: this is also what moves a user
+ * away from the login page after a successful login. They go back to the page they came from (a deep link, or the
+ * page where their session ended) only if their role may open it; otherwise, and always after an explicit logout,
+ * to the home page of their role. So logging in as another role never lands on a page that role cannot open.
  */
 export function GuestOnly() {
   const { user } = useAuth()
@@ -14,5 +15,5 @@ export function GuestOnly() {
   if (!user) return <Outlet />
 
   const from = (location.state as { from?: string } | null)?.from
-  return <Navigate to={from ?? homeFor(user.role)} replace />
+  return <Navigate to={returnPathFor(user.role, from)} replace />
 }

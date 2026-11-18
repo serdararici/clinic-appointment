@@ -39,6 +39,7 @@ builder.Services.AddScoped<IBranchService, BranchService>();
 builder.Services.AddScoped<IDepartmentService, DepartmentService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserStatusChecker, UserStatusChecker>();
 builder.Services.AddScoped<Clinic.Application.Account.IAccountService, Clinic.Application.Account.AccountService>();
 builder.Services.AddScoped<IManagerService, ManagerService>();
 builder.Services.AddJwtAuthentication();

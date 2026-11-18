@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { loginRequest } from '../api/auth'
 import { setUnauthorizedHandler } from '../api/client'
 import { AuthContext, type AuthContextValue } from './auth-context'
@@ -28,13 +28,27 @@ function restoreSession(): SessionUser | null {
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate()
+  const location = useLocation()
   const [user, setUser] = useState<SessionUser | null>(restoreSession)
+  const [justLoggedOut, setJustLoggedOut] = useState(false)
 
-  const logout = useCallback(() => {
+  // The page the user is on, for "return to where you were" when the session ends on its own.
+  const pathRef = useRef(location.pathname)
+  useEffect(() => {
+    pathRef.current = location.pathname
+  }, [location.pathname])
+
+  const clearSession = useCallback(() => {
     clearToken()
     clearDisplayName()
     setUser(null)
   }, [])
+
+  // An explicit logout: the user chose to leave, so nothing about the old page is kept.
+  const logout = useCallback(() => {
+    setJustLoggedOut(true)
+    clearSession()
+  }, [clearSession])
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await loginRequest({ email, password })
@@ -44,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setToken(response.token)
     clearDisplayName() // the new token already carries the current name
+    setJustLoggedOut(false)
     setUser(decoded)
     return decoded
   }, [])
@@ -56,11 +71,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
-  // Session ended on its own (expiry, or the API rejected the token): log out and explain on the login page.
+  // Session ended on its own (expiry, or the API rejected the token): explain on the login page and remember the
+  // page, so a new login can return there (if that user's role may open it).
   const endSession = useCallback(() => {
-    logout()
-    navigate('/giris', { replace: true, state: { notice: EXPIRED_NOTICE } })
-  }, [logout, navigate])
+    clearSession()
+    navigate('/giris', { replace: true, state: { notice: EXPIRED_NOTICE, from: pathRef.current } })
+  }, [clearSession, navigate])
 
   // The API client reports 401s on authenticated requests here.
   useEffect(() => {
@@ -76,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => clearTimeout(timer)
   }, [expiresAt, endSession])
 
-  const value = useMemo<AuthContextValue>(() => ({ user, login, logout, updateName }), [user, login, logout, updateName])
+  const value = useMemo<AuthContextValue>(() => ({ user, login, logout, justLoggedOut, updateName }), [user, login, logout, justLoggedOut, updateName])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

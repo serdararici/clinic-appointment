@@ -12,16 +12,19 @@ interface RequireRoleProps {
 }
 
 /**
- * Route guard. Not logged in: go to the login page (remembering where the user wanted to go).
+ * Route guard. Not logged in: go to the login page (remembering where the user wanted to go, unless they just logged
+ * out on purpose).
  * Logged in with another role: go to that user's own home page instead.
  * This is a convenience for the user; the API still refuses forbidden calls on its own (401/403).
  */
 export function RequireRole({ roles, children }: RequireRoleProps) {
-  const { user } = useAuth()
+  const { user, justLoggedOut } = useAuth()
   const location = useLocation()
 
   if (!user) {
-    return <Navigate to="/giris" replace state={{ from: location.pathname }} />
+    // After an explicit logout nothing is remembered: this guard re-renders at that moment and would otherwise
+    // store the page the user just left, and the next login would return there.
+    return <Navigate to="/giris" replace state={justLoggedOut ? undefined : { from: location.pathname }} />
   }
 
   if (!roles.includes(user.role)) {

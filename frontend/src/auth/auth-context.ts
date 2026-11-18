@@ -6,8 +6,10 @@ export interface AuthContextValue {
   user: SessionUser | null
   /** Logs in with the API; rejects with an ApiError (Turkish message) if the credentials are wrong. */
   login: (email: string, password: string) => Promise<SessionUser>
-  /** Clears the session. */
+  /** An explicit logout (the user pressed "Çıkış yap"): clears the session and forgets where the user was. */
   logout: () => void
+  /** True after an explicit logout until the next login: the login page then never returns to the old page. */
+  justLoggedOut: boolean
   /** Shows a new name everywhere (navbar, greetings) after the user changed it in "Hesabım". */
   updateName: (name: string) => void
 }

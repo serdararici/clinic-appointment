@@ -37,13 +37,14 @@ function RootRedirect() {
 export default function App() {
   return (
     <Routes>
+      {/* Login and register are full-screen pages with their own frame (no navbar). */}
+      <Route element={<GuestOnly />}>
+        <Route path="giris" element={<LoginPage />} />
+        <Route path="kayit" element={<RegisterPage />} />
+      </Route>
+
       <Route element={<Layout />}>
         <Route index element={<RootRedirect />} />
-
-        <Route element={<GuestOnly />}>
-          <Route path="giris" element={<LoginPage />} />
-          <Route path="kayit" element={<RegisterPage />} />
-        </Route>
 
         <Route element={<RequireRole roles={ROLES} />}>
           <Route path="hesabim" element={<AccountPage />} />

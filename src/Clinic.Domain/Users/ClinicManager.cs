@@ -11,6 +11,8 @@ public class ClinicManager : User
     /// <summary>A deactivated manager cannot log in (the account and its history stay).</summary>
     public bool IsActive { get; private set; } = true;
 
+    public override bool CanSignIn => IsActive;
+
     public void Deactivate() => IsActive = false;
 
     public void Activate() => IsActive = true;

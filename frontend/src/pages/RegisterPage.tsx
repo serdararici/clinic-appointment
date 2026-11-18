@@ -7,6 +7,7 @@ import { todayIsoDate } from '../utils/format'
 import { Button } from '../components/Button'
 import { Card } from '../components/Card'
 import { Input } from '../components/Input'
+import { AuthLayout } from '../layout/AuthLayout'
 
 const MIN_PASSWORD_LENGTH = 8 // the same rule the API enforces
 
@@ -91,56 +92,55 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="mx-auto max-w-xl space-y-4">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Hasta kaydı</h1>
-        <p className="mt-1 text-slate-600">Randevu almak için bir hesap oluşturun.</p>
-      </div>
+    <AuthLayout
+      title="Hasta kaydı"
+      subtitle="Randevu almak için bir hesap oluşturun."
+      footer={
+        <p className="text-sm text-slate-600">
+          Zaten hesabınız var mı?{' '}
+          <Link to="/giris" className="font-medium text-teal-700 underline underline-offset-2 hover:text-teal-800">
+            Giriş yapın
+          </Link>
+        </p>
+      }
+    >
+    <Card>
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        {formError ? <Alert tone="error">{formError}</Alert> : null}
 
-      <Card>
-        <form onSubmit={handleSubmit} noValidate className="space-y-5">
-          {formError ? <Alert tone="error">{formError}</Alert> : null}
+        <Input label="Ad soyad" size="lg" autoComplete="name" required {...field('fullName')} />
+        <Input label="E-posta" type="email" size="lg" autoComplete="email" required {...field('email')} />
+        <Input label="Telefon" type="tel" size="lg" autoComplete="tel" required {...field('phoneNumber')} />
+        <Input
+          label="Doğum tarihi"
+          type="date"
+          size="lg"
+          max={today}
+          autoComplete="bday"
+          required
+          {...field('dateOfBirth')}
+        />
+        <Input
+          label="Sigorta numarası"
+          size="lg"
+          hint="İsteğe bağlı. Sigortanız varsa girin."
+          {...field('insuranceNumber')}
+        />
+        <Input
+          label="Şifre"
+          type="password"
+          size="lg"
+          autoComplete="new-password"
+          hint={`En az ${MIN_PASSWORD_LENGTH} karakter.`}
+          required
+          {...field('password')}
+        />
 
-          <Input label="Ad soyad" size="lg" autoComplete="name" required {...field('fullName')} />
-          <Input label="E-posta" type="email" size="lg" autoComplete="email" required {...field('email')} />
-          <Input label="Telefon" type="tel" size="lg" autoComplete="tel" required {...field('phoneNumber')} />
-          <Input
-            label="Doğum tarihi"
-            type="date"
-            size="lg"
-            max={today}
-            autoComplete="bday"
-            required
-            {...field('dateOfBirth')}
-          />
-          <Input
-            label="Sigorta numarası"
-            size="lg"
-            hint="İsteğe bağlı. Sigortanız varsa girin."
-            {...field('insuranceNumber')}
-          />
-          <Input
-            label="Şifre"
-            type="password"
-            size="lg"
-            autoComplete="new-password"
-            hint={`En az ${MIN_PASSWORD_LENGTH} karakter.`}
-            required
-            {...field('password')}
-          />
-
-          <Button type="submit" size="lg" loading={submitting} className="w-full">
-            Kayıt ol
-          </Button>
-        </form>
-      </Card>
-
-      <p className="text-sm text-slate-600">
-        Zaten hesabınız var mı?{' '}
-        <Link to="/giris" className="font-medium text-teal-700 underline underline-offset-2 hover:text-teal-800">
-          Giriş yapın
-        </Link>
-      </p>
-    </div>
+        <Button type="submit" size="lg" loading={submitting} className="w-full">
+          Kayıt ol
+        </Button>
+      </form>
+    </Card>
+    </AuthLayout>
   )
 }

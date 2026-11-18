@@ -74,7 +74,7 @@ public class AuthService(
         }
 
         // A deactivated staff member or clinic manager has left: refuse with the same answer as a wrong password.
-        if (user is StaffMember { IsActive: false } or ClinicManager { IsActive: false })
+        if (!user.CanSignIn)
         {
             throw new InvalidCredentialsException();
         }

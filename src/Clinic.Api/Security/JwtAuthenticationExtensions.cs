@@ -44,6 +44,16 @@ public static class JwtAuthenticationExtensions
 
                 options.Events = new JwtBearerEvents
                 {
+                    // A valid signature is not enough: the account must still exist and be active (one primary-key
+                    // lookup per authenticated request). Failing here answers 401, so the frontend ends the session.
+                    OnTokenValidated = async context =>
+                    {
+                        var checker = context.HttpContext.RequestServices.GetRequiredService<IUserStatusChecker>();
+                        if (!await TokenUserValidation.IsAccountUsableAsync(context.Principal, checker, context.HttpContext.RequestAborted))
+                        {
+                            context.Fail("The account no longer exists or has been deactivated.");
+                        }
+                    },
                     OnChallenge = async context =>
                     {
                         context.HandleResponse(); // replace the empty default response

@@ -91,6 +91,12 @@ public abstract class User : Entity
         PhoneNumber = phoneNumber;
     }
 
+    /// <summary>
+    /// Whether the account may sign in and keep using the API. Always true, except for staff and clinic managers who
+    /// have been deactivated (they override this). One definition for the login and for every later request.
+    /// </summary>
+    public virtual bool CanSignIn => true;
+
     /// <summary>Human-readable role name, overridden by each concrete role (polymorphism).</summary>
     public abstract string RoleName { get; }
 }

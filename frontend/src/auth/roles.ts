@@ -21,3 +21,23 @@ export const ROLE_HOME: Record<Role, string> = {
 export function homeFor(role: Role): string {
   return ROLE_HOME[role]
 }
+
+// The first path segment decides which role owns a page: /hasta, /doktor, /personel, /yonetici, /sistem.
+// "/hesabim" (my account) belongs to everyone. This mirrors the route guards in App.tsx.
+const firstSegment = (path: string) => path.split(/[?#]/)[0].split('/')[1] ?? ''
+
+/** Whether a role may open a page (by its path). */
+export function canOpen(role: Role, path: string): boolean {
+  const segment = firstSegment(path)
+  return segment === 'hesabim' || segment === firstSegment(ROLE_HOME[role])
+}
+
+/**
+ * Where to send a user who has just logged in. `from` is the page they were on when the session ended or the
+ * deep link they opened; it is only used if it is a normal in-app path and this role may open it. Anything else
+ * (nothing, another role's page, an odd value) goes to the role's own home page.
+ */
+export function returnPathFor(role: Role, from: string | undefined): string {
+  if (from && from.startsWith('/') && !from.startsWith('//') && canOpen(role, from)) return from
+  return homeFor(role)
+}
