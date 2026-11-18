@@ -1,4 +1,5 @@
 import type { AppointmentDetail } from '../../api/types'
+import { isoDateOf, todayIsoDate } from '../../utils/format'
 
 /** Pending or confirmed: the appointment still holds its time and can be cancelled. */
 export function isActive(appointment: AppointmentDetail): boolean {
@@ -20,4 +21,10 @@ export function sortUpcoming(list: readonly AppointmentDetail[], now: number): A
 /** Most recent first. */
 export function sortPast(list: readonly AppointmentDetail[], now: number): AppointmentDetail[] {
   return list.filter((appointment) => !isUpcoming(appointment, now)).sort((a, b) => byStart(b, a))
+}
+
+/** Active appointments that start today (Turkey date), earliest first. */
+export function sortToday(list: readonly AppointmentDetail[]): AppointmentDetail[] {
+  const today = todayIsoDate()
+  return list.filter((appointment) => isActive(appointment) && isoDateOf(appointment.scheduledStartUtc) === today).sort(byStart)
 }

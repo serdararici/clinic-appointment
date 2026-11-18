@@ -25,10 +25,6 @@ function HomePlaceholder({ heading, children }: { heading: string; children: Rea
   )
 }
 
-export function DoctorHome() {
-  return <HomePlaceholder heading="Doktor paneli">Çalışma saatleriniz ve randevularınız burada yönetilecek.</HomePlaceholder>
-}
-
 export function TechnicianHome() {
   return <HomePlaceholder heading="Personel paneli">Bu rol için henüz bir ekran tanımlanmadı.</HomePlaceholder>
 }

@@ -134,3 +134,11 @@ export interface CreateAppointmentRequest {
   /** Required for Examination services. */
   doctorId?: string
 }
+
+/** The logged-in doctor's own name and department (GET /api/doctors/{id}/profile). */
+export interface DoctorProfile {
+  id: string
+  fullName: string
+  departmentId: string
+  departmentName: string
+}

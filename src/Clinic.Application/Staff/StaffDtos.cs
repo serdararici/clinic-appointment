@@ -19,6 +19,9 @@ public record StaffDto(
 /// <summary>An active doctor with the services they offer (<paramref name="DepartmentName"/> is their specialty), for choosing a doctor when booking an examination.</summary>
 public record DoctorSummaryDto(Guid Id, string FullName, string DepartmentName, int SlotDurationMinutes, IReadOnlyList<ServiceDto> Services);
 
+/// <summary>The logged-in doctor's own profile: name and department (their specialty is the department name).</summary>
+public record DoctorProfileDto(Guid Id, string FullName, Guid DepartmentId, string DepartmentName);
+
 /// <summary>Input DTO for registering a doctor. The slot duration defaults to 30 minutes when omitted.</summary>
 public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, int? SlotDurationMinutes = null);
 

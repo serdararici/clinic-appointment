@@ -10,7 +10,9 @@ import { RegisterPage } from './pages/RegisterPage'
 import { BookingPage } from './pages/patient/BookingPage'
 import { MyAppointmentsPage } from './pages/patient/MyAppointmentsPage'
 import { PatientHome } from './pages/patient/PatientHome'
-import { AdminHome, DoctorHome, ManagerHome, TechnicianHome } from './pages/RoleHomes'
+import { DoctorAppointmentsPage } from './pages/doctor/DoctorAppointmentsPage'
+import { DoctorHome } from './pages/doctor/DoctorHome'
+import { AdminHome, ManagerHome, TechnicianHome } from './pages/RoleHomes'
 
 // "/" has no page of its own: it sends people to where they belong.
 function RootRedirect() {
@@ -41,6 +43,7 @@ export default function App() {
         </Route>
         <Route element={<RequireRole roles={['Doctor']} />}>
           <Route path="doktor" element={<DoctorHome />} />
+          <Route path="doktor/randevular" element={<DoctorAppointmentsPage />} />
         </Route>
         <Route element={<RequireRole roles={['HealthTechnician']} />}>
           <Route path="personel" element={<TechnicianHome />} />

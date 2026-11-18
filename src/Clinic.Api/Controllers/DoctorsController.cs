@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Clinic.Application.Appointments;
 using Clinic.Application.Availability;
 using Clinic.Application.Slots;
+using Clinic.Application.Staff;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Clinic.Api.Controllers;
@@ -16,8 +17,15 @@ namespace Clinic.Api.Controllers;
 public class DoctorsController(
     IDoctorAvailabilityService availabilityService,
     ISlotService slotService,
-    IAppointmentService appointmentService) : ControllerBase
+    IAppointmentService appointmentService,
+    IStaffService staffService) : ControllerBase
 {
+    /// <summary>The doctor's own name and department (for the doctor's home page).</summary>
+    [HttpGet("profile")]
+    [Authorize(Roles = AppRoles.Doctor)]
+    public async Task<ActionResult<DoctorProfileDto>> GetProfile(Guid doctorId, CancellationToken cancellationToken) =>
+        Ok(await staffService.GetDoctorProfileAsync(doctorId, cancellationToken));
+
     [HttpGet("availability")]
     [Authorize(Roles = AppRoles.Doctor)]
     public async Task<ActionResult<IReadOnlyList<AvailabilityDto>>> GetAll(Guid doctorId, CancellationToken cancellationToken)

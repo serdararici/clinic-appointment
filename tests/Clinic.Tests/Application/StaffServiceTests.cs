@@ -1,3 +1,4 @@
+using Clinic.Application.Exceptions;
 using Clinic.Application.Staff;
 using Clinic.Domain.Enums;
 using Clinic.Domain.Users;
@@ -342,6 +343,24 @@ public class StaffServiceTests
 
         Assert.Equal(doctor.Id, (await _f.StaffService().GetAsync(doctor.Id)).Id);
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _f.StaffService().GetAsync(Guid.NewGuid()));
+    }
+
+    [Fact]
+    public async Task DoctorProfile_ReturnsTheOwnNameAndDepartment_AndRefusesEveryoneElse()
+    {
+        var department = NewDepartment("Gastroenteroloji");
+        var doctor = _f.AddDoctor(department, "own@example.com", "Dr. Kendi");
+        var other = _f.AddDoctor(department, "other@example.com", "Dr. Baska");
+
+        _f.CurrentUser = FakeCurrentUser.Doctor(doctor.Id);
+        var profile = await _f.StaffService().GetDoctorProfileAsync(doctor.Id);
+
+        Assert.Equal("Dr. Kendi", profile.FullName);
+        Assert.Equal("Gastroenteroloji", profile.DepartmentName);
+        await Assert.ThrowsAsync<ForbiddenException>(() => _f.StaffService().GetDoctorProfileAsync(other.Id));
+
+        _f.CurrentUser = FakeCurrentUser.Patient(Guid.NewGuid());
+        await Assert.ThrowsAsync<ForbiddenException>(() => _f.StaffService().GetDoctorProfileAsync(doctor.Id));
     }
 
     // =========================================================================================

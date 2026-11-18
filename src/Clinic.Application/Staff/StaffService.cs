@@ -70,6 +70,17 @@ public class StaffService(
             .ToList();
     }
 
+    public async Task<DoctorProfileDto> GetDoctorProfileAsync(Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        guard.EnsureOwnDoctor(doctorId);
+
+        var doctor = await LoadAsync(doctorId, cancellationToken) as Doctor
+            ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
+        var department = await LoadDepartmentAsync(doctor.DepartmentId, cancellationToken);
+
+        return new DoctorProfileDto(doctor.Id, doctor.FullName, department.Id, department.Name);
+    }
+
     public async Task<StaffDto> GetAsync(Guid staffId, CancellationToken cancellationToken = default)
     {
         var staff = await LoadAsync(staffId, cancellationToken);

@@ -36,6 +36,11 @@ export function formatCurrency(amount: number): string {
 
 const isoDateFormat = new Intl.DateTimeFormat('en-CA', { timeZone: TIME_ZONE, year: 'numeric', month: '2-digit', day: '2-digit' })
 
+/** The Turkey calendar date of an ISO date-time as "YYYY-MM-DD" (to compare with todayIsoDate()). */
+export function isoDateOf(iso: string): string {
+  return isoDateFormat.format(new Date(iso))
+}
+
 /** Today's date in Turkey as "YYYY-MM-DD", the form of a native date input and of the slot endpoints. */
 export function todayIsoDate(): string {
   return isoDateFormat.format(new Date())
