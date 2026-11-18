@@ -90,7 +90,7 @@ export function UserMenu({ user, onLogout }: UserMenuProps) {
         className="flex min-h-10 items-center gap-2 rounded-full py-1 pl-1 pr-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-100"
       >
         <UserAvatar name={user.name} className="h-8 w-8" />
-        <span className="max-w-36 truncate">{firstNameOf(user.name)}</span>
+        <span className="hidden max-w-36 truncate sm:inline">{firstNameOf(user.name)}</span>
         <Icon icon={ChevronDown} size={16} className={cx('text-slate-500 transition-transform duration-150', open && 'rotate-180')} />
       </button>
 

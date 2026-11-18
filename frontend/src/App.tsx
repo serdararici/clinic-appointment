@@ -4,6 +4,7 @@ import { RequireRole } from './auth/RequireRole'
 import { homeFor } from './auth/roles'
 import { ROLES } from './api/types'
 import { useAuth } from './auth/useAuth'
+import { AppShell } from './layout/AppShell'
 import { Layout } from './layout/Layout'
 import { AccountPage } from './pages/account/AccountPage'
 import { LoginPage } from './pages/LoginPage'
@@ -43,9 +44,8 @@ export default function App() {
         <Route path="kayit" element={<RegisterPage />} />
       </Route>
 
-      <Route element={<Layout />}>
-        <Route index element={<RootRedirect />} />
-
+      {/* Every role page: AppShell picks the sidebar shell for staff roles and the top navbar for the others. */}
+      <Route element={<AppShell />}>
         <Route element={<RequireRole roles={ROLES} />}>
           <Route path="hesabim" element={<AccountPage />} />
         </Route>
@@ -74,6 +74,11 @@ export default function App() {
           <Route path="sistem/yoneticiler" element={<ManagersPage />} />
         </Route>
 
+      </Route>
+
+      {/* "/" only redirects; unknown addresses get the 404 in the top-navbar layout. */}
+      <Route element={<Layout />}>
+        <Route index element={<RootRedirect />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
