@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
-import { cancelAppointment, listPatientAppointments } from '../../api/booking'
+import { useState } from 'react'
+import { cancelAppointment } from '../../api/booking'
 import { readableMessage } from '../../api/errors'
 import type { AppointmentDetail } from '../../api/types'
 import { Alert } from '../../components/Alert'
@@ -8,11 +8,10 @@ import { LinkButton } from '../../components/LinkButton'
 import { Modal } from '../../components/Modal'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Table, type Column } from '../../components/Table'
-import { useAuth } from '../../auth/useAuth'
 import { cx } from '../../utils/cx'
 import { formatCurrency, formatDateTime, formatPlace } from '../../utils/format'
-import { useAsync } from '../../utils/useAsync'
 import { ServiceLabel } from './ServiceLabel'
+import { usePatientAppointments } from './usePatientAppointments'
 import { isUpcoming, sortPast, sortUpcoming } from './appointment-utils'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { useToast } from '../../components/useToast'
@@ -32,10 +31,8 @@ const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
 /** The patient's own appointments: upcoming and past, with cancelling for the ones still active. */
 export function MyAppointmentsPage() {
   usePageTitle('Randevularım')
-  const { user } = useAuth()
   const toast = useToast()
-  const patientId = user?.id ?? ''
-  const state = useAsync(useCallback((signal: AbortSignal) => listPatientAppointments(patientId, signal), [patientId]))
+  const state = usePatientAppointments()
 
   const [tab, setTab] = useState<Tab>('upcoming')
   const [search, setSearch] = useState('')
