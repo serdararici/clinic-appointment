@@ -22,8 +22,11 @@ public record DoctorSummaryDto(Guid Id, string FullName, string DepartmentName, 
 /// <summary>The logged-in doctor's own profile: name, department (their specialty is the department name) and slot duration.</summary>
 public record DoctorProfileDto(Guid Id, string FullName, Guid DepartmentId, string DepartmentName, int SlotDurationMinutes);
 
-/// <summary>Input DTO for registering a doctor. The slot duration defaults to 30 minutes when omitted.</summary>
-public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, int? SlotDurationMinutes = null);
+/// <summary>
+/// Input DTO for registering a doctor. <paramref name="Password"/> is the temporary password the doctor logs in with
+/// (at least 8 characters). The slot duration defaults to 30 minutes when omitted.
+/// </summary>
+public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, string Password, int? SlotDurationMinutes = null);
 
 public record CreateTechnicianRequest(string FullName, string Email, string? PhoneNumber, string Title);
 

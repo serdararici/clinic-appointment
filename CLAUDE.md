@@ -198,6 +198,11 @@ Delete rules (409 with a message when violated):
   The same rule blocks **deactivating** them. Cancelled, rejected and finished appointments do not block.
   Deleting staff leaves past appointments pointing at a removed id (there is no foreign key on
   `Appointment.StaffMemberId`); deactivating keeps the history intact.
+- `POST /api/departments/{id}/doctors` takes a **temporary password** (`password`, at least 8 characters; the doctor logs
+  in with the email and this password). 400 for an invalid email or short password, 409 if the email is used (also when
+  `PUT staff/{id}` changes an email to one that is taken). The new doctor offers **all Examination services of the
+  department** and gets the default work schedule at once (`EnsureDefaultAvailabilityAsync`), so they are bookable
+  immediately.
 - `PUT /api/staff/{id}/services` replaces the offered set; every service must belong to the staff
   member's own department (400 otherwise, nothing changes).
 

@@ -29,10 +29,6 @@ export function TechnicianHome() {
   return <HomePlaceholder heading="Personel paneli">Bu rol için henüz bir ekran tanımlanmadı.</HomePlaceholder>
 }
 
-export function ManagerHome() {
-  return <HomePlaceholder heading="Yönetici paneli">Kurumunuzun şubeleri, bölümleri, hizmetleri ve personeli burada yönetilecek.</HomePlaceholder>
-}
-
 export function AdminHome() {
   return <HomePlaceholder heading="Sistem yönetimi">Kurumlar ve yönetici hesapları burada yönetilecek.</HomePlaceholder>
 }

@@ -76,7 +76,10 @@ internal class ManagementFixture
 
     public ServiceCatalogService ServiceCatalog() => new(Departments, Services, Appointments, Staff, UnitOfWork, Guard());
 
-    public StaffService StaffService() => new(Staff, Departments, Services, Appointments, UnitOfWork, Clock, Guard());
+    public SpyDefaultSchedule DefaultSchedule { get; } = new();
+
+    public StaffService StaffService() =>
+        new(Staff, Departments, Services, Appointments, Users, new AspNetPasswordHasher(), DefaultSchedule, UnitOfWork, Clock, Guard());
 
     public ManagerService ManagerService() => new(Clinics, Users, new AspNetPasswordHasher(), UnitOfWork, Guard());
 
@@ -140,4 +143,18 @@ internal class ManagementFixture
         Appointments.Items.Add(appointment);
         return appointment;
     }
+}
+
+/// <summary>Records the doctors the default schedule was requested for (the real service is tested on its own).</summary>
+internal class SpyDefaultSchedule : Clinic.Application.Availability.IDefaultScheduleService
+{
+    public List<Guid> Requested { get; } = [];
+
+    public Task<int> EnsureDefaultAvailabilityAsync(Guid doctorId, DateTime utcNow, CancellationToken cancellationToken = default)
+    {
+        Requested.Add(doctorId);
+        return Task.FromResult(0);
+    }
+
+    public Task<int> EnsureForAllAsync(DateTime utcNow, CancellationToken cancellationToken = default) => Task.FromResult(0);
 }

@@ -1,4 +1,6 @@
 using Clinic.Application.Auth;
+using Clinic.Application.Availability;
+using Clinic.Domain.Enums;
 using Clinic.Domain.Repositories;
 using Clinic.Domain.Users;
 
@@ -14,6 +16,9 @@ public class StaffService(
     IDepartmentRepository departmentRepository,
     IServiceRepository serviceRepository,
     IAppointmentRepository appointmentRepository,
+    IUserRepository userRepository,
+    IPasswordHashing passwordHashing,
+    IDefaultScheduleService defaultSchedule,
     IUnitOfWork unitOfWork,
     TimeProvider timeProvider,
     AccessGuard guard) : IStaffService
@@ -23,15 +28,38 @@ public class StaffService(
         var department = await LoadDepartmentAsync(departmentId, cancellationToken);
         await guard.EnsureDepartmentAsync(department, cancellationToken);
 
+        // The doctor gets a login: a valid, unused email and a temporary password (same rules as registration).
+        var email = AuthService.ValidateEmail(request.Email);
+        AuthService.ValidatePassword(request.Password);
+        if (await userRepository.EmailExistsAsync(email, cancellationToken))
+        {
+            throw new InvalidOperationException("An account with this email address already exists.");
+        }
+
         var doctor = new Doctor(
             request.FullName,
-            request.Email,
+            email,
             request.PhoneNumber ?? string.Empty,
             department,
             request.SlotDurationMinutes ?? StaffMember.DefaultSlotDurationMinutes);
+        doctor.SetPasswordHash(passwordHashing.Hash(request.Password));
+
+        // A new doctor offers every Examination service of the department, so patients can book them right away.
+        // (The offered set can be changed later with PUT staff/{id}/services.)
+        foreach (var service in await serviceRepository.GetByDepartmentIdAsync(department.Id, cancellationToken))
+        {
+            if (service.ServiceType == ServiceType.Examination)
+            {
+                doctor.AddService(service);
+            }
+        }
 
         await staffRepository.AddAsync(doctor, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // ... and the default work schedule (weekdays 09:00-12:00 and 13:00-16:00 for the next 14 days) is filled in
+        // at once, so the new doctor is bookable immediately instead of at the next scheduled run.
+        await defaultSchedule.EnsureDefaultAvailabilityAsync(doctor.Id, timeProvider.GetUtcNow().UtcDateTime, cancellationToken);
 
         return ToDto(doctor);
     }
@@ -125,8 +153,17 @@ public class StaffService(
         var staff = await LoadAsync(staffId, cancellationToken);
         await guard.EnsureStaffAsync(staff, cancellationToken);
 
+        // A changed email must not belong to someone else (it is the login name and unique).
+        var newEmail = request.Email?.Trim() ?? string.Empty;
+        if (newEmail.Length > 0
+            && !string.Equals(staff.Email, newEmail, StringComparison.OrdinalIgnoreCase)
+            && await userRepository.EmailExistsAsync(newEmail, cancellationToken))
+        {
+            throw new InvalidOperationException("An account with this email address already exists.");
+        }
+
         staff.Rename(request.FullName);
-        staff.UpdateContactInfo(request.Email, request.PhoneNumber ?? string.Empty);
+        staff.UpdateContactInfo(request.Email ?? string.Empty, request.PhoneNumber ?? string.Empty);
 
         // The role-specific field depends on the concrete type.
         switch (staff)

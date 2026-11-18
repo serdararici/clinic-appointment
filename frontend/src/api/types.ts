@@ -183,3 +183,44 @@ export interface BulkAvailabilityResult {
   /** Dates skipped because the range had already started. */
   pastDates: string[]
 }
+
+// ---- Management (clinic manager) ----
+
+/** Create or update a service (POST /api/departments/{id}/services, PUT /api/services/{id}). */
+export interface SaveServiceRequest {
+  name: string
+  serviceType: ServiceType
+  durationMinutes: number
+  basePrice: number
+}
+
+/** A staff member as the manager sees them (GET /api/staff). */
+export interface StaffMember {
+  id: string
+  /** "Doctor" or "HealthTechnician". */
+  role: string
+  fullName: string
+  email: string
+  phoneNumber: string
+  branchId: string
+  departmentId: string
+  slotDurationMinutes: number
+  isActive: boolean
+  title: string | null
+  serviceIds: string[]
+}
+
+export interface CreateDoctorRequest {
+  fullName: string
+  email: string
+  phoneNumber?: string
+  /** The temporary password the doctor first logs in with (at least 8 characters). */
+  password: string
+  slotDurationMinutes?: number
+}
+
+export interface UpdateStaffRequest {
+  fullName: string
+  email: string
+  phoneNumber?: string
+}

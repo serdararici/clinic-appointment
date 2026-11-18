@@ -57,7 +57,7 @@ public class StaffServiceTests
         var department = NewDepartment();
 
         var dto = await _f.StaffService().CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. Hakan Yıldız", "hakan@example.com", "+90-264-555-0011"));
+            new CreateDoctorRequest("Dr. Hakan Yıldız", "hakan@example.com", "+90-264-555-0011", "Gecici123!"));
 
         Assert.Equal("Doctor", dto.Role);
         Assert.Null(dto.Title);
@@ -74,7 +74,7 @@ public class StaffServiceTests
     public async Task CreateDoctor_AcceptsAnAllowedSlotDuration_AndAMissingPhone()
     {
         var dto = await _f.StaffService().CreateDoctorAsync(NewDepartment().Id,
-            new CreateDoctorRequest("Dr. Elif Şahin", "elif@example.com", null, 20));
+            new CreateDoctorRequest("Dr. Elif Şahin", "elif@example.com", null, "Gecici123!", 20));
 
         Assert.Equal(20, dto.SlotDurationMinutes);
         Assert.Equal(string.Empty, dto.PhoneNumber);
@@ -87,21 +87,77 @@ public class StaffServiceTests
         var service = _f.StaffService();
 
         await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("", "x@example.com", null)));          // no name
+            new CreateDoctorRequest("", "x@example.com", null, "Gecici123!")));          // no name
         await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. X", " ", null)));                 // no email
+            new CreateDoctorRequest("Dr. X", " ", null, "Gecici123!")));                 // no email
         await Assert.ThrowsAnyAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
-            new CreateDoctorRequest("Dr. X", "x@example.com", null, 25))); // slot not allowed
+            new CreateDoctorRequest("Dr. X", "x@example.com", null, "Gecici123!", 25))); // slot not allowed
 
         Assert.Empty(_f.Staff.Items);
         Assert.Equal(0, _f.UnitOfWork.SaveCount);
     }
 
     [Fact]
+    public async Task CreateDoctor_FillsTheDefaultScheduleRightAway_SoTheDoctorIsBookableImmediately()
+    {
+        var dto = await _f.StaffService().CreateDoctorAsync(NewDepartment().Id,
+            new CreateDoctorRequest("Dr. Yeni", "yeni@example.com", null, "Gecici123!"));
+
+        Assert.Equal([dto.Id], _f.DefaultSchedule.Requested);
+    }
+
+    [Fact]
+    public async Task CreateDoctor_GivesALogin_AndOffersTheExaminationServicesOfTheDepartment()
+    {
+        var department = NewDepartment();
+        var examination = _f.AddService(department, "Genel Muayene", ServiceType.Examination, 30, 450m);
+        _f.AddService(department, "EKG", ServiceType.Diagnostic, 15, 300m);
+
+        var dto = await _f.StaffService().CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. Yeni", "Yeni@Example.com", null, "Gecici123!"));
+
+        var doctor = Assert.IsType<Doctor>(Assert.Single(_f.Staff.Items));
+        Assert.NotNull(doctor.PasswordHash);
+        Assert.NotEqual("Gecici123!", doctor.PasswordHash);   // stored hashed
+        Assert.Equal([examination.Id], dto.ServiceIds);        // the diagnostic service is booked without a doctor
+    }
+
+    [Fact]
+    public async Task CreateDoctor_Throws_ForAShortPassword_OrAnEmailThatIsAlreadyUsed_AndSavesNothing()
+    {
+        var department = NewDepartment();
+        _f.Users.Items.Add(new Patient("Var Olan", "var@example.com", "", new DateOnly(1990, 1, 1)));
+        var service = _f.StaffService();
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. X", "x@example.com", null, "kisa")));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. X", "VAR@example.com", null, "Gecici123!")));
+
+        Assert.Empty(_f.Staff.Items);
+        Assert.Empty(_f.DefaultSchedule.Requested);
+        Assert.Equal(0, _f.UnitOfWork.SaveCount);
+    }
+
+    [Fact]
+    public async Task Update_Throws_WhenTheNewEmailBelongsToSomeoneElse_ButAllowsKeepingTheOwnEmail()
+    {
+        var doctor = _f.AddDoctor(NewDepartment(), "own@example.com");
+        _f.Users.Items.Add(new Patient("Var Olan", "var@example.com", "", new DateOnly(1990, 1, 1)));
+        _f.Users.Items.Add(doctor);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _f.StaffService().UpdateAsync(doctor.Id, new UpdateStaffRequest("Dr. Test", "var@example.com", null)));
+
+        var dto = await _f.StaffService().UpdateAsync(doctor.Id, new UpdateStaffRequest("Dr. Yeni Ad", "own@example.com", null));
+        Assert.Equal("Dr. Yeni Ad", dto.FullName);
+    }
+
+    [Fact]
     public async Task CreateDoctor_Throws_WhenTheDepartmentDoesNotExist()
     {
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _f.StaffService().CreateDoctorAsync(Guid.NewGuid(),
-            new CreateDoctorRequest("Dr. X", "x@example.com", null)));
+            new CreateDoctorRequest("Dr. X", "x@example.com", null, "Gecici123!")));
     }
 
     [Fact]
