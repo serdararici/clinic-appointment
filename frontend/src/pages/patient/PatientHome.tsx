@@ -12,6 +12,7 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { formatCurrency, formatLongDate, formatPlace, formatTime } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { sortUpcoming } from './appointment-utils'
+import { ServiceLabel } from './ServiceLabel'
 
 function BigAction({ to, title, description }: { to: string; title: string; description: string }) {
   return (
@@ -62,8 +63,8 @@ export function PatientHome() {
               </p>
               <StatusBadge status={next.status} />
             </div>
-            <p className="text-slate-700">
-              {next.serviceName}
+            <p className="text-slate-900">
+              <ServiceLabel serviceName={next.serviceName} departmentName={next.departmentName} />
             </p>
             <p className="text-slate-700">{formatPlace(next)}</p>
             <p className="text-sm text-slate-600">

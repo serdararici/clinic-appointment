@@ -24,6 +24,7 @@ public class AppointmentService(
     IServiceRepository serviceRepository,
     IClinicFacilityRepository clinicFacilityRepository,
     IHealthOrganizationRepository organizationRepository,
+    IDepartmentRepository departmentRepository,
     IPricingStrategy pricingStrategy,
     IConfirmationPolicy confirmationPolicy,
     IUnitOfWork unitOfWork,
@@ -245,6 +246,7 @@ public class AppointmentService(
 
         // The branch is the one that owns the service's department (also true for examinations).
         var branchNames = new Dictionary<Guid, string>();
+        var departmentNames = new Dictionary<Guid, string>();
         var organizationNames = new Dictionary<Guid, string>();
         var organizationNamesByService = new Dictionary<Guid, string>();
         foreach (var service in services.Values)
@@ -256,6 +258,8 @@ public class AppointmentService(
             }
 
             branchNames[service.Id] = branch.Name;
+            var department = await departmentRepository.GetByIdAsync(service.DepartmentId, cancellationToken);
+            departmentNames[service.Id] = department?.Name ?? string.Empty;
 
             // Look each organization up once, however many of its branches and appointments the list has.
             if (!organizationNames.ContainsKey(branch.OrganizationId))
@@ -280,6 +284,7 @@ public class AppointmentService(
                     a.StaffMemberId is { } staffId && staffNames.TryGetValue(staffId, out var staffName) ? staffName : null,
                     organizationNamesByService.GetValueOrDefault(a.ServiceId, string.Empty),
                     branchNames.GetValueOrDefault(a.ServiceId, string.Empty),
+                    departmentNames.GetValueOrDefault(a.ServiceId, string.Empty),
                     a.ServiceId,
                     service?.Name ?? string.Empty,
                     service?.ServiceType ?? ServiceType.Examination,

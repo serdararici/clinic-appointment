@@ -97,6 +97,7 @@ export interface AppointmentDetail {
   staffMemberName: string | null
   organizationName: string
   branchName: string
+  departmentName: string
   serviceId: string
   serviceName: string
   serviceType: ServiceType

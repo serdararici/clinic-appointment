@@ -37,33 +37,33 @@ public static class SeedCatalog
             Doctor("Dr. Hakan Yıldız", "hakan.yildiz" + Sakarya, 30),
             Doctor("Dr. Elif Şahin", "elif.sahin" + Sakarya, 20),
         ]),
-        new("Gastroenteroloji", [Exam("Gastroenteroloji Muayenesi", 20, 550m)],
+        new("Gastroenteroloji", [Exam("Genel Muayene", 20, 550m)],
         [
             Doctor("Dr. Selin Aydın", "selin.aydin" + Sakarya, 20),
             Doctor("Dr. Murat Tekin", "murat.tekin" + Sakarya, 30),
         ]),
-        new("Kardiyoloji", [Exam("Kardiyoloji Muayenesi", 30, 600m), Diagnostic("EKG", 15, 300m), Diagnostic("Ekokardiyografi", 30, 900m)],
+        new("Kardiyoloji", [Exam("Genel Muayene", 30, 600m), Diagnostic("EKG", 15, 300m), Diagnostic("Ekokardiyografi", 30, 900m)],
         [
             Doctor("Dr. Kemal Aslan", "kemal.aslan" + Sakarya, 30),
             Doctor("Dr. Neslihan Koç", "neslihan.koc" + Sakarya, 15),
         ]),
         // One service only: the booking flow selects it automatically.
-        new("Ortopedi ve Travmatoloji", [Exam("Ortopedi Muayenesi", 20, 500m)],
+        new("Ortopedi ve Travmatoloji", [Exam("Genel Muayene", 20, 500m)],
         [
             Doctor("Dr. Oğuz Karaca", "oguz.karaca" + Sakarya, 20),
             Doctor("Dr. Pınar Eren", "pinar.eren" + Sakarya, 30),
         ]),
-        new("Göz Hastalıkları", [Exam("Göz Muayenesi", 20, 450m)],
+        new("Göz Hastalıkları", [Exam("Genel Muayene", 20, 450m)],
         [
             Doctor("Dr. Deniz Kurt", "deniz.kurt" + Sakarya, 15),
             Doctor("Dr. Gamze Özkan", "gamze.ozkan" + Sakarya, 20),
         ]),
-        new("Çocuk Sağlığı ve Hastalıkları", [Exam("Çocuk Muayenesi", 20, 400m)],
+        new("Çocuk Sağlığı ve Hastalıkları", [Exam("Genel Muayene", 20, 400m)],
         [
             Doctor("Dr. Tuğba Yalçın", "tugba.yalcin" + Sakarya, 20),
             Doctor("Dr. Serkan Bulut", "serkan.bulut" + Sakarya, 15),
         ]),
-        new("Nöroloji", [Exam("Nöroloji Muayenesi", 30, 550m), Diagnostic("EMG", 30, 800m)],
+        new("Nöroloji", [Exam("Genel Muayene", 30, 550m), Diagnostic("EMG", 30, 800m)],
         [
             Doctor("Dr. Cem Uysal", "cem.uysal" + Sakarya, 30),
             Doctor("Dr. Aylin Güler", "aylin.guler" + Sakarya, 20),
@@ -80,17 +80,17 @@ public static class SeedCatalog
             Doctor("Dr. Zeynep Çelik", "zeynep.celik" + Sakarya, 30),
             Doctor("Dr. Hasan Polat", "hasan.polat" + Sakarya, 20),
         ]),
-        new("Gastroenteroloji", [Exam("Gastroenteroloji Muayenesi", 20, 500m)],
+        new("Gastroenteroloji", [Exam("Genel Muayene", 20, 500m)],
         [
             Doctor("Dr. Burak Öztürk", "burak.ozturk" + Sakarya, 20),
             Doctor("Dr. Ece Yavuz", "ece.yavuz" + Sakarya, 30),
         ]),
-        new("Kardiyoloji", [Exam("Kardiyoloji Muayenesi", 30, 550m), Diagnostic("EKG", 15, 300m)],
+        new("Kardiyoloji", [Exam("Genel Muayene", 30, 550m), Diagnostic("EKG", 15, 300m)],
         [
             Doctor("Dr. Volkan Tan", "volkan.tan" + Sakarya, 30),
             Doctor("Dr. Sibel Acar", "sibel.acar" + Sakarya, 15),
         ]),
-        new("Çocuk Sağlığı ve Hastalıkları", [Exam("Çocuk Muayenesi", 20, 380m)],
+        new("Çocuk Sağlığı ve Hastalıkları", [Exam("Genel Muayene", 20, 380m)],
         [
             Doctor("Dr. Merve Sarı", "merve.sari" + Sakarya, 20),
             Doctor("Dr. Burcu Çakır", "burcu.cakir" + Sakarya, 15),
@@ -107,12 +107,12 @@ public static class SeedCatalog
             Doctor("Dr. Can Aksoy", "can.aksoy" + Marmara, 15),
             Doctor("Dr. Leyla Tunç", "leyla.tunc" + Marmara, 30),
         ]),
-        new("Göz Hastalıkları", [Exam("Göz Muayenesi", 20, 400m)],
+        new("Göz Hastalıkları", [Exam("Genel Muayene", 20, 400m)],
         [
             Doctor("Dr. Barış Çetin", "baris.cetin" + Marmara, 20),
             Doctor("Dr. Yasemin Doğan", "yasemin.dogan" + Marmara, 15),
         ]),
-        new("Ortopedi ve Travmatoloji", [Exam("Ortopedi Muayenesi", 20, 450m)],
+        new("Ortopedi ve Travmatoloji", [Exam("Genel Muayene", 20, 450m)],
         [
             Doctor("Dr. Onur Işık", "onur.isik" + Marmara, 30),
             Doctor("Dr. Selma Kaya", "selma.kaya" + Marmara, 20),

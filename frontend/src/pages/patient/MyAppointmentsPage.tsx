@@ -12,6 +12,7 @@ import { useAuth } from '../../auth/useAuth'
 import { cx } from '../../utils/cx'
 import { formatCurrency, formatDateTime, formatPlace } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
+import { ServiceLabel } from './ServiceLabel'
 import { isUpcoming, sortPast, sortUpcoming } from './appointment-utils'
 
 type Tab = 'upcoming' | 'past'
@@ -60,7 +61,7 @@ export function MyAppointmentsPage() {
   const columns: Column<AppointmentDetail>[] = [
     { key: 'when', header: 'Tarih ve saat', primary: true, cell: (row) => <span className="tabular-nums">{formatDateTime(row.scheduledStartUtc)}</span> },
     { key: 'branch', header: 'Kurum ve şube', cell: (row) => formatPlace(row) },
-    { key: 'service', header: 'Hizmet', cell: (row) => row.serviceName },
+    { key: 'service', header: 'Hizmet', cell: (row) => <ServiceLabel serviceName={row.serviceName} departmentName={row.departmentName} /> },
     { key: 'staff', header: 'Doktor', cell: (row) => row.staffMemberName ?? <span className="text-slate-600">Atanmadı</span> },
     { key: 'price', header: 'Ücret', align: 'right', cell: (row) => formatCurrency(row.price) },
     { key: 'status', header: 'Durum', cell: (row) => <StatusBadge status={row.status} /> },
@@ -132,7 +133,11 @@ export function MyAppointmentsPage() {
         {toCancel ? (
           <div className="space-y-3">
             <p className="text-slate-700">
-              <span className="font-medium tabular-nums">{formatDateTime(toCancel.scheduledStartUtc)}</span> tarihli {toCancel.serviceName} randevusunu ({formatPlace(toCancel)}) iptal etmek istediğinize emin misiniz?
+              <span className="font-medium tabular-nums">{formatDateTime(toCancel.scheduledStartUtc)}</span> tarihli randevunuzu iptal etmek istediğinize emin misiniz?
+            </p>
+            <p className="text-slate-900">
+              <ServiceLabel serviceName={toCancel.serviceName} departmentName={toCancel.departmentName} />
+              <span className="block text-sm text-slate-600">{formatPlace(toCancel)}</span>
             </p>
             {cancelError ? <Alert tone="error">{cancelError}</Alert> : null}
           </div>

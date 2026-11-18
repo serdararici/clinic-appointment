@@ -19,6 +19,16 @@ public class SeedCatalogTests
     }
 
     [Fact]
+    public void EveryExaminationService_IsCalledGenelMuayene_WhileDiagnosticServicesKeepTheirOwnNames()
+    {
+        var services = Branches.SelectMany(b => b).SelectMany(d => d.Services).ToList();
+
+        Assert.All(services.Where(s => s.Type == ServiceType.Examination), s => Assert.Equal("Genel Muayene", s.Name));
+        Assert.All(services.Where(s => s.Type == ServiceType.Diagnostic), s => Assert.NotEqual("Genel Muayene", s.Name));
+        Assert.Contains(services, s => s.Name == "EKG");
+    }
+
+    [Fact]
     public void DepartmentsWithoutExaminationServices_HaveNoDoctors()
     {
         foreach (var department in Branches.SelectMany(b => b).Where(d => d.Services.All(s => s.Type == ServiceType.Diagnostic)))

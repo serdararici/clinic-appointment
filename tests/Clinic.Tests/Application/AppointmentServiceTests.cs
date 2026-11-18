@@ -30,6 +30,7 @@ public class AppointmentServiceTests
 
     private readonly HealthOrganization _organization = new("Sakarya Şehir Hastanesi");
     private readonly FakeHealthOrganizationRepository _organizations;
+    private readonly FakeDepartmentRepository _departments;
     private readonly ClinicFacility _clinic;
     private readonly Department _department;
     private readonly Service _checkUp;
@@ -45,6 +46,7 @@ public class AppointmentServiceTests
         _clinic = new(_organization.Id, "Merkez", "Test Address");
         _organizations = new FakeHealthOrganizationRepository(_clinics);
         _organizations.Items.Add(_organization);
+        _departments = new FakeDepartmentRepository(_services, new FakeStaffMemberRepository());
         for (var day = DayOfWeek.Monday; day <= DayOfWeek.Friday; day++)
         {
             _clinic.AddWorkingHour(day, new TimeOnly(8, 0), new TimeOnly(17, 0));
@@ -58,6 +60,7 @@ public class AppointmentServiceTests
         _xRay = radiology.AddService("Röntgen", ServiceType.Diagnostic, TimeSpan.FromMinutes(20), 350m);
         _mr = radiology.AddService("MR", ServiceType.Diagnostic, TimeSpan.FromMinutes(45), 1800m);
 
+        _departments.Items.AddRange([_department, radiology]);
         _doctor = NewDoctor(slotDurationMinutes: 30);
         // Available all week (UTC), so tests that fail on working hours are not masked by availability.
         _doctor.AddAvailability(Monday, Monday.AddDays(7));
@@ -78,7 +81,7 @@ public class AppointmentServiceTests
     }
 
     private AppointmentService CreateService(IPricingStrategy pricing, IConfirmationPolicy policy, DateTime? now = null, ICurrentUser? user = null) =>
-        new(_appointments, _doctors, _patients, _services, _clinics, _organizations, pricing, policy, _unitOfWork,
+        new(_appointments, _doctors, _patients, _services, _clinics, _organizations, _departments, pricing, policy, _unitOfWork,
             new FixedTimeProvider(now ?? LongAgo),
             new AccessGuard(
                 user ?? FakeCurrentUser.Patient(_patient.Id),
@@ -571,6 +574,7 @@ public class AppointmentServiceTests
         Assert.Equal("Pat Ient", list[0].PatientName);
         Assert.Equal("Sakarya Şehir Hastanesi", list[0].OrganizationName);
         Assert.Equal("Merkez", list[0].BranchName);
+        Assert.Equal("Radyoloji", list[0].DepartmentName);
         Assert.Equal(350m, list[0].Price);
         Assert.Equal(AppointmentStatus.Confirmed, list[0].Status);
         Assert.Equal(Monday.AddHours(5), list[0].ScheduledStartUtc);
@@ -581,6 +585,7 @@ public class AppointmentServiceTests
         Assert.Equal("Dr. Test", list[1].StaffMemberName);
         Assert.Equal("Sakarya Şehir Hastanesi", list[1].OrganizationName);
         Assert.Equal("Merkez", list[1].BranchName);
+        Assert.Equal("Dahiliye", list[1].DepartmentName);
         Assert.Equal(AppointmentStatus.Cancelled, list[1].Status); // every status is listed
     }
 
@@ -627,6 +632,7 @@ public class AppointmentServiceTests
         Assert.Equal("Pat Ient", only.PatientName);
         Assert.Equal("Sakarya Şehir Hastanesi", only.OrganizationName);
         Assert.Equal("Merkez", only.BranchName);
+        Assert.Equal("Dahiliye", only.DepartmentName);
         await Assert.ThrowsAsync<ForbiddenException>(() => doctorService.GetByDoctorAsync(Guid.NewGuid())); // not their own id
     }
 
