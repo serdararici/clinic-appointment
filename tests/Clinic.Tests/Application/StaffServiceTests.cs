@@ -357,6 +357,7 @@ public class StaffServiceTests
 
         Assert.Equal("Dr. Kendi", profile.FullName);
         Assert.Equal("Gastroenteroloji", profile.DepartmentName);
+        Assert.Equal(doctor.SlotDurationMinutes, profile.SlotDurationMinutes);
         await Assert.ThrowsAsync<ForbiddenException>(() => _f.StaffService().GetDoctorProfileAsync(other.Id));
 
         _f.CurrentUser = FakeCurrentUser.Patient(Guid.NewGuid());

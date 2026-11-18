@@ -50,3 +50,11 @@ export function todayIsoDate(): string {
 export function formatPlace(place: { organizationName: string; branchName: string }): string {
   return `${place.organizationName} · ${place.branchName}`
 }
+
+/**
+ * Turkey wall-clock date ("YYYY-MM-DD") and time ("HH:mm") to a UTC ISO date-time for the API.
+ * Turkey has been on a fixed UTC+3 since 2016 (no daylight saving), so the offset is constant.
+ */
+export function istanbulToUtcIso(date: string, time: string): string {
+  return new Date(`${date}T${time}:00+03:00`).toISOString()
+}

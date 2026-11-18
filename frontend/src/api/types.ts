@@ -141,4 +141,39 @@ export interface DoctorProfile {
   fullName: string
   departmentId: string
   departmentName: string
+  slotDurationMinutes: number
+}
+
+// ---- Availability ----
+
+/** One availability range of a doctor (UTC). */
+export interface Availability {
+  id: string
+  doctorId: string
+  startUtc: string
+  endUtc: string
+}
+
+export interface AddAvailabilityRequest {
+  startUtc: string
+  endUtc: string
+}
+
+export type WeekdayName = 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday'
+
+/** Dates and times are Istanbul local time ("YYYY-MM-DD" and "HH:mm"). */
+export interface BulkAvailabilityRequest {
+  fromDate: string
+  toDate: string
+  weekdays: WeekdayName[]
+  startTime: string
+  endTime: string
+}
+
+export interface BulkAvailabilityResult {
+  created: Availability[]
+  /** Dates skipped because the range would overlap an existing one. */
+  skippedDates: string[]
+  /** Dates skipped because the range had already started. */
+  pastDates: string[]
 }

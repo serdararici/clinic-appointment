@@ -78,7 +78,7 @@ public class StaffService(
             ?? throw new KeyNotFoundException($"Doctor {doctorId} was not found.");
         var department = await LoadDepartmentAsync(doctor.DepartmentId, cancellationToken);
 
-        return new DoctorProfileDto(doctor.Id, doctor.FullName, department.Id, department.Name);
+        return new DoctorProfileDto(doctor.Id, doctor.FullName, department.Id, department.Name, doctor.SlotDurationMinutes);
     }
 
     public async Task<StaffDto> GetAsync(Guid staffId, CancellationToken cancellationToken = default)

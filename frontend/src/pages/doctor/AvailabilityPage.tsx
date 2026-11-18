@@ -1,0 +1,71 @@
+import { useCallback, useState } from 'react'
+import { getDoctorProfile, listAvailability } from '../../api/doctor'
+import { useAuth } from '../../auth/useAuth'
+import { Alert } from '../../components/Alert'
+import { Button } from '../../components/Button'
+import { Spinner } from '../../components/Spinner'
+import { useAsync } from '../../utils/useAsync'
+import { AvailabilityList } from './AvailabilityList'
+import { BulkAvailabilityCard } from './BulkAvailabilityCard'
+import { SingleAvailabilityCard } from './SingleAvailabilityCard'
+import { SlotDurationCard } from './SlotDurationCard'
+
+/** The doctor's schedule: appointment length, adding availability (single or bulk) and the upcoming ranges. */
+export function AvailabilityPage() {
+  const { user } = useAuth()
+  const doctorId = user?.id ?? ''
+  const profile = useAsync(useCallback((signal: AbortSignal) => getDoctorProfile(doctorId, signal), [doctorId]))
+  const availability = useAsync(useCallback((signal: AbortSignal) => listAvailability(doctorId, signal), [doctorId]))
+  const [now] = useState(() => Date.now())
+  // After a save the new duration is used right away, without reloading the profile (which would blank the cards).
+  const [savedDuration, setSavedDuration] = useState<number | null>(null)
+
+  const slotDuration = savedDuration ?? profile.data?.slotDurationMinutes
+
+  // Only upcoming ranges: a range that has not ended yet.
+  const upcoming = availability.data
+    ?.filter((range) => new Date(range.endUtc).getTime() > now)
+    .sort((a, b) => new Date(a.startUtc).getTime() - new Date(b.startUtc).getTime())
+
+  return (
+    <div className="space-y-5">
+      <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Uygunluk</h1>
+
+      {slotDuration === undefined ? (
+        profile.error ? (
+          <div className="space-y-3">
+            <Alert tone="error">{profile.error}</Alert>
+            <Button variant="secondary" onClick={profile.reload}>
+              Yeniden dene
+            </Button>
+          </div>
+        ) : (
+          <div className="flex justify-center py-10">
+            <Spinner label="Yükleniyor..." />
+          </div>
+        )
+      ) : (
+        <>
+          <SlotDurationCard doctorId={doctorId} current={slotDuration} onSaved={setSavedDuration} />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <SingleAvailabilityCard doctorId={doctorId} onAdded={availability.reload} />
+            <BulkAvailabilityCard doctorId={doctorId} slotDurationMinutes={slotDuration} onAdded={availability.reload} />
+          </div>
+          <section aria-labelledby="existing-heading" className="space-y-3">
+            <h2 id="existing-heading" className="text-base font-semibold text-slate-900">
+              Mevcut uygunluklar
+            </h2>
+            <AvailabilityList
+              doctorId={doctorId}
+              rows={upcoming}
+              loading={availability.loading}
+              error={availability.error}
+              slotDurationMinutes={slotDuration}
+              onReload={availability.reload}
+            />
+          </section>
+        </>
+      )}
+    </div>
+  )
+}

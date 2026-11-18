@@ -27,6 +27,13 @@ const KNOWN_MESSAGES: ReadonlyArray<readonly [RegExp, (match: RegExpMatchArray) 
   [/full name is required/i, () => 'Ad soyad zorunludur.'],
   [/invalid email or password/i, () => 'E-posta veya şifre hatalı.'],
   [/token is invalid or has expired/i, () => 'Oturumunuz sona erdi. Lütfen yeniden giriş yapın.'],
+  [/availability range overlaps an existing/i, () => 'Bu aralık mevcut bir uygunluk aralığıyla çakışıyor.'],
+  [/end time must be after start time/i, () => 'Bitiş saati başlangıç saatinden sonra olmalıdır.'],
+  [/todate must not be before fromdate/i, () => 'Bitiş tarihi başlangıç tarihinden önce olamaz.'],
+  [/date range cannot be longer than (\d+)/i, (m) => `Tarih aralığı en fazla ${m[1]} gün olabilir.`],
+  [/at least one weekday is required/i, () => 'En az bir gün seçin.'],
+  [/availability range that still has active appointments/i, () => 'Bu aralıkta aktif randevular olduğu için silinemez. Önce randevuları iptal edin.'],
+  [/slot duration must be one of/i, () => 'Randevu süresi 10, 15, 20, 30 veya 60 dakika olmalıdır.'],
   [/authentication is required/i, () => 'Devam etmek için giriş yapmalısınız.'],
 ]
 

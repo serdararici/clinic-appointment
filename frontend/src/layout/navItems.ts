@@ -16,7 +16,7 @@ export function navItemsFor(role: Role): NavItem[] {
     return [home, { to: '/hasta/randevu-al', label: 'Randevu al' }, { to: '/hasta/randevularim', label: 'Randevularım' }]
   }
   if (role === 'Doctor') {
-    return [home, { to: '/doktor/randevular', label: 'Randevular' }]
+    return [home, { to: '/doktor/randevular', label: 'Randevular' }, { to: '/doktor/uygunluk', label: 'Uygunluk' }]
   }
   return [home]
 }
