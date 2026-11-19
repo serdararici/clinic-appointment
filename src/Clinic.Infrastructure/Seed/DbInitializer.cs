@@ -27,6 +27,7 @@ public static class DbInitializer
         // Patients
         "ahmet.celik@example.com",
         "fatma.yildirim@example.com",
+        .. SeedCatalog.ExtraPatients.Select(patient => patient.Email),
         // Clinic managers
         "ayse.yilmaz@sakaryasehir.example",
         "mehmet.kara@sakaryasehir.example",
@@ -82,7 +83,7 @@ public static class DbInitializer
         dbContext.SaveChanges();
     }
 
-    /// <summary>Seeds organizations, branches, services, staff and patients once; skipped when data already exists.</summary>
+    /// <summary>Seeds organizations, branches, services, staff, patients and appointments once; skipped when data already exists.</summary>
     private static void SeedCoreData(ClinicDbContext dbContext)
     {
         if (dbContext.HealthOrganizations.Any())
@@ -90,18 +91,35 @@ public static class DbInitializer
             return; // Already seeded.
         }
 
-        SeedSakaryaCityHospital(dbContext);
+        AddSeedData(dbContext, DateTime.UtcNow);
+        dbContext.SaveChanges();
+    }
+
+    /// <summary>
+    /// Adds all sample data to the context without saving (and without touching the database, so tests can inspect it).
+    /// The demo appointments are planned relative to <paramref name="utcNow"/>.
+    /// </summary>
+    public static void AddSeedData(ClinicDbContext dbContext, DateTime utcNow)
+    {
+        var merkezDepartments = SeedSakaryaCityHospital(dbContext);
         SeedMarmaraPoliklinik(dbContext);
 
         dbContext.Patients.AddRange(
             new Patient("Ahmet Çelik", "ahmet.celik@example.com", "+90-532-000-0001", new DateOnly(1990, 5, 20), insuranceNumber: "SGK-12345"),
             new Patient("Fatma Yıldırım", "fatma.yildirim@example.com", "+90-532-000-0002", new DateOnly(1985, 11, 3)));
+        dbContext.Patients.AddRange(SeedCatalog.ExtraPatients.Select(patient =>
+            new Patient(patient.FullName, patient.Email, patient.Phone, patient.DateOfBirth, patient.Insurance)));
 
-        dbContext.SaveChanges();
+        // The demo history and calendar (past and upcoming appointments), through the context so the past ones are allowed.
+        dbContext.Appointments.AddRange(DemoAppointments.Build(
+            utcNow,
+            dbContext.ChangeTracker.Entries<Doctor>().Select(entry => entry.Entity),
+            dbContext.ChangeTracker.Entries<Patient>().Select(entry => entry.Entity),
+            merkezDepartments["Radyoloji"]));
     }
 
     /// <summary>A multi-branch organization: Merkez and Adapazarı Şubesi, each with its own hours and departments.</summary>
-    private static void SeedSakaryaCityHospital(ClinicDbContext dbContext)
+    private static Dictionary<string, Department> SeedSakaryaCityHospital(ClinicDbContext dbContext)
     {
         var organization = new HealthOrganization("Sakarya Şehir Hastanesi");
         dbContext.HealthOrganizations.Add(organization);
@@ -124,6 +142,8 @@ public static class DbInitializer
 
         dbContext.ClinicManagers.Add(new ClinicManager("Mehmet Kara", "mehmet.kara@sakaryasehir.example", "+90-264-555-0002", adapazari.Id));
         AddTechnicians(dbContext, adapazariDepartments, SeedCatalog.AdapazariTechnicians);
+
+        return merkezDepartments;
     }
 
     /// <summary>A second, independent organization with a single branch.</summary>

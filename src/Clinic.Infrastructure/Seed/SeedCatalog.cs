@@ -8,6 +8,9 @@ public sealed record SeedDoctor(string FullName, string Email, int SlotDurationM
 /// <summary>A service of the sample data (the type decides whether the patient picks a doctor).</summary>
 public sealed record SeedService(string Name, ServiceType Type, int DurationMinutes, decimal Price);
 
+/// <summary>An additional demo patient (password: the demo password). <paramref name="Insurance"/> is null for an uninsured one.</summary>
+public sealed record SeedPatient(string FullName, string Email, string Phone, DateOnly DateOfBirth, string? Insurance);
+
 /// <summary>A health technician of the sample data, linked to some Diagnostic services of their department (a definition only).</summary>
 public sealed record SeedTechnician(string FullName, string Email, string Phone, string Title, string Department, string[] Services);
 
@@ -148,6 +151,19 @@ public static class SeedCatalog
     public static readonly SeedTechnician[] SerdivanTechnicians =
     [
         Technician("Emre Korkmaz", "emre.korkmaz" + Marmara, "+90-264-555-0052", LaboratoryTitle, "Laboratuvar", "Kan Tahlili", "İdrar Tahlili", "Tam Kan Sayımı"),
+    ];
+
+    /// <summary>Eight more Turkish-named patients: four insured and four not, so the price difference can be shown.</summary>
+    public static readonly SeedPatient[] ExtraPatients =
+    [
+        new("Mehmet Yılmaz", "mehmet.yilmaz@example.com", "+90-532-000-0003", new DateOnly(1978, 3, 14), "SGK-20031"),
+        new("Elif Demir", "elif.demir@example.com", "+90-532-000-0004", new DateOnly(1992, 8, 2), null),
+        new("Mustafa Kaya", "mustafa.kaya@example.com", "+90-532-000-0005", new DateOnly(1965, 12, 27), "SGK-20033"),
+        new("Zeynep Arslan", "zeynep.arslan@example.com", "+90-532-000-0006", new DateOnly(2001, 5, 9), null),
+        new("Hasan Çetin", "hasan.cetin@example.com", "+90-532-000-0007", new DateOnly(1983, 1, 30), "SGK-20035"),
+        new("Ayşe Korkmaz", "ayse.korkmaz@example.com", "+90-532-000-0008", new DateOnly(1995, 10, 21), null),
+        new("Emre Şahin", "emre.sahin@example.com", "+90-532-000-0009", new DateOnly(1988, 6, 5), "SGK-20037"),
+        new("Selin Aydoğan", "selin.aydogan@example.com", "+90-532-000-0010", new DateOnly(1999, 2, 17), null),
     ];
 
     /// <summary>The emails of every seeded doctor.</summary>

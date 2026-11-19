@@ -327,6 +327,13 @@ startup if it does not exist.
 | Clinic manager | `mehmet.kara@sakaryasehir.example` | Adapazarı Şubesi |
 | Clinic manager | `ali.erdogan@marmarapoliklinik.example` | Serdivan Kliniği |
 | System administrator | `admin@clinic.example` | all organizations |
+| Patients (extra) | `mehmet.yilmaz`, `mustafa.kaya`, `hasan.cetin`, `emre.sahin` (insured); `elif.demir`, `zeynep.arslan`, `ayse.korkmaz`, `selin.aydogan` (not insured), all `@example.com` | - |
+
+**Demo appointments** (`DemoAppointments`, planned relative to the day the seed runs, written through the DbContext so the
+past ones are allowed, but on the doctor's slot grid, without overlaps, priced by the real strategy, upcoming ones on
+weekdays inside the 14-day window): Ahmet Çelik has six past appointments (Confirmed, Cancelled, Rejected, one diagnostic)
+and three upcoming ones (one Pending); Dr. Hakan Yıldız (auto-confirm) and Dr. Kemal Aslan (approval) have nine each, and
+Dr. Kemal Aslan has four Pending upcoming ones for the approve/reject demo. The README has a "Demo senaryosu" in Turkish.
 
 ## Date and Time
 

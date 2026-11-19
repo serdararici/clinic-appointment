@@ -47,6 +47,28 @@ All demo accounts use the password **`Demo123!`**.
 | Doctor | `hakan.yildiz@sakaryasehir.example`, `elif.sahin@sakaryasehir.example`, `zeynep.celik@sakaryasehir.example`, `burak.ozturk@sakaryasehir.example`, `can.aksoy@marmarapoliklinik.example` |
 | Patient | `ahmet.celik@example.com`, `fatma.yildirim@example.com` |
 
+### Demo senaryosu
+
+Tüm hesapların şifresi **`Demo123!`**. Veritabanı sıfırlandığında randevular çalıştırma gününe göre yeniden oluşturulur
+(geçmiş ve önümüzdeki 14 gün içindeki hafta içi günler).
+
+| Adım | Hesap | Ne gösterilir |
+|---|---|---|
+| 1. Hasta paneli | `ahmet.celik@example.com` (sigortalı hasta) | Ana sayfada takvim, sıradaki randevu, geçmişte onaylı, iptal ve reddedilmiş randevular; **Randevularım** sayfasında "Yaklaşan" ve "Geçmiş" sekmeleri |
+| 2. Randevu alma | Ahmet Çelik | Randevu al: kurum, şube, bölüm, hizmet (Dahiliye'de "Genel Muayene" ve "Kontrol Muayenesi"), doktor, tarih ve saat. Özet ekranında sigortalı tutar (%20 indirim) görünür |
+| 3. Sigortasız fiyat | `elif.demir@example.com` (sigortasız hasta) | Aynı hizmette tam fiyatı gösterir |
+| 4. Onay gerektiren doktor | `kemal.aslan@sakaryasehir.example` (Kardiyoloji) | **Randevular > Bekleyen** sekmesinde 4 onay bekleyen randevu: "Onayla" ve "Reddet" |
+| 5. Hasta tarafında sonuç | Ahmet Çelik | Dr. Kemal Aslan ile alınan randevu "Onay bekliyor" iken onaylanınca "Onaylandı", reddedilince "Reddedildi" görünür |
+| 6. Otomatik onaylı doktor | `hakan.yildiz@sakaryasehir.example` (Dahiliye) | Randevuları hemen "Onaylandı" olur; **Uygunluk** sayfasında takvim, çalışma saatleri ve randevu süresi |
+| 7. Klinik yöneticisi | `ayse.yilmaz@sakaryasehir.example` (Merkez) | Ana sayfada personel sayıları ve çalışma saatleri; **Bölümler** ve **Personel** sayfalarında doktor ve sağlık teknisyeni yönetimi |
+| 8. Sistem yöneticisi | `admin@clinic.example` | **Kurumlar** (şube ve çalışma saatleri) ve **Yöneticiler** sayfaları |
+
+Diğer sigortalı hastalar: `mehmet.yilmaz@example.com`, `mustafa.kaya@example.com`, `hasan.cetin@example.com`,
+`emre.sahin@example.com`. Sigortasızlar: `elif.demir@example.com`, `zeynep.arslan@example.com`,
+`ayse.korkmaz@example.com`, `selin.aydogan@example.com`. Veritabanını sıfırlamak için API'yi durdurup
+`dotnet ef database drop --force --project src/Clinic.Infrastructure --startup-project src/Clinic.Api` komutunu çalıştırın,
+sonra API'yi yeniden başlatın.
+
 ### Demo of the appointment approval flow
 
 Every doctor decides whether new appointments are confirmed at once (the default) or wait for their approval. In the
