@@ -98,6 +98,24 @@ public class AccessGuard(ICurrentUser user, IClinicFacilityRepository clinics, I
         }
     }
 
+    /// <summary>
+    /// A branch's working hours may be changed by a system administrator, or by the clinic manager of exactly that
+    /// branch (the one in their token): not another branch, not even one of their own organization.
+    /// </summary>
+    public void EnsureOwnBranch(Guid branchId, Guid organizationId)
+    {
+        if (IsSystemAdmin)
+        {
+            return;
+        }
+
+        EnsureOrganization(organizationId);
+        if (user.BranchId != branchId)
+        {
+            throw new ForbiddenException("You can only change the working hours of your own branch.");
+        }
+    }
+
     public async Task EnsureBranchAsync(Guid branchId, CancellationToken cancellationToken = default)
     {
         if (IsSystemAdmin)

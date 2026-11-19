@@ -127,7 +127,7 @@ public class BranchService(
     public async Task<WorkingHourDto> AddWorkingHourAsync(Guid branchId, AddWorkingHourRequest request, CancellationToken cancellationToken = default)
     {
         var branch = await LoadAsync(branchId, cancellationToken);
-        guard.EnsureOrganization(branch.OrganizationId);
+        guard.EnsureOwnBranch(branch.Id, branch.OrganizationId); // a manager: their own branch only
 
         // Validates the range and rejects an overlap with an existing range on the same weekday.
         var workingHour = branch.AddWorkingHour(request.DayOfWeek, request.OpensAt, request.ClosesAt);
@@ -141,7 +141,7 @@ public class BranchService(
     public async Task RemoveWorkingHourAsync(Guid branchId, Guid workingHourId, CancellationToken cancellationToken = default)
     {
         var branch = await LoadAsync(branchId, cancellationToken);
-        guard.EnsureOrganization(branch.OrganizationId);
+        guard.EnsureOwnBranch(branch.Id, branch.OrganizationId); // a manager: their own branch only
 
         var workingHour = branch.RemoveWorkingHour(workingHourId)
             ?? throw new KeyNotFoundException($"Working hours {workingHourId} were not found for branch {branchId}.");

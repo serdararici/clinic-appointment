@@ -7,15 +7,21 @@ import { Card } from '../../components/Card'
 import { LinkButton } from '../../components/LinkButton'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Table, type Column } from '../../components/Table'
-import { formatLongDate, formatTime } from '../../utils/format'
+import { formatLongDate } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { sortPending, sortToday, sortUpcoming } from '../patient/appointment-utils'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { CalendarClock } from 'lucide-react'
 import { Check, ClipboardCheck } from 'lucide-react'
+import { AppointmentTime } from '../../components/AppointmentTime'
 
 const todayColumns: Column<AppointmentDetail>[] = [
-  { key: 'time', header: 'Saat', primary: true, cell: (row) => <span className="font-medium tabular-nums">{formatTime(row.scheduledStartUtc)}</span> },
+  { key: 'time', header: 'Saat', primary: true, cell: (row) => (
+      <span className="font-medium">
+        <AppointmentTime startUtc={row.scheduledStartUtc} endUtc={row.scheduledEndUtc} show="time" />
+      </span>
+    ),
+  },
   { key: 'patient', header: 'Hasta', cell: (row) => row.patientName },
   { key: 'service', header: 'Hizmet', cell: (row) => row.serviceName },
   { key: 'status', header: 'Durum', cell: (row) => <StatusBadge status={row.status} /> },
@@ -94,7 +100,7 @@ export function DoctorHome() {
                 {next ? (
                   <>
                     <span className="font-medium tabular-nums">
-                      {formatLongDate(next.scheduledStartUtc)}, {formatTime(next.scheduledStartUtc)}
+                      {formatLongDate(next.scheduledStartUtc)}, <AppointmentTime startUtc={next.scheduledStartUtc} endUtc={next.scheduledEndUtc} show="time" />
                     </span>
                     <span className="block text-slate-700">
                       {next.patientName} · {next.serviceName}

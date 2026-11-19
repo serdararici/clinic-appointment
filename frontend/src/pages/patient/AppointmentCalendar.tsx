@@ -5,7 +5,7 @@ import { Icon } from '../../components/Icon'
 import type { AppointmentDetail } from '../../api/types'
 import { StatusBadge } from '../../components/StatusBadge'
 import { cx } from '../../utils/cx'
-import { formatLongDate, formatPlace, formatTime, isoDateOf } from '../../utils/format'
+import { formatDuration, formatLongDate, formatPlace, formatTime, isoDateOf, minutesBetween } from '../../utils/format'
 import { isActive } from './appointment-utils'
 import { addDaysTo, addMonths, dayAndMonth, monthOf, monthTitle, monthWeeks, sameMonth, WEEKDAYS, type Month } from './calendar-utils'
 import { ServiceLabel } from './ServiceLabel'
@@ -207,7 +207,10 @@ export function AppointmentCalendar({ appointments, today, initialDay }: Appoint
           <ul className="space-y-3">
             {dayList.map((appointment) => (
               <li key={appointment.id} className="flex gap-4 rounded-lg border border-slate-200 p-3">
-                <span className="w-12 shrink-0 pt-0.5 text-base font-semibold tabular-nums text-slate-900">{formatTime(appointment.scheduledStartUtc)}</span>
+                <span className="w-16 shrink-0 pt-0.5 tabular-nums">
+                  <span className="block text-base font-semibold text-slate-900">{formatTime(appointment.scheduledStartUtc)}</span>
+                  <span className="block text-xs text-slate-500">{formatDuration(minutesBetween(appointment.scheduledStartUtc, appointment.scheduledEndUtc))}</span>
+                </span>
                 <div className="min-w-0 flex-1 space-y-1">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <p className="text-sm font-medium text-slate-900">

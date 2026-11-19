@@ -10,7 +10,7 @@ import { Modal } from '../../components/Modal'
 import { StatusBadge } from '../../components/StatusBadge'
 import { Table, type Column } from '../../components/Table'
 import { cx } from '../../utils/cx'
-import { formatCurrency, formatDateTime, formatPlace } from '../../utils/format'
+import { formatCurrency, formatPlace } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { isUpcoming, sortConfirmedUpcoming, sortPast, sortPending } from '../patient/appointment-utils'
 import { usePageTitle } from '../../utils/usePageTitle'
@@ -24,6 +24,7 @@ import { Check, X } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { ApprovalCard } from './ApprovalCard'
 import { ConfirmDialog } from '../../components/ConfirmDialog'
+import { AppointmentTime } from '../../components/AppointmentTime'
 
 type Tab = 'pending' | 'upcoming' | 'past'
 
@@ -123,7 +124,7 @@ export function DoctorAppointmentsPage() {
   }
 
   const columns: Column<AppointmentDetail>[] = [
-    { key: 'when', header: 'Tarih ve saat', primary: true, cell: (row) => <span className="tabular-nums">{formatDateTime(row.scheduledStartUtc)}</span> },
+    { key: 'when', header: 'Tarih ve saat', primary: true, cell: (row) => <AppointmentTime startUtc={row.scheduledStartUtc} endUtc={row.scheduledEndUtc} /> },
     { key: 'patient', header: 'Hasta', cell: (row) => row.patientName },
     { key: 'service', header: 'Hizmet', cell: (row) => row.serviceName },
     { key: 'place', header: 'Kurum ve şube', cell: (row) => formatPlace(row) },
@@ -241,7 +242,7 @@ export function DoctorAppointmentsPage() {
           <div className="space-y-3">
             <p className="text-slate-700">
               <span className="font-medium">{toCancel.patientName}</span> adlı hastanın{' '}
-              <span className="font-medium tabular-nums">{formatDateTime(toCancel.scheduledStartUtc)}</span> tarihli {toCancel.serviceName} randevusu iptal edilecek.
+              <span className="font-medium"><AppointmentTime startUtc={toCancel.scheduledStartUtc} endUtc={toCancel.scheduledEndUtc} /></span> tarihli {toCancel.serviceName} randevusu iptal edilecek.
             </p>
             <Alert tone="info">Hasta bu randevuyu “İptal edildi” durumunda görecek. Bu işlem geri alınamaz.</Alert>
             {cancelError ? <Alert tone="error">{cancelError}</Alert> : null}
@@ -265,7 +266,7 @@ export function DoctorAppointmentsPage() {
         {toReject ? (
           <p>
             <span className="font-medium">{toReject.patientName}</span> adlı hastanın{' '}
-            <span className="font-medium tabular-nums">{formatDateTime(toReject.scheduledStartUtc)}</span> tarihli {toReject.serviceName} randevusu reddedilecek. Hasta bu
+            <span className="font-medium"><AppointmentTime startUtc={toReject.scheduledStartUtc} endUtc={toReject.scheduledEndUtc} /></span> tarihli {toReject.serviceName} randevusu reddedilecek. Hasta bu
             randevuyu “Reddedildi” durumunda görecek ve saat yeniden boşa çıkacak.
           </p>
         ) : null}

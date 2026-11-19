@@ -10,6 +10,7 @@ import { LinkButton } from '../../components/LinkButton'
 import { Spinner } from '../../components/Spinner'
 import { useAsync } from '../../utils/useAsync'
 import { usePageTitle } from '../../utils/usePageTitle'
+import { WorkingHoursCard } from './WorkingHoursCard'
 
 interface DepartmentStaff {
   id: string
@@ -150,6 +151,8 @@ export function ManagerHome() {
           </dl>
         ) : null}
       </Card>
+
+      {branchId ? <WorkingHoursCard branchId={branchId} branchName={state.data?.branchName ?? 'Şube'} /> : null}
 
       {state.data && state.data.byDepartment.length > 0 ? (
         <Card icon={Layers} title="Bölümlere göre personel">

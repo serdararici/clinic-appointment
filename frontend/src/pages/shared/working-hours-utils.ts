@@ -23,22 +23,40 @@ function rangesOf(hours: readonly WorkingHour[], day: WeekdayName): string {
     .join(', ')
 }
 
+export interface HourGroup {
+  /** "Pzt–Cum", "Cmt" ... */
+  days: string
+  /** "08:00–17:00" or "08:00–12:00, 13:00–17:00"; "Kapalı" for the days without hours. */
+  ranges: string
+}
+
+/**
+ * The week as groups of consecutive days with the same hours, Monday first. With `includeClosed` the days without any
+ * hours are grouped too ("Cmt–Paz Kapalı"); without it they are left out.
+ */
+export function hourGroups(hours: readonly WorkingHour[], includeClosed = false): HourGroup[] {
+  const groups: { first: number; last: number; ranges: string }[] = []
+
+  DAY_ORDER.forEach((day, index) => {
+    const ranges = rangesOf(hours, day.name) || (includeClosed ? 'Kapalı' : '')
+    if (!ranges) return
+    const previous = groups[groups.length - 1]
+    if (previous && previous.ranges === ranges && previous.last === index - 1) previous.last = index
+    else groups.push({ first: index, last: index, ranges })
+  })
+
+  return groups.map((group) => ({
+    days: group.first === group.last ? DAY_ORDER[group.first].short : `${DAY_ORDER[group.first].short}–${DAY_ORDER[group.last].short}`,
+    ranges: group.ranges,
+  }))
+}
+
 /**
  * A short summary of a branch's week: consecutive days with the same hours are joined, e.g.
  * "Pzt–Cum 08:00–17:00 · Cmt 09:00–13:00". A branch without any working hours is closed all week.
  */
 export function summarizeHours(hours: readonly WorkingHour[]): string {
-  const groups: { first: string; last: string; ranges: string }[] = []
-
-  for (const day of DAY_ORDER) {
-    const ranges = rangesOf(hours, day.name)
-    if (!ranges) continue
-    const previous = groups[groups.length - 1]
-    const previousDayIndex = previous ? DAY_ORDER.findIndex((candidate) => candidate.short === previous.last) : -1
-    if (previous && previous.ranges === ranges && previousDayIndex === DAY_ORDER.indexOf(day) - 1) previous.last = day.short
-    else groups.push({ first: day.short, last: day.short, ranges })
-  }
-
+  const groups = hourGroups(hours)
   if (groups.length === 0) return 'Çalışma saati tanımlı değil'
-  return groups.map((group) => `${group.first === group.last ? group.first : `${group.first}–${group.last}`} ${group.ranges}`).join(' · ')
+  return groups.map((group) => `${group.days} ${group.ranges}`).join(' · ')
 }

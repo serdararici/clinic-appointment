@@ -102,7 +102,7 @@ public class ScopeTests
     }
 
     [Fact]
-    public async Task WorkingHours_CanBeAddedAndRemoved_OnlyOnABranchOfTheOwnOrganization()
+    public async Task WorkingHours_CanBeAddedAndRemoved_OnlyOnTheOwnBranch_NotOnAnotherOrganization()
     {
         var ownHour = await _f.BranchService().AddWorkingHourAsync(_branchA.Id,
             new AddWorkingHourRequest(DayOfWeek.Monday, new TimeOnly(8, 0), new TimeOnly(17, 0)));
@@ -114,6 +114,34 @@ public class ScopeTests
         await _f.BranchService().RemoveWorkingHourAsync(_branchA.Id, ownHour.Id);
 
         Assert.Single(_branchB.WorkingHours);
+    }
+
+    [Fact]
+    public async Task WorkingHours_AManagerCannotChangeAnotherBranchOfTheirOwnOrganization_ButAnAdminCan()
+    {
+        var sibling = _f.AddBranch(_orgA, "Adapazarı Şubesi");
+        var siblingHour = sibling.AddWorkingHour(DayOfWeek.Monday, new TimeOnly(8, 0), new TimeOnly(17, 0));
+
+        // The manager of Merkez (own organization, but another branch) is refused, for add and for remove.
+        await Assert.ThrowsAsync<ForbiddenException>(() => _f.BranchService().AddWorkingHourAsync(sibling.Id,
+            new AddWorkingHourRequest(DayOfWeek.Tuesday, new TimeOnly(8, 0), new TimeOnly(17, 0))));
+        await Assert.ThrowsAsync<ForbiddenException>(() => _f.BranchService().RemoveWorkingHourAsync(sibling.Id, siblingHour.Id));
+        Assert.Single(sibling.WorkingHours);
+
+        // Anyone may read the working hours; the system administrator may change them on every branch.
+        Assert.Single(await _f.BranchService().GetWorkingHoursAsync(sibling.Id, null));
+        As(FakeCurrentUser.Admin());
+        await _f.BranchService().AddWorkingHourAsync(sibling.Id, new AddWorkingHourRequest(DayOfWeek.Tuesday, new TimeOnly(8, 0), new TimeOnly(17, 0)));
+        Assert.Equal(2, sibling.WorkingHours.Count);
+    }
+
+    [Fact]
+    public async Task WorkingHours_AManagerWithoutABranchInTheToken_CannotChangeAny()
+    {
+        As(FakeCurrentUser.Manager(_orgA.Id)); // no branch id in the token
+
+        await Assert.ThrowsAsync<ForbiddenException>(() => _f.BranchService().AddWorkingHourAsync(_branchA.Id,
+            new AddWorkingHourRequest(DayOfWeek.Monday, new TimeOnly(8, 0), new TimeOnly(17, 0))));
     }
 
     // =========================================================================================

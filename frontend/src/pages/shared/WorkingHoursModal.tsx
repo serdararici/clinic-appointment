@@ -9,8 +9,9 @@ import { Modal } from '../../components/Modal'
 import { Select } from '../../components/Select'
 import { Table, type Column } from '../../components/Table'
 import { minutesOf } from '../doctor/availability-utils'
+import { useToast } from '../../components/useToast'
 import { useAsync } from '../../utils/useAsync'
-import { DAY_ORDER, shortTime } from './admin-utils'
+import { DAY_ORDER, shortTime } from './working-hours-utils'
 
 interface WorkingHoursModalProps {
   open: boolean
@@ -31,6 +32,7 @@ export function WorkingHoursModal({ open, branchId, branchName, onClose, onChang
 }
 
 function WorkingHoursEditor({ branchId, onChanged }: { branchId: string; onChanged: () => void }) {
+  const toast = useToast()
   const state = useAsync(useCallback((signal: AbortSignal) => getWorkingHours(branchId, signal), [branchId]))
   const [day, setDay] = useState<WeekdayName>('Monday')
   const [opens, setOpens] = useState('08:00')
@@ -55,6 +57,7 @@ function WorkingHoursEditor({ branchId, onChanged }: { branchId: string; onChang
     setBusy(true)
     try {
       await addWorkingHour(branchId, { dayOfWeek: day, opensAt: opens, closesAt: closes })
+      toast.success('Çalışma saati eklendi.')
       changed()
     } catch (caught) {
       setApiError(readableMessage(caught))
@@ -68,6 +71,7 @@ function WorkingHoursEditor({ branchId, onChanged }: { branchId: string; onChang
     setBusy(true)
     try {
       await removeWorkingHour(branchId, hour.id)
+      toast.success('Çalışma saati silindi.')
       changed()
     } catch (caught) {
       setApiError(readableMessage(caught))
@@ -94,6 +98,9 @@ function WorkingHoursEditor({ branchId, onChanged }: { branchId: string; onChang
   return (
     <div className="space-y-4">
       <p className="text-sm text-slate-600">Saatler Türkiye saatidir. Çalışma saati olmayan günler kapalı sayılır; hiç aralık yoksa şubede randevu alınamaz.</p>
+      <p className="text-sm text-slate-600">
+        Çalışma saatleri dışında kalan uygunluk saatleri hastalara sunulmaz. Saatleri daraltırsanız, dışarıda kalan randevu saatleri görünmez olur.
+      </p>
       <Table
         columns={columns}
         rows={state.data}

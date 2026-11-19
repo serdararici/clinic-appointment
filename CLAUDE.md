@@ -284,6 +284,10 @@ and throws `ForbiddenException` (403) if not. `ICurrentUser` (read from the JWT 
   hours, departments, services and staff, and the appointments of its branches (confirm, reject, cancel). A staff list
   without a filter shows only their organization's staff. Creating or deleting organizations and creating manager
   accounts is SystemAdmin only.
+- **Working hours of a branch** (`POST` / `DELETE branches/{id}/working-hours`): a **ClinicManager may change them for
+  their own branch only** (the `branch_id` in the token; another branch of the same organization is 403, and a manager token
+  without a branch cannot change any), a SystemAdmin for every branch. Reading them is public. Availability outside the
+  branch hours is not offered to patients, so shrinking the hours hides those slots.
 - **SystemAdmin** is not tied to an organization and passes every scope check. Its token has no branch or organization.
 - Checks run after the resource is loaded, so an unknown id is 404 and someone else's id is 403.
 

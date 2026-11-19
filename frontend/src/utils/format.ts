@@ -58,3 +58,16 @@ export function formatPlace(place: { organizationName: string; branchName: strin
 export function istanbulToUtcIso(date: string, time: string): string {
   return new Date(`${date}T${time}:00+03:00`).toISOString()
 }
+
+/** Whole minutes between two ISO date-times (an appointment's length). */
+export function minutesBetween(startIso: string, endIso: string): number {
+  return Math.round((new Date(endIso).getTime() - new Date(startIso).getTime()) / 60_000)
+}
+
+/** "30 dk", "1 sa" or "1 sa 30 dk". */
+export function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  if (hours === 0) return `${rest} dk`
+  return rest === 0 ? `${hours} sa` : `${hours} sa ${rest} dk`
+}

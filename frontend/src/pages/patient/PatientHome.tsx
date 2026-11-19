@@ -10,7 +10,7 @@ import { EmptyState } from '../../components/EmptyState'
 import { LinkButton } from '../../components/LinkButton'
 import { StatusBadge } from '../../components/StatusBadge'
 import { firstNameOf } from '../../utils/avatar'
-import { formatCurrency, formatLongDate, formatPlace, formatTime, isoDateOf, todayIsoDate } from '../../utils/format'
+import { formatCurrency, formatLongDate, formatPlace, isoDateOf, todayIsoDate } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { AppointmentCalendar } from './AppointmentCalendar'
@@ -19,6 +19,7 @@ import { ServiceLabel } from './ServiceLabel'
 import { usePatientAppointments } from './usePatientAppointments'
 import { CalendarClock, CalendarDays, CalendarPlus, ChartColumn, ClipboardList, History, ShieldCheck, type LucideIcon } from 'lucide-react'
 import { Icon } from '../../components/Icon'
+import { AppointmentTime } from '../../components/AppointmentTime'
 
 /** Grey bars in the shape of a card's content while it loads. */
 function Skeleton({ lines = 3 }: { lines?: number }) {
@@ -54,7 +55,7 @@ function NextAppointment({ next }: { next: AppointmentDetail | undefined }) {
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-3">
             <p className="text-lg font-semibold tabular-nums text-slate-900">
-              {formatLongDate(next.scheduledStartUtc)}, {formatTime(next.scheduledStartUtc)}
+              {formatLongDate(next.scheduledStartUtc)}, <AppointmentTime startUtc={next.scheduledStartUtc} endUtc={next.scheduledEndUtc} show="time" />
             </p>
             <StatusBadge status={next.status} />
           </div>

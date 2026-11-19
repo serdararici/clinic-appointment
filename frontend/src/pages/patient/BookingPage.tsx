@@ -11,7 +11,7 @@ import { StatusBadge } from '../../components/StatusBadge'
 import { StepIndicator } from '../../components/StepIndicator'
 import { useToast } from '../../components/useToast'
 import { SelectionAside, SelectionBar } from './SelectionPanel'
-import { formatCurrency, formatLongDate, formatTime } from '../../utils/format'
+import { formatCurrency, formatLongDate } from '../../utils/format'
 import { useAsync } from '../../utils/useAsync'
 import { CHOICE_ORDER, EMPTY_SELECTION, type BookingResult, type Selection, type Step } from './booking-types'
 import { BranchStep, DepartmentStep, DoctorStep, OrganizationStep, ServiceStep, SlotStep } from './BookingSteps'
@@ -19,6 +19,7 @@ import { SERVICE_TYPE_LABELS } from './labels'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { Check } from 'lucide-react'
 import { Icon } from '../../components/Icon'
+import { AppointmentTime } from '../../components/AppointmentTime'
 
 const HEADINGS: Record<Step, string> = {
   organization: 'Kurum seçin',
@@ -234,7 +235,7 @@ function SummaryRow({ label, children }: { label: string; children: ReactNode })
   )
 }
 
-function SummaryDetails({ selection, startUtc, priceLabel, price }: { selection: Selection; startUtc: string; priceLabel: string; price: number }) {
+function SummaryDetails({ selection, startUtc, endUtc, priceLabel, price }: { selection: Selection; startUtc: string; endUtc: string; priceLabel: string; price: number }) {
   const { branch, department, service, doctor } = selection
   return (
     <dl className="divide-y divide-slate-200 text-base">
@@ -248,7 +249,7 @@ function SummaryDetails({ selection, startUtc, priceLabel, price }: { selection:
       {doctor ? <SummaryRow label="Doktor">{doctor.fullName}</SummaryRow> : null}
       <SummaryRow label="Tarih ve saat">
         <span className="tabular-nums">
-          {formatLongDate(startUtc)}, {formatTime(startUtc)}
+          {formatLongDate(startUtc)}, <AppointmentTime startUtc={startUtc} endUtc={endUtc} show="time" />
         </span>
       </SummaryRow>
       <SummaryRow label={priceLabel}>
@@ -267,7 +268,7 @@ function Summary({ selection, error, submitting, onConfirm }: { selection: Selec
     <div className="space-y-4">
       <Card>
         {selection.slot && selection.service ? (
-          <SummaryDetails selection={selection} startUtc={selection.slot.startUtc} priceLabel="Hizmet bedeli" price={selection.service.basePrice} />
+          <SummaryDetails selection={selection} startUtc={selection.slot.startUtc} endUtc={selection.slot.endUtc} priceLabel="Hizmet bedeli" price={selection.service.basePrice} />
         ) : null}
         <div className="mt-3 border-t border-slate-200 pt-3 text-base">
           {preview.loading ? (
@@ -325,7 +326,7 @@ function Done({ result, onRestart }: { result: BookingResult; onRestart: () => v
           {doctor ? <SummaryRow label="Doktor">{doctor.fullName}</SummaryRow> : null}
           <SummaryRow label="Tarih ve saat">
             <span className="tabular-nums">
-              {formatLongDate(appointment.scheduledStartUtc)}, {formatTime(appointment.scheduledStartUtc)}
+              {formatLongDate(appointment.scheduledStartUtc)}, <AppointmentTime startUtc={appointment.scheduledStartUtc} endUtc={appointment.scheduledEndUtc} show="time" />
             </span>
           </SummaryRow>
           <SummaryRow label="Ödenecek tutar">
