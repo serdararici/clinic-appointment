@@ -1,4 +1,5 @@
 using Clinic.Domain.Clinics;
+using Clinic.Domain.Enums;
 
 namespace Clinic.Domain.Users;
 
@@ -25,6 +26,9 @@ public abstract class StaffMember : User
     public bool IsActive { get; private set; } = true;
 
     public override bool CanSignIn => IsActive;
+
+    /// <summary>The kind of service this person may offer: Examination for a doctor, Diagnostic for a technician.</summary>
+    public abstract ServiceType OfferedServiceType { get; }
 
     private readonly List<Service> _servicesProvided = [];
     public IReadOnlyCollection<Service> ServicesProvided => _servicesProvided.AsReadOnly();
@@ -66,7 +70,7 @@ public abstract class StaffMember : User
     {
         ArgumentNullException.ThrowIfNull(service);
 
-        EnsureSameDepartment(service);
+        EnsureCanOffer(service);
 
         if (!_servicesProvided.Any(s => s.Id == service.Id))
         {
@@ -85,15 +89,24 @@ public abstract class StaffMember : User
         var wanted = services.DistinctBy(s => s.Id).ToList();
         foreach (var service in wanted)
         {
-            EnsureSameDepartment(service);
+            EnsureCanOffer(service);
         }
 
         _servicesProvided.Clear();
         _servicesProvided.AddRange(wanted);
     }
 
-    private void EnsureSameDepartment(Service service)
+    // A service can only be offered by someone of its own department, and a doctor offers Examination services while a
+    // technician offers Diagnostic ones. It is a definition link only: bookings and availability do not use it for technicians.
+    private void EnsureCanOffer(Service service)
     {
+        if (service.ServiceType != OfferedServiceType)
+        {
+            throw new ArgumentException(
+                OfferedServiceType == ServiceType.Examination ? "A doctor can only offer examination services." : "A health technician can only offer diagnostic services.",
+                nameof(service));
+        }
+
         if (service.DepartmentId != DepartmentId)
         {
             throw new ArgumentException(

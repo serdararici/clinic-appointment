@@ -19,13 +19,80 @@ public class SeedCatalogTests
     }
 
     [Fact]
-    public void EveryExaminationService_IsCalledGenelMuayene_WhileDiagnosticServicesKeepTheirOwnNames()
+    public void ExaminationServices_AreGenelMuayeneOrKontrolMuayenesi_WhileDiagnosticServicesKeepTheirOwnNames()
     {
         var services = Branches.SelectMany(b => b).SelectMany(d => d.Services).ToList();
 
-        Assert.All(services.Where(s => s.Type == ServiceType.Examination), s => Assert.Equal("Genel Muayene", s.Name));
-        Assert.All(services.Where(s => s.Type == ServiceType.Diagnostic), s => Assert.NotEqual("Genel Muayene", s.Name));
+        Assert.All(services.Where(s => s.Type == ServiceType.Examination), s => Assert.Contains(s.Name, new[] { "Genel Muayene", "Kontrol Muayenesi" }));
+        Assert.All(services.Where(s => s.Type == ServiceType.Diagnostic), s => Assert.DoesNotContain(s.Name, new[] { "Genel Muayene", "Kontrol Muayenesi" }));
         Assert.Contains(services, s => s.Name == "EKG");
+        // Every department with a Kontrol Muayenesi also has the Genel Muayene.
+        foreach (var department in Branches.SelectMany(b => b).Where(d => d.Services.Any(s => s.Name == "Kontrol Muayenesi")))
+        {
+            Assert.Contains(department.Services, s => s.Name == "Genel Muayene");
+        }
+    }
+
+    [Theory]
+    [InlineData("Merkez", new[] { "İç Hastalıkları (Dahiliye)", "Kardiyoloji", "Çocuk Sağlığı ve Hastalıkları", "Göz Hastalıkları" })]
+    [InlineData("Adapazari", new[] { "İç Hastalıkları (Dahiliye)", "Kardiyoloji", "Çocuk Sağlığı ve Hastalıkları" })]
+    [InlineData("Serdivan", new[] { "İç Hastalıkları (Dahiliye)", "Göz Hastalıkları" })]
+    public void TheMainClinics_HaveAKontrolMuayenesi_At60PercentOfTheGenelMuayenePrice_WhichOnlyOneDoctorOffers(string branch, string[] departments)
+    {
+        var catalog = branch switch { "Merkez" => SeedCatalog.Merkez, "Adapazari" => SeedCatalog.Adapazari, _ => SeedCatalog.Serdivan };
+
+        foreach (var name in departments)
+        {
+            var department = catalog.Single(d => d.Name == name);
+            var general = department.Services.Single(s => s.Name == "Genel Muayene");
+            var control = department.Services.Single(s => s.Name == "Kontrol Muayenesi");
+
+            Assert.InRange(control.Price / general.Price, 0.55m, 0.65m);
+            Assert.Equal(2, department.Doctors.Length);
+            Assert.Null(department.Doctors[0].OnlyServices);                                     // the first doctor offers both
+            Assert.Equal(["Genel Muayene"], department.Doctors[1].OnlyServices ?? []);                  // the other only Genel Muayene
+        }
+    }
+
+    [Fact]
+    public void Orthopedics_KeepsASingleService_ForTheAutoSelectDemo()
+    {
+        foreach (var department in Branches.SelectMany(b => b).Where(d => d.Name == "Ortopedi ve Travmatoloji"))
+        {
+            Assert.Single(department.Services);
+        }
+    }
+
+    [Fact]
+    public void Technicians_AreLinkedToDiagnosticServicesOfTheirOwnDepartment_WithVariedSets()
+    {
+        var technicians = SeedCatalog.MerkezTechnicians.Concat(SeedCatalog.AdapazariTechnicians).Concat(SeedCatalog.SerdivanTechnicians).ToList();
+        var catalogs = new Dictionary<SeedTechnician, SeedDepartment[]>();
+        foreach (var technician in SeedCatalog.MerkezTechnicians) catalogs[technician] = SeedCatalog.Merkez;
+        foreach (var technician in SeedCatalog.AdapazariTechnicians) catalogs[technician] = SeedCatalog.Adapazari;
+        foreach (var technician in SeedCatalog.SerdivanTechnicians) catalogs[technician] = SeedCatalog.Serdivan;
+
+        foreach (var technician in technicians)
+        {
+            var department = catalogs[technician].Single(d => d.Name == technician.Department);
+            Assert.NotEmpty(technician.Services);
+            Assert.All(technician.Services, name => Assert.Contains(department.Services, s => s.Name == name && s.Type == ServiceType.Diagnostic));
+        }
+
+        // Radyoloji (Merkez): one technician does Röntgen and Ultrasonografi, another MR.
+        var radiology = SeedCatalog.MerkezTechnicians.Where(t => t.Department == "Radyoloji").ToList();
+        Assert.Contains(radiology, t => t.Services.Contains("Röntgen") && t.Services.Contains("Ultrasonografi") && !t.Services.Contains("MR"));
+        Assert.Contains(radiology, t => t.Services.SequenceEqual(["MR"]));
+
+        // Laboratuvar: Kan Tahlili plus one or two more laboratory services.
+        foreach (var technician in technicians.Where(t => t.Department == "Laboratuvar"))
+        {
+            Assert.Contains("Kan Tahlili", technician.Services);
+            Assert.InRange(technician.Services.Length, 2, 3);
+        }
+
+        var emails = technicians.Select(t => t.Email).Concat(SeedCatalog.DoctorEmails).ToList();
+        Assert.Equal(emails.Count, emails.Distinct(StringComparer.OrdinalIgnoreCase).Count());
     }
 
     [Fact]

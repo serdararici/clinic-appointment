@@ -92,7 +92,10 @@ Appointment   PatientId, StaffMemberId? (null = unassigned), ServiceId, start/en
   has its own working hours and departments, so services belong to exactly one branch.
 - A `StaffMember` is built from a `Department`; its `ClinicFacilityId` is read from
   that department, so staff can never be linked to a department of another branch.
-  A staff member may only provide services of their own department.
+  A staff member may only provide services of their own department, and of their own kind: a **doctor** offers
+  **Examination** services, a **health technician** is linked to **Diagnostic** services (`StaffMember.OfferedServiceType`;
+  400 otherwise). The technician link is a definition only: booking, slots, availability and appointments do not use it
+  (a diagnostic appointment still has no staff member).
 - `SlotDurationMinutes` defaults to 30; only 10, 15, 20, 30 and 60 are allowed
   (validated in the domain; `PUT /api/staff/{staffId}/slot-duration`).
 - `Service` keeps the names `Service` and `BasePrice`. `ServiceType` is
@@ -214,16 +217,22 @@ Delete rules (409 with a message when violated):
   `Appointment.StaffMemberId`); deactivating keeps the history intact.
 - `POST /api/departments/{id}/doctors` takes a **temporary password** (`password`, at least 8 characters; the doctor logs
   in with the email and this password). 400 for an invalid email or short password, 409 if the email is used (also when
-  `PUT staff/{id}` changes an email to one that is taken). The new doctor offers **all Examination services of the
-  department** and gets the default work schedule at once (`EnsureDefaultAvailabilityAsync`), so they are bookable
-  immediately.
+  `PUT staff/{id}` changes an email to one that is taken). The request may carry `serviceIds` (the examination services
+  the doctor offers): when left out the doctor offers **all Examination services of the department**; when given, every id
+  must be an examination service of the department and **at least one** is required (400 otherwise). The doctor and the
+  services are saved in one operation, and the default work schedule is filled in at once (`EnsureDefaultAvailabilityAsync`),
+  so the new doctor is bookable immediately. `GET /api/departments/{id}/doctors?serviceId=` lists only the doctors who
+  offer that service (the booking flow's doctor step).
 - **Health technicians** are staff records only: the manager creates them with name, email, phone and department (no
   password; the title is optional and defaults to "Sağlık Teknisyeni"), lists them with the doctors (`GET /api/staff`, the
   `role` field tells `Doctor` from `HealthTechnician`), edits, deactivates and activates them with the same scope rules as
-  doctors. `User.CanSignIn` is **false** for technicians, so the login refuses them like a wrong password.
+  doctors. `User.CanSignIn` is **false** for technicians, so the login refuses them like a wrong password. The create
+  request may carry `serviceIds` (diagnostic services of the department; an empty list is fine); when left out the
+  technician is linked to **all Diagnostic services of the department**. A technician's services are in the staff DTO's
+  `serviceIds` like a doctor's.
 - `PUT /api/staff/{id}/services` replaces the offered set (a doctor's current services are the `serviceIds` of the staff
-  record); a doctor can only offer **Examination** services (Diagnostic ones are booked without a doctor) and a
-  technician offers none (400 otherwise); every service must belong to the staff
+  record) and works for doctors and technicians under the same manager scope rules; a doctor can only offer
+  **Examination** services and a technician only **Diagnostic** ones, and every service must belong to the staff
   member's own department (400 otherwise, nothing changes).
 
 ## Authentication and Authorization
@@ -297,6 +306,11 @@ The sample data (`SeedCatalog`) has three branches with departments such as İç
 Gastroenteroloji, Kardiyoloji, Ortopedi ve Travmatoloji, Göz Hastalıkları, Çocuk Sağlığı ve Hastalıkları, Nöroloji,
 Radyoloji and Laboratuvar. Every examination department has at least two doctors with different slot durations, and
 **every seeded doctor** has a demo login (`firstname.lastname@sakaryasehir.example` or `@marmarapoliklinik.example`).
+In Dahiliye, Kardiyoloji, Çocuk Sağlığı ve Hastalıkları and Göz Hastalıkları (where the branch has them) there are two
+examination services, "Genel Muayene" and a cheaper "Kontrol Muayenesi" (about 60 percent of the price): the first doctor
+offers both, the second only "Genel Muayene". Ortopedi ve Travmatoloji keeps a single service (auto-select demo). The
+technicians are linked to varied diagnostic services (for example in Merkez Radyoloji one does Röntgen and Ultrasonografi,
+the other MR; the laboratories have Kan Tahlili, İdrar Tahlili and Tam Kan Sayımı).
 The table below lists only a short selection. The seed runs only on an empty database (reset `ClinicDb` to apply changes).
 
 All demo accounts use the password **`Demo123!`** and are given it at startup only if they have no password yet

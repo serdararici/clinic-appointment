@@ -1,5 +1,6 @@
 using Clinic.Application.Auth;
 using Clinic.Application.Availability;
+using Clinic.Domain.Clinics;
 using Clinic.Domain.Enums;
 using Clinic.Domain.Repositories;
 using Clinic.Domain.Users;
@@ -44,15 +45,9 @@ public class StaffService(
             request.SlotDurationMinutes ?? StaffMember.DefaultSlotDurationMinutes);
         doctor.SetPasswordHash(passwordHashing.Hash(request.Password));
 
-        // A new doctor offers every Examination service of the department, so patients can book them right away.
-        // (The offered set can be changed later with PUT staff/{id}/services.)
-        foreach (var service in await serviceRepository.GetByDepartmentIdAsync(department.Id, cancellationToken))
-        {
-            if (service.ServiceType == ServiceType.Examination)
-            {
-                doctor.AddService(service);
-            }
-        }
+        // The services the doctor offers: the ones given (at least one), otherwise every Examination service of the department,
+        // so patients can book the new doctor right away. They are saved together with the doctor.
+        doctor.SetServices(await ChooseServicesAsync(department, doctor, request.ServiceIds, atLeastOne: true, cancellationToken));
 
         await staffRepository.AddAsync(doctor, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -83,19 +78,23 @@ public class StaffService(
             department,
             request.Title ?? HealthTechnician.DefaultTitle);
 
+        // The diagnostic services the technician is linked to (a definition only): the ones given (none is fine), otherwise
+        // every Diagnostic service of the department. Saved together with the technician.
+        technician.SetServices(await ChooseServicesAsync(department, technician, request.ServiceIds, atLeastOne: false, cancellationToken));
+
         await staffRepository.AddAsync(technician, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ToDto(technician);
     }
 
-    public async Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, Guid? serviceId = null, CancellationToken cancellationToken = default)
     {
         var department = await LoadDepartmentAsync(departmentId, cancellationToken);
 
         return (await staffRepository.ListAsync(null, departmentId, cancellationToken))
             .OfType<Doctor>()
-            .Where(d => d.IsActive)
+            .Where(d => d.IsActive && (serviceId is null || d.OffersService(serviceId.Value)))
             .Select(d => new DoctorSummaryDto(
                 d.Id,
                 d.FullName,
@@ -217,19 +216,8 @@ public class StaffService(
             throw new KeyNotFoundException($"Service(s) not found: {string.Join(", ", missing)}.");
         }
 
-        // Doctors offer Examination services; a Diagnostic service is booked without a doctor, and technicians are
-        // not booked at all. Rejected before anything changes.
-        if (staff is HealthTechnician && services.Count > 0)
-        {
-            throw new ArgumentException("Health technicians do not offer bookable services.", nameof(serviceIds));
-        }
-
-        if (services.Any(service => service.ServiceType != ServiceType.Examination))
-        {
-            throw new ArgumentException("Doctors can only offer examination services.", nameof(serviceIds));
-        }
-
-        // Rejects (ArgumentException) any service of another department and then changes nothing.
+        // Rejects (ArgumentException) any service of another department or of the wrong kind (a doctor: Examination,
+        // a technician: Diagnostic) and then changes nothing.
         staff.SetServices(services);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -299,6 +287,32 @@ public class StaffService(
         {
             throw new InvalidOperationException($"The staff member has upcoming appointments and cannot be {action}. Cancel or reassign them first.");
         }
+    }
+
+    private async Task<IReadOnlyList<Service>> ChooseServicesAsync(
+        Department department, StaffMember staff, IReadOnlyList<Guid>? requestedIds, bool atLeastOne, CancellationToken cancellationToken)
+    {
+        if (requestedIds is null)
+        {
+            return (await serviceRepository.GetByDepartmentIdAsync(department.Id, cancellationToken))
+                .Where(service => service.ServiceType == staff.OfferedServiceType)
+                .ToList();
+        }
+
+        var wantedIds = requestedIds.Distinct().ToList();
+        if (atLeastOne && wantedIds.Count == 0)
+        {
+            throw new ArgumentException("A doctor must offer at least one service.", nameof(requestedIds));
+        }
+
+        var services = await serviceRepository.GetByIdsAsync(wantedIds, cancellationToken);
+        var missing = wantedIds.Except(services.Select(service => service.Id)).ToList();
+        if (missing.Count > 0)
+        {
+            throw new KeyNotFoundException($"Service(s) not found: {string.Join(", ", missing)}.");
+        }
+
+        return services; // the department and the kind are checked by SetServices
     }
 
     private async Task<StaffMember> LoadAsync(Guid staffId, CancellationToken cancellationToken) =>

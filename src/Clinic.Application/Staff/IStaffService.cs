@@ -7,7 +7,8 @@ public interface IStaffService
     Task<StaffDto> CreateTechnicianAsync(Guid departmentId, CreateTechnicianRequest request, CancellationToken cancellationToken = default);
 
     /// <summary>The department's active doctors (no technicians, no deactivated staff) with their offered services.</summary>
-    Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, CancellationToken cancellationToken = default);
+    /// <param name="serviceId">When given, only the doctors who offer that service (the booking flow's doctor step).</param>
+    Task<IReadOnlyList<DoctorSummaryDto>> ListActiveDoctorsAsync(Guid departmentId, Guid? serviceId = null, CancellationToken cancellationToken = default);
 
     /// <summary>The logged-in doctor's own name and department (403 for anyone else's id).</summary>
     Task<DoctorProfileDto> GetDoctorProfileAsync(Guid doctorId, CancellationToken cancellationToken = default);

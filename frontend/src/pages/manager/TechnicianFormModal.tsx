@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { createTechnician, updateStaff } from '../../api/manager'
 import { readableMessage } from '../../api/errors'
 import type { Department, StaffMember } from '../../api/types'
@@ -7,6 +7,7 @@ import { Button } from '../../components/Button'
 import { Input } from '../../components/Input'
 import { Modal } from '../../components/Modal'
 import { Select } from '../../components/Select'
+import { ServiceChecklist } from './ServiceChecklist'
 
 interface TechnicianFormModalProps {
   open: boolean
@@ -59,7 +60,10 @@ function TechnicianForm({
   const [email, setEmail] = useState(technician?.email ?? '')
   const [phone, setPhone] = useState(technician?.phoneNumber ?? '')
   const [departmentId, setDepartmentId] = useState(technician?.departmentId ?? '')
+  const [services, setServices] = useState<ReadonlySet<string>>(new Set())
   const [errors, setErrors] = useState<{ name?: string; email?: string; department?: string }>({})
+  // Each time a department's list has loaded, all of its services start checked.
+  const checkAll = useCallback((ids: string[]) => setServices(new Set(ids)), [])
   const [apiError, setApiError] = useState<string | null>(null)
 
   const submit = async (event: FormEvent) => {
@@ -76,7 +80,7 @@ function TechnicianForm({
     onBusy(true)
     try {
       if (technician) await updateStaff(technician.id, { fullName: name.trim(), email: email.trim(), phoneNumber: phone.trim() })
-      else await createTechnician(departmentId, { fullName: name.trim(), email: email.trim(), phoneNumber: phone.trim() || undefined })
+      else await createTechnician(departmentId, { fullName: name.trim(), email: email.trim(), phoneNumber: phone.trim() || undefined, serviceIds: [...services] })
       onSaved()
     } catch (caught) {
       setApiError(readableMessage(caught))
@@ -99,6 +103,9 @@ function TechnicianForm({
           options={departments.map((department) => ({ value: department.id, label: department.name }))}
           error={errors.department}
         />
+      )}
+      {technician || !departmentId ? null : (
+        <ServiceChecklist key={departmentId} departmentId={departmentId} kind="Diagnostic" selected={services} onSelectedChange={setServices} onLoaded={checkAll} />
       )}
       {technician ? null : <p className="text-sm text-slate-600">Sağlık teknisyenleri sisteme giriş yapmaz; yalnızca personel kaydı olarak tutulur.</p>}
       {apiError ? <Alert tone="error">{apiError}</Alert> : null}

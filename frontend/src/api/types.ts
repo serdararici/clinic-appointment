@@ -219,12 +219,16 @@ export interface CreateDoctorRequest {
   /** The temporary password the doctor first logs in with (at least 8 characters). */
   password: string
   slotDurationMinutes?: number
+  /** The examination services the doctor offers (at least one); all of the department's when left out. */
+  serviceIds?: string[]
 }
 
 export interface CreateTechnicianRequest {
   fullName: string
   email: string
   phoneNumber?: string
+  /** The diagnostic services the technician is linked to (may be empty); all of the department's when left out. */
+  serviceIds?: string[]
 }
 
 export interface UpdateStaffRequest {

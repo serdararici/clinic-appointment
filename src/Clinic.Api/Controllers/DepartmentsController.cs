@@ -53,11 +53,14 @@ public class DepartmentsController(
 
     // ---- Staff registered under the department ----
 
-    /// <summary>Active doctors of the department with their offered services and slot duration.</summary>
+    /// <summary>
+    /// Active doctors of the department with their offered services and slot duration. With <c>?serviceId=</c> only the
+    /// doctors who offer that service (the booking flow lists the doctors of the chosen examination service).
+    /// </summary>
     [HttpGet("{departmentId:guid}/doctors")]
     [AllowAnonymous]
-    public async Task<ActionResult<IReadOnlyList<DoctorSummaryDto>>> ListDoctors(Guid departmentId, CancellationToken cancellationToken) =>
-        Ok(await staffService.ListActiveDoctorsAsync(departmentId, cancellationToken));
+    public async Task<ActionResult<IReadOnlyList<DoctorSummaryDto>>> ListDoctors(Guid departmentId, [FromQuery] Guid? serviceId, CancellationToken cancellationToken) =>
+        Ok(await staffService.ListActiveDoctorsAsync(departmentId, serviceId, cancellationToken));
 
     [HttpPost("{departmentId:guid}/doctors")]
     [Authorize(Roles = AppRoles.ClinicManagerOrAdmin)]

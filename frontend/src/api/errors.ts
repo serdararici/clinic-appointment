@@ -75,8 +75,9 @@ const KNOWN_MESSAGES: ReadonlyArray<readonly [RegExp, (match: RegExpMatchArray) 
   [/^email is required/i, () => 'E-posta zorunludur.'],
   [/cannot confirm an appointment in status/i, () => 'Yalnızca onay bekleyen randevular onaylanabilir.'],
   [/cannot reject an appointment in status/i, () => 'Yalnızca onay bekleyen randevular reddedilebilir.'],
-  [/doctors can only offer examination services/i, () => 'Doktorlar yalnızca muayene hizmeti verebilir.'],
-  [/technicians do not offer bookable services/i, () => 'Sağlık teknisyenleri randevu hizmeti vermez.'],
+  [/doctor can only offer examination services/i, () => 'Doktorlar yalnızca muayene hizmeti verebilir.'],
+  [/health technician can only offer diagnostic services/i, () => 'Sağlık teknisyenleri yalnızca tetkik hizmetlerine bağlanabilir.'],
+  [/doctor must offer at least one service/i, () => 'Doktor en az bir muayene hizmeti vermelidir.'],
   [/belongs to a different department/i, () => 'Seçilen hizmet doktorun bölümüne ait değil.'],
   // The booking-window message is already Turkish (written for the patient), so it is shown as it is.
   [/^Randevu yalnızca bugünden itibaren.*$/, (m) => m[0]],

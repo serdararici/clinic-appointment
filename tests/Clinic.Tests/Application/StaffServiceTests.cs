@@ -175,6 +175,125 @@ public class StaffServiceTests
         Assert.IsType<HealthTechnician>(Assert.Single(_f.Staff.Items));
     }
 
+    // ---- Offered services at creation ----
+
+    [Fact]
+    public async Task CreateDoctor_WithoutServiceIds_OffersAllExaminationServicesOfTheDepartment()
+    {
+        var department = NewDepartment();
+        var general = _f.AddService(department, "Genel Muayene", ServiceType.Examination, 30, 450m);
+        var control = _f.AddService(department, "Kontrol Muayenesi", ServiceType.Examination, 30, 270m);
+        _f.AddService(department, "EKG", ServiceType.Diagnostic, 15, 300m);
+
+        var dto = await _f.StaffService().CreateDoctorAsync(department.Id, new CreateDoctorRequest("Dr. Yeni", "yeni@example.com", null, "Gecici123!"));
+
+        Assert.Equal(2, dto.ServiceIds.Count);
+        Assert.Contains(general.Id, dto.ServiceIds);
+        Assert.Contains(control.Id, dto.ServiceIds); // the diagnostic EKG is not offered by a doctor
+    }
+
+    [Fact]
+    public async Task CreateDoctor_WithServiceIds_OffersExactlyThose_SavedTogetherWithTheDoctor()
+    {
+        var department = NewDepartment();
+        var general = _f.AddService(department, "Genel Muayene", ServiceType.Examination, 30, 450m);
+        _f.AddService(department, "Kontrol Muayenesi", ServiceType.Examination, 30, 270m);
+
+        var dto = await _f.StaffService().CreateDoctorAsync(department.Id, new CreateDoctorRequest("Dr. Yeni", "yeni@example.com", null, "Gecici123!", ServiceIds: [general.Id]));
+
+        Assert.Equal([general.Id], dto.ServiceIds);
+        Assert.Equal(1, _f.UnitOfWork.SaveCount); // one save for the doctor and the services
+    }
+
+    [Fact]
+    public async Task CreateDoctor_Throws_ForNoServiceAtAll_ADiagnosticServiceOrAServiceOfAnotherDepartment_AndSavesNothing()
+    {
+        var department = NewDepartment();
+        var examination = _f.AddService(department, "Genel Muayene", ServiceType.Examination, 30, 450m);
+        var diagnostic = _f.AddService(department, "EKG", ServiceType.Diagnostic, 15, 300m);
+        var foreign = _f.AddService(NewDepartment("Göz Hastalıkları"), "Göz Muayenesi", ServiceType.Examination, 20, 400m);
+        var service = _f.StaffService();
+
+        var none = await Assert.ThrowsAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. A", "a@example.com", null, "Gecici123!", ServiceIds: [])));
+        Assert.Contains("at least one service", none.Message);
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. B", "b@example.com", null, "Gecici123!", ServiceIds: [examination.Id, diagnostic.Id])));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. C", "c@example.com", null, "Gecici123!", ServiceIds: [foreign.Id])));
+        await Assert.ThrowsAsync<KeyNotFoundException>(() => service.CreateDoctorAsync(department.Id,
+            new CreateDoctorRequest("Dr. D", "d@example.com", null, "Gecici123!", ServiceIds: [Guid.NewGuid()])));
+
+        Assert.Empty(_f.Staff.Items);
+        Assert.Equal(0, _f.UnitOfWork.SaveCount);
+    }
+
+    [Fact]
+    public async Task CreateTechnician_WithoutServiceIds_IsLinkedToAllDiagnosticServicesOfTheDepartment()
+    {
+        var department = NewDepartment("Radyoloji");
+        var xRay = _f.AddService(department, "Röntgen", ServiceType.Diagnostic, 20, 350m);
+        var mr = _f.AddService(department, "MR", ServiceType.Diagnostic, 45, 1800m);
+        _f.AddService(department, "Muayene", ServiceType.Examination, 20, 400m);
+
+        var dto = await _f.StaffService().CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("Kemal", "kemal@example.com", null));
+
+        Assert.Equal(2, dto.ServiceIds.Count);
+        Assert.Contains(xRay.Id, dto.ServiceIds);
+        Assert.Contains(mr.Id, dto.ServiceIds);
+    }
+
+    [Fact]
+    public async Task CreateTechnician_WithServiceIds_IsLinkedToThose_AnEmptyListIsFine_AndWrongKindsAreRefused()
+    {
+        var department = NewDepartment("Radyoloji");
+        var xRay = _f.AddService(department, "Röntgen", ServiceType.Diagnostic, 20, 350m);
+        _f.AddService(department, "MR", ServiceType.Diagnostic, 45, 1800m);
+        var examination = _f.AddService(department, "Muayene", ServiceType.Examination, 20, 400m);
+        var foreign = _f.AddService(NewDepartment("Laboratuvar"), "Kan Tahlili", ServiceType.Diagnostic, 15, 250m);
+        var service = _f.StaffService();
+
+        Assert.Equal([xRay.Id], (await service.CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("A", "a@example.com", null, ServiceIds: [xRay.Id]))).ServiceIds);
+        Assert.Empty((await service.CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("B", "b@example.com", null, ServiceIds: []))).ServiceIds);
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("C", "c@example.com", null, ServiceIds: [examination.Id])));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("D", "d@example.com", null, ServiceIds: [foreign.Id])));
+        Assert.Equal(2, _f.Staff.Items.Count); // only the two valid ones were saved
+    }
+
+    [Fact]
+    public async Task ATechnicianServices_CanBeReplacedLater_WithDiagnosticServicesOfTheirDepartment()
+    {
+        var department = NewDepartment("Radyoloji");
+        var xRay = _f.AddService(department, "Röntgen", ServiceType.Diagnostic, 20, 350m);
+        var mr = _f.AddService(department, "MR", ServiceType.Diagnostic, 45, 1800m);
+        var technician = _f.AddTechnician(department, "t@example.com");
+
+        var dto = await _f.StaffService().SetServicesAsync(technician.Id, [xRay.Id, mr.Id]);
+
+        Assert.Equal(2, dto.ServiceIds.Count);
+        Assert.Equal(2, (await _f.StaffService().GetAsync(technician.Id)).ServiceIds.Count); // returned like a doctor's
+    }
+
+    [Fact]
+    public async Task DoctorsOfAnExaminationService_AreOnlyTheDoctorsWhoOfferIt()
+    {
+        var department = NewDepartment();
+        var general = _f.AddService(department, "Genel Muayene", ServiceType.Examination, 30, 450m);
+        var control = _f.AddService(department, "Kontrol Muayenesi", ServiceType.Examination, 30, 270m);
+        var both = _f.AddDoctor(department, "both@example.com", "Dr. Ikisi");
+        both.AddService(general);
+        both.AddService(control);
+        var generalOnly = _f.AddDoctor(department, "general@example.com", "Dr. Genel");
+        generalOnly.AddService(general);
+        _f.AddDoctor(department, "none@example.com", "Dr. Hicbiri");
+
+        var service = _f.StaffService();
+
+        Assert.Equal(["Dr. Genel", "Dr. Ikisi"], (await service.ListActiveDoctorsAsync(department.Id, general.Id)).Select(d => d.FullName).Order());
+        Assert.Equal(["Dr. Ikisi"], (await service.ListActiveDoctorsAsync(department.Id, control.Id)).Select(d => d.FullName));
+        Assert.Equal(3, (await service.ListActiveDoctorsAsync(department.Id)).Count); // without a service: every active doctor
+    }
+
     [Fact]
     public async Task CreateTechnician_NeedsNoPasswordOrTitle_AndCannotSignIn()
     {

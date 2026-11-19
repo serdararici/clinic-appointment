@@ -22,8 +22,9 @@ export const listDepartments = (branchId: string, signal?: AbortSignal) =>
 export const listServices = (departmentId: string, signal?: AbortSignal) =>
   api.get<Service[]>(`/api/departments/${departmentId}/services`, undefined, signal)
 
-export const listDoctors = (departmentId: string, signal?: AbortSignal) =>
-  api.get<DoctorSummary[]>(`/api/departments/${departmentId}/doctors`, undefined, signal)
+/** The active doctors of a department; with `serviceId` only those who offer that service. */
+export const listDoctors = (departmentId: string, serviceId?: string, signal?: AbortSignal) =>
+  api.get<DoctorSummary[]>(`/api/departments/${departmentId}/doctors`, { serviceId }, signal)
 
 /** Slots of a doctor for one local day ("YYYY-MM-DD"). Examination services. */
 export const listDoctorSlots = (doctorId: string, date: string, signal?: AbortSignal) =>

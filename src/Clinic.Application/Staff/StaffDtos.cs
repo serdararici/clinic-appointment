@@ -26,15 +26,19 @@ public record SetAutoConfirmRequest(bool Enabled);
 
 /// <summary>
 /// Input DTO for registering a doctor. <paramref name="Password"/> is the temporary password the doctor logs in with
-/// (at least 8 characters). The slot duration defaults to 30 minutes when omitted.
+/// (at least 8 characters). The slot duration defaults to 30 minutes when omitted. <paramref name="ServiceIds"/> are the
+/// examination services the doctor offers: when omitted, all of the department's; when given, every id must be an
+/// examination service of the department and at least one is required.
 /// </summary>
-public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, string Password, int? SlotDurationMinutes = null);
+public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, string Password, int? SlotDurationMinutes = null, IReadOnlyList<Guid>? ServiceIds = null);
 
 /// <summary>
 /// Input DTO for registering a health technician. Technicians cannot sign in, so there is no password. The title is
 /// optional and defaults to "Sağlık Teknisyeni"; a title that is given must not be blank.
+/// <paramref name="ServiceIds"/> are the diagnostic services the technician is linked to: when omitted, all of the department's; when given
+/// (an empty list is allowed), every id must be a diagnostic service of the department.
 /// </summary>
-public record CreateTechnicianRequest(string FullName, string Email, string? PhoneNumber, string? Title = null);
+public record CreateTechnicianRequest(string FullName, string Email, string? PhoneNumber, string? Title = null, IReadOnlyList<Guid>? ServiceIds = null);
 
 /// <summary>
 /// Input DTO for editing a staff member. <paramref name="Title"/> changes a technician's title (left as it is when null) and is ignored

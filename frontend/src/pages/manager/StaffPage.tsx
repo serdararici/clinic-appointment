@@ -19,7 +19,7 @@ import { matchesQuery } from '../../utils/search'
 import { useAsync } from '../../utils/useAsync'
 import { usePageTitle } from '../../utils/usePageTitle'
 import { DoctorFormModal } from './DoctorFormModal'
-import { DoctorServicesModal } from './DoctorServicesModal'
+import { StaffServicesModal } from './StaffServicesModal'
 import { StaffTypeModal, type StaffKind } from './StaffTypeModal'
 import { TechnicianFormModal } from './TechnicianFormModal'
 
@@ -32,7 +32,7 @@ type Dialog =
   | { kind: 'type' }
   | { kind: 'doctor-form'; doctor: StaffMember | null }
   | { kind: 'technician-form'; technician: StaffMember | null }
-  | { kind: 'services'; doctor: StaffMember }
+  | { kind: 'services'; member: StaffMember }
   | { kind: 'deactivate'; member: StaffMember }
   | { kind: 'activate'; member: StaffMember }
 
@@ -100,6 +100,8 @@ export function StaffPage() {
       ),
     },
     { key: 'department', header: 'Bölüm', cell: (row) => departmentName(row.departmentId) },
+    // How many services the person is linked to (a doctor offers them, a technician is linked to diagnostic ones).
+    { key: 'services', header: 'Hizmet', align: 'right', cell: (row) => `${row.serviceIds.length} hizmet` },
     { key: 'email', header: 'E-posta', cell: (row) => row.email },
     { key: 'phone', header: 'Telefon', cell: (row) => <span className="tabular-nums">{row.phoneNumber || '–'}</span> },
     // Only doctors have appointment slots.
@@ -114,11 +116,9 @@ export function StaffPage() {
           <Button variant="secondary" onClick={() => setDialog(isDoctor(row) ? { kind: 'doctor-form', doctor: row } : { kind: 'technician-form', technician: row })}>
             Düzenle
           </Button>
-          {isDoctor(row) ? (
-            <Button variant="secondary" onClick={() => setDialog({ kind: 'services', doctor: row })}>
-              Hizmetler
-            </Button>
-          ) : null}
+          <Button variant="secondary" onClick={() => setDialog({ kind: 'services', member: row })}>
+            Hizmetler
+          </Button>
           <Button variant="ghost" onClick={() => setDialog({ kind: row.isActive ? 'deactivate' : 'activate', member: row })}>
             {row.isActive ? 'Pasifleştir' : 'Aktifleştir'}
           </Button>
@@ -201,7 +201,7 @@ export function StaffPage() {
         onClose={close}
         onSaved={() => saved(dialog?.kind === 'technician-form' && dialog.technician ? 'Sağlık teknisyeni güncellendi.' : 'Sağlık teknisyeni eklendi.')}
       />
-      <DoctorServicesModal open={dialog?.kind === 'services'} doctor={dialog?.kind === 'services' ? dialog.doctor : null} onClose={close} onSaved={() => saved('Hizmetler kaydedildi.')} />
+      <StaffServicesModal open={dialog?.kind === 'services'} member={dialog?.kind === 'services' ? dialog.member : null} onClose={close} onSaved={() => saved('Hizmetler kaydedildi.')} />
 
       <ConfirmDialog
         open={dialog?.kind === 'deactivate'}

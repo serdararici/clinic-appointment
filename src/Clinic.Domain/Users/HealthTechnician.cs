@@ -1,4 +1,5 @@
 using Clinic.Domain.Clinics;
+using Clinic.Domain.Enums;
 
 namespace Clinic.Domain.Users;
 
@@ -45,4 +46,6 @@ public class HealthTechnician : StaffMember
     }
 
     public override string RoleName => "HealthTechnician";
+
+    public override ServiceType OfferedServiceType => ServiceType.Diagnostic;
 }

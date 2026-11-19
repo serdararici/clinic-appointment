@@ -732,6 +732,23 @@ public class AppointmentServiceTests
         Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
     }
 
+    // ---- Technicians are only linked to diagnostic services (a definition) ----
+
+    [Fact]
+    public async Task ADiagnosticBooking_IsUnaffectedByTheTechniciansLinkedToTheService_AndStaysUnassigned()
+    {
+        var radiology = _clinic.Departments.Single(d => d.Name == "Radyoloji");
+        var technician = new HealthTechnician("Kemal Arslan", "kemal@example.com", "", radiology, "Radyoloji Teknikeri");
+        technician.AddService(_xRay);
+
+        var dto = await _service.CreateAppointmentAsync(new CreateAppointmentRequest(_xRay.Id, Monday.AddHours(5)));
+
+        Assert.Null(dto.StaffMemberId); // still unassigned
+        Assert.Equal(AppointmentStatus.Confirmed, _appointments.Items.Single().Status);
+        // The service's slot is still taken per service, not per technician.
+        await Assert.ThrowsAsync<ServiceSlotConflictException>(() => _service.CreateAppointmentAsync(new CreateAppointmentRequest(_xRay.Id, Monday.AddHours(5))));
+    }
+
     // ---- Per-doctor approval ----
 
     private AppointmentService DoctorPreferenceService(ICurrentUser? user = null) =>

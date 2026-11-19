@@ -162,7 +162,8 @@ export function DoctorStep({ departmentId, serviceId, selectedId, onSelect }: { 
   // Only doctors who offer the chosen service.
   const state = useAsync(
     useCallback(
-      async (signal: AbortSignal) => (await listDoctors(departmentId, signal)).filter((doctor) => doctor.services.some((service) => service.id === serviceId)),
+      // The API returns only the doctors who offer the chosen service.
+      (signal: AbortSignal) => listDoctors(departmentId, serviceId, signal),
       [departmentId, serviceId],
     ),
   )

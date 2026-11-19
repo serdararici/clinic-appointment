@@ -114,9 +114,7 @@ public static class DbInitializer
         dbContext.ClinicFacilities.Add(merkez);
 
         dbContext.ClinicManagers.Add(new ClinicManager("Ayşe Yılmaz", "ayse.yilmaz@sakaryasehir.example", "+90-264-555-0001", merkez.Id));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Kemal Arslan", "kemal.arslan@sakaryasehir.example", "+90-264-555-0021", merkezDepartments["Radyoloji"], "Radyoloji Teknikeri"));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Gülşen Demirtaş", "gulsen.demirtas@sakaryasehir.example", "+90-264-555-0022", merkezDepartments["Radyoloji"], "Radyoloji Teknikeri"));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Fatma Güneş", "fatma.gunes@sakaryasehir.example", "+90-264-555-0023", merkezDepartments["Laboratuvar"], "Tıbbi Laboratuvar Teknisyeni"));
+        AddTechnicians(dbContext, merkezDepartments, SeedCatalog.MerkezTechnicians);
 
         // ---- Adapazarı Şubesi: weekdays 08:30-16:30 ----
         var adapazari = new ClinicFacility(organization.Id, "Adapazarı Şubesi", "Semerciler Mah. Atatürk Bulvarı No: 48, Adapazarı / Sakarya");
@@ -125,8 +123,7 @@ public static class DbInitializer
         dbContext.ClinicFacilities.Add(adapazari);
 
         dbContext.ClinicManagers.Add(new ClinicManager("Mehmet Kara", "mehmet.kara@sakaryasehir.example", "+90-264-555-0002", adapazari.Id));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Mustafa Kılıç", "mustafa.kilic@sakaryasehir.example", "+90-264-555-0041", adapazariDepartments["Radyoloji"], "Radyoloji Teknikeri"));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Ayten Polat", "ayten.polat@sakaryasehir.example", "+90-264-555-0042", adapazariDepartments["Laboratuvar"], "Tıbbi Laboratuvar Teknisyeni"));
+        AddTechnicians(dbContext, adapazariDepartments, SeedCatalog.AdapazariTechnicians);
     }
 
     /// <summary>A second, independent organization with a single branch.</summary>
@@ -145,7 +142,23 @@ public static class DbInitializer
         dbContext.ClinicFacilities.Add(serdivan);
 
         dbContext.ClinicManagers.Add(new ClinicManager("Ali Rıza Erdoğan", "ali.erdogan@marmarapoliklinik.example", "+90-264-555-0003", serdivan.Id));
-        dbContext.HealthTechnicians.Add(new HealthTechnician("Emre Korkmaz", "emre.korkmaz@marmarapoliklinik.example", "+90-264-555-0052", departments["Laboratuvar"], "Tıbbi Laboratuvar Teknisyeni"));
+        AddTechnicians(dbContext, departments, SeedCatalog.SerdivanTechnicians);
+    }
+
+    /// <summary>The technicians of a branch from the catalog, each linked to the named Diagnostic services of their department.</summary>
+    private static void AddTechnicians(ClinicDbContext dbContext, IReadOnlyDictionary<string, Department> departments, IEnumerable<SeedTechnician> technicians)
+    {
+        foreach (var seed in technicians)
+        {
+            var department = departments[seed.Department];
+            var technician = new HealthTechnician(seed.FullName, seed.Email, seed.Phone, department, seed.Title);
+            foreach (var service in department.Services.Where(service => seed.Services.Contains(service.Name)))
+            {
+                technician.AddService(service);
+            }
+
+            dbContext.HealthTechnicians.Add(technician);
+        }
     }
 
     private static void AddWeekdayHours(ClinicFacility clinic, TimeOnly opensAt, TimeOnly closesAt)
@@ -183,7 +196,8 @@ public static class DbInitializer
             foreach (var seedDoctor in entry.Doctors)
             {
                 var doctor = new Doctor(seedDoctor.FullName, seedDoctor.Email, $"+90-264-555-{phoneNumber++:D4}", department, seedDoctor.SlotDurationMinutes);
-                foreach (var examination in examinations)
+                // All of the department's examination services, or only the ones named for this doctor.
+                foreach (var examination in examinations.Where(service => seedDoctor.OnlyServices is null || seedDoctor.OnlyServices.Contains(service.Name)))
                 {
                     doctor.AddService(examination);
                 }

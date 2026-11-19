@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useCallback, useState, type FormEvent } from 'react'
 import { setSlotDuration } from '../../api/doctor'
 import { createDoctor, updateStaff } from '../../api/manager'
 import { readableMessage } from '../../api/errors'
@@ -9,6 +9,7 @@ import { Input } from '../../components/Input'
 import { Modal } from '../../components/Modal'
 import { Select } from '../../components/Select'
 import { SLOT_DURATIONS } from '../doctor/availability-utils'
+import { ServiceChecklist } from './ServiceChecklist'
 
 interface DoctorFormModalProps {
   open: boolean
@@ -57,7 +58,10 @@ function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: rea
   const [password, setPassword] = useState('')
   const [departmentId, setDepartmentId] = useState(doctor?.departmentId ?? '')
   const [slot, setSlot] = useState(String(doctor?.slotDurationMinutes ?? 30))
-  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; department?: string }>({})
+  const [services, setServices] = useState<ReadonlySet<string>>(new Set())
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; department?: string; services?: string }>({})
+  // Each time a department's list has loaded, all of its services start checked.
+  const checkAll = useCallback((ids: string[]) => setServices(new Set(ids)), [])
   const [apiError, setApiError] = useState<string | null>(null)
 
   const submit = async (event: FormEvent) => {
@@ -69,6 +73,7 @@ function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: rea
     if (!EMAIL_PATTERN.test(email.trim())) found.email = 'Geçerli bir e-posta adresi girin.'
     if (!doctor && password.length < MIN_PASSWORD_LENGTH) found.password = `Geçici şifre en az ${MIN_PASSWORD_LENGTH} karakter olmalıdır.`
     if (!doctor && !departmentId) found.department = 'Bölüm seçin.'
+    if (!doctor && departmentId && services.size === 0) found.services = 'En az bir muayene hizmeti seçin.'
     setErrors(found)
     if (Object.keys(found).length > 0) return
 
@@ -84,6 +89,7 @@ function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: rea
           phoneNumber: phone.trim() || undefined,
           password,
           slotDurationMinutes: Number(slot),
+          serviceIds: [...services],
         })
       }
       onSaved()
@@ -117,8 +123,19 @@ function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: rea
             options={departments.map((department) => ({ value: department.id, label: department.name }))}
             error={errors.department}
           />
-          <p className="-mt-1.5 text-sm text-slate-500">Doktor, bölümündeki tüm muayene hizmetlerini otomatik olarak sunar. Sonra “Hizmetler” ile değiştirebilirsiniz.</p>
         </>
+      )}
+      {doctor || !departmentId ? null : (
+        <ServiceChecklist
+          key={departmentId}
+          departmentId={departmentId}
+          kind="Examination"
+          selected={services}
+          onSelectedChange={setServices}
+          onLoaded={checkAll}
+          examinationMinutes={Number(slot)}
+          error={errors.services}
+        />
       )}
       <Select
         label="Randevu süresi"
