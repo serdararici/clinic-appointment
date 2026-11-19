@@ -20,5 +20,7 @@ export const DEMO_ACCOUNTS: readonly DemoAccount[] = [
   { name: 'Ayşe Yılmaz', email: 'ayse.yilmaz@sakaryasehir.example', role: 'ClinicManager', workplace: 'Sakarya Şehir Hastanesi - Merkez' },
   { name: 'Dr. Hakan Yıldız', email: 'hakan.yildiz@sakaryasehir.example', role: 'Doctor', workplace: 'Dahiliye, Merkez (otomatik onay)' },
   { name: 'Dr. Kemal Aslan', email: 'kemal.aslan@sakaryasehir.example', role: 'Doctor', workplace: 'Kardiyoloji, Merkez (onay gerekir)' },
+  { name: 'Dr. Selin Aydın', email: 'selin.aydin@sakaryasehir.example', role: 'Doctor', workplace: 'Gastroenteroloji, Merkez (otomatik onay)' },
   { name: 'Ahmet Çelik', email: 'ahmet.celik@example.com', role: 'Patient', workplace: 'sigortalı hasta' },
+  { name: 'Elif Demir', email: 'elif.demir@example.com', role: 'Patient', workplace: 'sigortasız hasta' },
 ]

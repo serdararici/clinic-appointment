@@ -56,10 +56,10 @@ Tüm hesapların şifresi **`Demo123!`**. Veritabanı sıfırlandığında rande
 |---|---|---|
 | 1. Hasta paneli | `ahmet.celik@example.com` (sigortalı hasta) | Ana sayfada takvim, sıradaki randevu, geçmişte onaylı, iptal ve reddedilmiş randevular; **Randevularım** sayfasında "Yaklaşan" ve "Geçmiş" sekmeleri |
 | 2. Randevu alma | Ahmet Çelik | Randevu al: kurum, şube, bölüm, hizmet (Dahiliye'de "Genel Muayene" ve "Kontrol Muayenesi"), doktor, tarih ve saat. Özet ekranında sigortalı tutar (%20 indirim) görünür |
-| 3. Sigortasız fiyat | `elif.demir@example.com` (sigortasız hasta) | Aynı hizmette tam fiyatı gösterir |
+| 3. Sigortasız fiyat karşılaştırması | `elif.demir@example.com` (Elif Demir, sigortasız hasta) | Ahmet ile aynı doktor ve hizmeti seçin: Ahmet'in özetinde sigortalı tutar (%20 indirimli), Elif'in özetinde tam fiyat görünür |
 | 4. Onay gerektiren doktor | `kemal.aslan@sakaryasehir.example` (Kardiyoloji) | **Randevular > Bekleyen** sekmesinde 4 onay bekleyen randevu: "Onayla" ve "Reddet" |
 | 5. Hasta tarafında sonuç | Ahmet Çelik | Dr. Kemal Aslan ile alınan randevu "Onay bekliyor" iken onaylanınca "Onaylandı", reddedilince "Reddedildi" görünür |
-| 6. Otomatik onaylı doktor | `hakan.yildiz@sakaryasehir.example` (Dahiliye) | Randevuları hemen "Onaylandı" olur; **Uygunluk** sayfasında takvim, çalışma saatleri ve randevu süresi |
+| 6. Otomatik onaylı doktorlar | `hakan.yildiz@sakaryasehir.example` (Dahiliye) ve `selin.aydin@sakaryasehir.example` (Gastroenteroloji, Dr. Selin Aydın) | Randevuları hemen "Onaylandı" olur (Dr. Kemal Aslan'ın "Onay bekliyor" akışıyla karşılaştırın); **Uygunluk** sayfasında takvim, çalışma saatleri ve randevu süresi |
 | 7. Klinik yöneticisi | `ayse.yilmaz@sakaryasehir.example` (Merkez) | Ana sayfada personel sayıları ve çalışma saatleri; **Bölümler** ve **Personel** sayfalarında doktor ve sağlık teknisyeni yönetimi |
 | 8. Sistem yöneticisi | `admin@clinic.example` | **Kurumlar** (şube ve çalışma saatleri) ve **Yöneticiler** sayfaları |
 
