@@ -486,3 +486,6 @@ last-report.md
 
 # My notes
 notes.md
+# Extracted text of the assignment document and Word lock files
+docs/_extract/
+~$*.docx
