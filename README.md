@@ -41,6 +41,76 @@ Proje nesneye dayalı programlama ilkelerini (kalıtım, çok biçimlilik, kaps�
 Sağlık teknisyenleri yalnızca personel kaydıdır: yönetici onları ekler ve tetkik hizmetlerine bağlar, ancak teknisyenin
 giriş yapması mümkün değildir (`User.CanSignIn` teknisyen için `false`).
 
+## Ekran görüntüleri
+
+Ekran görüntüleri demo verisiyle alınmıştır.
+
+### Giriş
+
+<img src="docs/screenshots/01-giris.png" alt="Giriş sayfası" width="800">
+
+*Giriş sayfası.*
+
+### Hasta
+
+<img src="docs/screenshots/02-hasta-anasayfa.png" alt="Hasta ana sayfası" width="800">
+
+*Hasta ana sayfası: sıradaki randevu, takvim, özet ve sigorta bilgisi.*
+
+<img src="docs/screenshots/03-randevu-hizmet-doktor.png" alt="Randevu alma adımları: hizmet ve doktor seçimi" width="800">
+
+*Randevu alma adımları: seçilen hizmeti veren doktorlar listelenir.*
+
+<img src="docs/screenshots/04-randevu-ozet-fiyat.png" alt="Randevu özeti ve fiyat" width="800">
+
+*Randevu özeti: sigortalı hasta için indirimli tutar.*
+
+<img src="docs/screenshots/05-hasta-randevularim.png" alt="Hasta yaklaşan randevular" width="800">
+
+*Randevularım: yaklaşan randevular.*
+
+<img src="docs/screenshots/06-hasta-randevularim-gecmis.png" alt="Hasta geçmiş randevular" width="800">
+
+*Randevularım: geçmiş randevular ve durumları (onaylandı, reddedildi, iptal edildi).*
+
+### Doktor
+
+<img src="docs/screenshots/07-doktor-randevular.png" alt="Doktor ana sayfası" width="800">
+
+*Doktor ana sayfası: bugünün randevuları ve yaklaşan randevular.*
+
+<img src="docs/screenshots/08-doktor-onay-bekleyen.png" alt="Doktorun onay bekleyen randevuları" width="800">
+
+*Onay gerektiren doktorda bekleyen randevular: Onayla ve Reddet.*
+
+<img src="docs/screenshots/09-doktor-uygunluk.png" alt="Doktor uygunluk yönetimi" width="800">
+
+*Uygunluk yönetimi: randevu süresi, otomatik çalışma takvimi, tek ve toplu uygunluk ekleme, şube çalışma saatleri notu.*
+
+### Klinik yöneticisi
+
+<img src="docs/screenshots/10-yonetici-anasayfa.png" alt="Klinik yöneticisi ana sayfası" width="800">
+
+*Yönetici ana sayfası: şube özeti, çalışma saatleri, bölümlere göre personel.*
+
+<img src="docs/screenshots/11-yonetici-bolumler.png" alt="Bölümler ve hizmetler" width="800">
+
+*Bölümler ve hizmetler: muayene ve tetkik türleri, süre, ücret.*
+
+<img src="docs/screenshots/12-yonetici-personel.png" alt="Personel listesi" width="800">
+
+*Personel listesi: doktorlar ve sağlık teknisyenleri, hizmet sayısı.*
+
+<img src="docs/screenshots/13-yonetici-doktor-ekle.png" alt="Doktor ekleme formu" width="800">
+
+*Doktor ekleme formu: bölüme göre hizmet seçimi.*
+
+### Sistem yöneticisi
+
+<img src="docs/screenshots/14-admin-kurumlar.png" alt="Kurumlar ve şubeler" width="800">
+
+*Kurum ve şube yönetimi, şube çalışma saatleri.*
+
 ## Teknolojiler
 
 - **Arka uç:** C#, .NET 10, ASP.NET Core Web API, Entity Framework Core 10, SQL Server LocalDB
@@ -206,4 +276,5 @@ Diğer sigortalı hastalar: `mehmet.yilmaz@example.com`, `mustafa.kaya@example.c
 - Doktor başka bir bölüme taşınamaz.
 - İlk girişte şifre değiştirmeye zorlama, e-posta doğrulama ve "şifremi unuttum" akışı yoktur.
 - Tohum veri yalnızca boş veritabanında yüklenir; örnek veri değiştiğinde veritabanı sıfırlanmalıdır.
+- Geniş tablolar dar ekranlarda yatay kaydırılır; en rahat görünüm için tarayıcı yakınlaştırmasını %80 yapın.
 - Projede farklı günlere yayılmış en az 10 commit şartı sağlanamamıştır (ayrıntı için `docs/requirements-map.md`).
