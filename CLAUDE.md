@@ -333,7 +333,10 @@ startup if it does not exist.
 past ones are allowed, but on the doctor's slot grid, without overlaps, priced by the real strategy, upcoming ones on
 weekdays inside the 14-day window): Ahmet Çelik has six past appointments (Confirmed, Cancelled, Rejected, one diagnostic)
 and three upcoming ones (one Pending); Dr. Hakan Yıldız (auto-confirm) and Dr. Kemal Aslan (approval) have nine each, and
-Dr. Kemal Aslan has four Pending upcoming ones for the approve/reject demo. The README has a "Demo senaryosu" in Turkish.
+Dr. Kemal Aslan has four Pending upcoming ones for the approve/reject demo. On a weekday both doctors also have
+appointments **today** at fixed Istanbul times (Hakan four, Kemal three, one of them Pending), so some are already past and
+some later; on a weekend nothing is added for today. In Merkez, İç Hastalıkları and Çocuk Sağlığı ve Hastalıkları have a third
+doctor (Dr. Ayhan Demirci, 20 min, both services; Dr. Nilüfer Kaplan, 15 min, Genel Muayene only). The README has a "Demo senaryosu" in Turkish.
 
 ## Date and Time
 

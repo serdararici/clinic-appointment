@@ -33,14 +33,30 @@ internal static class DemoAppointments
     /// </summary>
     private sealed record Plan(string PatientEmail, string? Provider, string ServiceName, int Day, string Time, AppointmentStatus Status);
 
+    // A plan with this day is for today (Istanbul day), and only when today is a weekday.
+    private const int TodayMarker = int.MinValue;
+
     private static Plan Past(string patient, string? provider, string service, int weekdaysAgo, string time, AppointmentStatus status) =>
         new(patient, provider, service, -weekdaysAgo, time, status);
 
     private static Plan Upcoming(string patient, string? provider, string service, int nthWeekday, string time, AppointmentStatus status) =>
         new(patient, provider, service, nthWeekday, time, status);
 
+    /// <summary>An appointment today at a fixed Istanbul time, whatever the time of the seed run: some are already past, some later.</summary>
+    private static Plan Today(string patient, string provider, string service, string time, AppointmentStatus status) =>
+        new(patient, provider, service, TodayMarker, time, status);
+
     private static readonly Plan[] Plans =
     [
+        // ---- Today (weekdays only): the doctors have a day in progress ----
+        Today("zeynep.arslan@example.com", Hakan, "Genel Muayene", "09:00", AppointmentStatus.Confirmed),
+        Today(Ahmet, Hakan, "Kontrol Muayenesi", "10:30", AppointmentStatus.Confirmed),
+        Today("hasan.cetin@example.com", Hakan, "Genel Muayene", "14:00", AppointmentStatus.Confirmed),
+        Today("emre.sahin@example.com", Hakan, "Kontrol Muayenesi", "15:30", AppointmentStatus.Cancelled),
+        Today("ayse.korkmaz@example.com", Kemal, "Genel Muayene", "10:00", AppointmentStatus.Pending),
+        Today("elif.demir@example.com", Kemal, "Genel Muayene", "11:30", AppointmentStatus.Confirmed),
+        Today("selin.aydogan@example.com", Kemal, "Kontrol Muayenesi", "14:30", AppointmentStatus.Confirmed),
+
         // ---- Ahmet Çelik (insured): six past appointments in different departments (one diagnostic) and three upcoming ----
         Past(Ahmet, Hakan, "Genel Muayene", 1, "09:30", AppointmentStatus.Confirmed),
         Past(Ahmet, SelinAydin, "Genel Muayene", 3, "10:20", AppointmentStatus.Confirmed),
@@ -85,8 +101,14 @@ internal static class DemoAppointments
 
         foreach (var plan in Plans)
         {
+            // Nothing is booked for a weekend day: the clinics (and the doctors' schedules) are closed.
+            if (plan.Day == TodayMarker && !DefaultSchedule.IsWorkingDay(today))
+            {
+                continue;
+            }
+
             var patient = patientsByEmail[plan.PatientEmail];
-            var date = WeekdayAt(today, plan.Day);
+            var date = plan.Day == TodayMarker ? today : WeekdayAt(today, plan.Day);
             var start = ClinicTimeZone.ToUtc(date.ToDateTime(TimeOnly.Parse(plan.Time)));
 
             if (plan.Provider is null)

@@ -44,6 +44,8 @@ public class DemoSeedTests
         public DateOnly DayOf(Appointment appointment) => DateOnly.FromDateTime(ClinicTimeZone.ToLocal(appointment.ScheduledStartUtc));
 
         public bool IsUpcoming(Appointment appointment) => appointment.ScheduledStartUtc > Now;
+
+        public bool IsToday(Appointment appointment) => DayOf(appointment) == Today;
     }
 
     private static Seeded Seed(DateTime now)
@@ -147,7 +149,7 @@ public class DemoSeedTests
     {
         var seeded = Seed(now);
 
-        foreach (var appointment in seeded.Appointments)
+        foreach (var appointment in seeded.Appointments.Where(a => !seeded.IsToday(a)))
         {
             var day = seeded.DayOf(appointment);
             if (seeded.IsUpcoming(appointment))
@@ -168,7 +170,8 @@ public class DemoSeedTests
         var seeded = Seed(now);
         var ahmet = seeded.Patient("ahmet.celik@example.com");
         Assert.True(ahmet.HasInsurance);
-        var mine = seeded.Appointments.Where(a => a.PatientId == ahmet.Id).ToList();
+        // The history and the calendar: today's appointment (a weekday only) is checked in its own test.
+        var mine = seeded.Appointments.Where(a => a.PatientId == ahmet.Id && !seeded.IsToday(a)).ToList();
 
         var past = mine.Where(a => !seeded.IsUpcoming(a)).ToList();
         var upcoming = mine.Where(seeded.IsUpcoming).ToList();
@@ -200,18 +203,19 @@ public class DemoSeedTests
         var hakans = seeded.Appointments.Where(a => a.StaffMemberId == hakan.Id).ToList();
         var kemals = seeded.Appointments.Where(a => a.StaffMemberId == kemal.Id).ToList();
 
-        Assert.InRange(hakans.Count, 8, 10);
-        Assert.InRange(kemals.Count, 8, 10);
+        // Nine each, plus the ones of today on a weekday (Hakan 4, Kemal 3).
+        Assert.InRange(hakans.Count(a => !seeded.IsToday(a)), 8, 10);
+        Assert.InRange(kemals.Count(a => !seeded.IsToday(a)), 8, 10);
         Assert.True(hakans.Select(a => a.PatientId).Distinct().Count() >= 6, "different patients");
         Assert.True(kemals.Select(a => a.PatientId).Distinct().Count() >= 5, "different patients");
 
         // The doctor who confirms at once has no Pending or Rejected appointment, and has both past and upcoming ones.
         Assert.All(hakans, a => Assert.Contains(a.Status, new[] { AppointmentStatus.Confirmed, AppointmentStatus.Cancelled }));
-        Assert.Contains(hakans, seeded.IsUpcoming);
-        Assert.Contains(hakans, a => !seeded.IsUpcoming(a));
+        Assert.Contains(hakans, a => !seeded.IsToday(a) && seeded.IsUpcoming(a));
+        Assert.Contains(hakans, a => !seeded.IsToday(a) && !seeded.IsUpcoming(a));
 
         // The doctor who approves has 3-4 Pending upcoming appointments to decide, and a history.
-        var pending = kemals.Where(a => a.Status == AppointmentStatus.Pending).ToList();
+        var pending = kemals.Where(a => a.Status == AppointmentStatus.Pending && !seeded.IsToday(a)).ToList();
         Assert.InRange(pending.Count, 3, 4);
         Assert.All(pending, a => Assert.True(seeded.IsUpcoming(a)));
         Assert.Contains(kemals, a => !seeded.IsUpcoming(a) && a.Status == AppointmentStatus.Confirmed);
@@ -231,5 +235,55 @@ public class DemoSeedTests
 
         var emails = seeded.Db.ChangeTracker.Entries<Patient>().Select(e => e.Entity.Email).ToList();
         Assert.Equal(emails.Count, emails.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+    }
+
+    [Theory]
+    [MemberData(nameof(RunTimes))]
+    public void OnAWeekday_TheTwoDemoDoctorsHaveAppointmentsToday_AtFixedTimes_AndOnAWeekendNone(DateTime now)
+    {
+        var seeded = Seed(now);
+        var hakan = seeded.Doctor("hakan.yildiz@sakaryasehir.example");
+        var kemal = seeded.Doctor("kemal.aslan@sakaryasehir.example");
+        var todays = seeded.Appointments.Where(seeded.IsToday).ToList();
+
+        if (!DefaultSchedule.IsWorkingDay(seeded.Today))
+        {
+            Assert.Empty(todays); // a weekend: nothing today (the other appointments use the previous and next weekdays)
+            return;
+        }
+
+        var hakans = todays.Where(a => a.StaffMemberId == hakan.Id).ToList();
+        var kemals = todays.Where(a => a.StaffMemberId == kemal.Id).ToList();
+        var ahmet = seeded.Patient("ahmet.celik@example.com");
+        var elif = seeded.Patient("elif.demir@example.com");
+
+        // Dr. Hakan Yıldız: 3-4 from different patients, Confirmed and one Cancelled, Ahmet once.
+        Assert.InRange(hakans.Count, 3, 4);
+        Assert.Equal(hakans.Count, hakans.Select(a => a.PatientId).Distinct().Count());
+        Assert.Single(hakans, a => a.PatientId == ahmet.Id);
+        Assert.All(hakans, a => Assert.Contains(a.Status, new[] { AppointmentStatus.Confirmed, AppointmentStatus.Cancelled }));
+        Assert.Single(hakans, a => a.Status == AppointmentStatus.Cancelled);
+
+        // Dr. Kemal Aslan: one Pending and one or two Confirmed, Elif Demir once.
+        Assert.Single(kemals, a => a.Status == AppointmentStatus.Pending);
+        Assert.InRange(kemals.Count(a => a.Status == AppointmentStatus.Confirmed), 1, 2);
+        Assert.Single(kemals, a => a.PatientId == elif.Id);
+
+        // The times are fixed Istanbul times, whatever the time of the run, so with an early clock all are still ahead.
+        var localTimes = todays.Select(a => ClinicTimeZone.ToLocal(a.ScheduledStartUtc).TimeOfDay).Order().ToList();
+        Assert.Equal(new TimeSpan(9, 0, 0), localTimes[0]);
+        Assert.Equal(new TimeSpan(15, 30, 0), localTimes[^1]);
+    }
+
+    [Fact]
+    public void TheSameTodayAppointmentsAreSeeded_WhateverTheTimeOfTheDay()
+    {
+        var early = Seed(new DateTime(2026, 11, 18, 5, 30, 0, DateTimeKind.Utc)); // 08:30 in Turkey
+        var late = Seed(new DateTime(2026, 11, 18, 17, 0, 0, DateTimeKind.Utc));  // 20:00 in Turkey
+
+        Assert.Equal(
+            early.Appointments.Where(early.IsToday).Select(a => a.ScheduledStartUtc).Order(),
+            late.Appointments.Where(late.IsToday).Select(a => a.ScheduledStartUtc).Order());
+        Assert.Equal(7, early.Appointments.Count(early.IsToday));
     }
 }

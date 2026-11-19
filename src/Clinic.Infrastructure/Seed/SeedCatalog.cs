@@ -43,6 +43,8 @@ public static class SeedCatalog
         [
             Doctor("Dr. Hakan Yıldız", "hakan.yildiz" + Sakarya, 30),
             Doctor("Dr. Elif Şahin", "elif.sahin" + Sakarya, 20, onlyServices: ["Genel Muayene"]),
+            // A third doctor with a 20-minute slot who offers both services.
+            Doctor("Dr. Ayhan Demirci", "ayhan.demirci" + Sakarya, 20),
         ]),
         new("Gastroenteroloji", [Exam("Genel Muayene", 20, 550m)],
         [
@@ -70,6 +72,8 @@ public static class SeedCatalog
         [
             Doctor("Dr. Tuğba Yalçın", "tugba.yalcin" + Sakarya, 20),
             Doctor("Dr. Serkan Bulut", "serkan.bulut" + Sakarya, 15, onlyServices: ["Genel Muayene"]),
+            // A third doctor with a 15-minute slot who offers only Genel Muayene.
+            Doctor("Dr. Nilüfer Kaplan", "nilufer.kaplan" + Sakarya, 15, onlyServices: ["Genel Muayene"]),
         ]),
         new("Nöroloji", [Exam("Genel Muayene", 30, 550m), Diagnostic("EMG", 30, 800m)],
         [

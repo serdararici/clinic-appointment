@@ -50,7 +50,9 @@ All demo accounts use the password **`Demo123!`**.
 ### Demo senaryosu
 
 Tüm hesapların şifresi **`Demo123!`**. Veritabanı sıfırlandığında randevular çalıştırma gününe göre yeniden oluşturulur
-(geçmiş ve önümüzdeki 14 gün içindeki hafta içi günler).
+(geçmiş, **bugün** ve önümüzdeki 14 gün içindeki hafta içi günler; hafta sonu çalıştırılırsa bugün için randevu eklenmez).
+Merkez'de İç Hastalıkları (Dr. Hakan Yıldız, Dr. Elif Şahin, Dr. Ayhan Demirci) ve Çocuk Sağlığı ve Hastalıkları (Dr. Tuğba Yalçın,
+Dr. Serkan Bulut, Dr. Nilüfer Kaplan) bölümlerinde üçer doktor vardır; diğer bölümlerde ikişer.
 
 | Adım | Hesap | Ne gösterilir |
 |---|---|---|
@@ -59,9 +61,10 @@ Tüm hesapların şifresi **`Demo123!`**. Veritabanı sıfırlandığında rande
 | 3. Sigortasız fiyat karşılaştırması | `elif.demir@example.com` (Elif Demir, sigortasız hasta) | Ahmet ile aynı doktor ve hizmeti seçin: Ahmet'in özetinde sigortalı tutar (%20 indirimli), Elif'in özetinde tam fiyat görünür |
 | 4. Onay gerektiren doktor | `kemal.aslan@sakaryasehir.example` (Kardiyoloji) | **Randevular > Bekleyen** sekmesinde 4 onay bekleyen randevu: "Onayla" ve "Reddet" |
 | 5. Hasta tarafında sonuç | Ahmet Çelik | Dr. Kemal Aslan ile alınan randevu "Onay bekliyor" iken onaylanınca "Onaylandı", reddedilince "Reddedildi" görünür |
-| 6. Otomatik onaylı doktorlar | `hakan.yildiz@sakaryasehir.example` (Dahiliye) ve `selin.aydin@sakaryasehir.example` (Gastroenteroloji, Dr. Selin Aydın) | Randevuları hemen "Onaylandı" olur (Dr. Kemal Aslan'ın "Onay bekliyor" akışıyla karşılaştırın); **Uygunluk** sayfasında takvim, çalışma saatleri ve randevu süresi |
-| 7. Klinik yöneticisi | `ayse.yilmaz@sakaryasehir.example` (Merkez) | Ana sayfada personel sayıları ve çalışma saatleri; **Bölümler** ve **Personel** sayfalarında doktor ve sağlık teknisyeni yönetimi |
-| 8. Sistem yöneticisi | `admin@clinic.example` | **Kurumlar** (şube ve çalışma saatleri) ve **Yöneticiler** sayfaları |
+| 6. Doktorun bugünü | `hakan.yildiz@sakaryasehir.example` ve `kemal.aslan@sakaryasehir.example` | Doktor ana sayfasındaki **Bugünün randevuları** listesinde bugün için sabit saatlerde randevular görünür (Dr. Hakan Yıldız 4, Dr. Kemal Aslan 3; Dr. Kemal Aslan'da biri onay bekler, Ahmet Çelik ve Elif Demir de bu listededir). Hafta sonu bu liste boştur |
+| 7. Otomatik onaylı doktorlar | `hakan.yildiz@sakaryasehir.example` (Dahiliye) ve `selin.aydin@sakaryasehir.example` (Gastroenteroloji, Dr. Selin Aydın) | Randevuları hemen "Onaylandı" olur (Dr. Kemal Aslan'ın "Onay bekliyor" akışıyla karşılaştırın); **Uygunluk** sayfasında takvim, çalışma saatleri ve randevu süresi |
+| 8. Klinik yöneticisi | `ayse.yilmaz@sakaryasehir.example` (Merkez) | Ana sayfada personel sayıları ve çalışma saatleri; **Bölümler** ve **Personel** sayfalarında doktor ve sağlık teknisyeni yönetimi |
+| 9. Sistem yöneticisi | `admin@clinic.example` | **Kurumlar** (şube ve çalışma saatleri) ve **Yöneticiler** sayfaları |
 
 Diğer sigortalı hastalar: `mehmet.yilmaz@example.com`, `mustafa.kaya@example.com`, `hasan.cetin@example.com`,
 `emre.sahin@example.com`. Sigortasızlar: `elif.demir@example.com`, `zeynep.arslan@example.com`,

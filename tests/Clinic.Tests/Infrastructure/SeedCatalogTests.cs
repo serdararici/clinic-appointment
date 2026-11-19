@@ -48,9 +48,10 @@ public class SeedCatalogTests
             var control = department.Services.Single(s => s.Name == "Kontrol Muayenesi");
 
             Assert.InRange(control.Price / general.Price, 0.55m, 0.65m);
-            Assert.Equal(2, department.Doctors.Length);
+            // Two doctors everywhere; Merkez's Dahiliye and Çocuk Sağlığı have a third one.
+            Assert.Equal(branch == "Merkez" && name is "İç Hastalıkları (Dahiliye)" or "Çocuk Sağlığı ve Hastalıkları" ? 3 : 2, department.Doctors.Length);
             Assert.Null(department.Doctors[0].OnlyServices);                                     // the first doctor offers both
-            Assert.Equal(["Genel Muayene"], department.Doctors[1].OnlyServices ?? []);                  // the other only Genel Muayene
+            Assert.Equal(["Genel Muayene"], department.Doctors[1].OnlyServices ?? []);                  // the second only Genel Muayene
         }
     }
 
@@ -151,5 +152,25 @@ public class SeedCatalogTests
             Assert.InRange(service.Price, 100m, 5000m);
             Assert.InRange(service.DurationMinutes, 10, 120);
         }
+    }
+
+    [Fact]
+    public void MerkezHasAThirdDoctor_InDahiliyeAndCocukSagligi_WithTheAskedSlotsAndServices()
+    {
+        var dahiliye = SeedCatalog.Merkez.Single(d => d.Name == "İç Hastalıkları (Dahiliye)").Doctors.Single(d => d.Email == "ayhan.demirci@sakaryasehir.example");
+        var cocuk = SeedCatalog.Merkez.Single(d => d.Name == "Çocuk Sağlığı ve Hastalıkları").Doctors.Single(d => d.Email == "nilufer.kaplan@sakaryasehir.example");
+
+        Assert.Equal("Dr. Ayhan Demirci", dahiliye.FullName);
+        Assert.Equal(20, dahiliye.SlotDurationMinutes);
+        Assert.True(dahiliye.AutoConfirm);
+        Assert.Null(dahiliye.OnlyServices); // both Genel Muayene and Kontrol Muayenesi
+
+        Assert.Equal("Dr. Nilüfer Kaplan", cocuk.FullName);
+        Assert.Equal(15, cocuk.SlotDurationMinutes);
+        Assert.True(cocuk.AutoConfirm);
+        Assert.Equal(["Genel Muayene"], cocuk.OnlyServices ?? []);
+
+        // The other branches keep their two doctors per department.
+        Assert.All(SeedCatalog.Adapazari.Concat(SeedCatalog.Serdivan).Where(d => d.Doctors.Length > 0), d => Assert.Equal(2, d.Doctors.Length));
     }
 }
