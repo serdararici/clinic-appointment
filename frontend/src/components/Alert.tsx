@@ -1,13 +1,14 @@
 import type { ReactNode } from 'react'
-import { CircleAlert, CircleCheck, Info, type LucideIcon } from 'lucide-react'
+import { CircleAlert, CircleCheck, Info, TriangleAlert, type LucideIcon } from 'lucide-react'
 import { cx } from '../utils/cx'
 import { Icon } from './Icon'
 
-type AlertTone = 'error' | 'success' | 'info'
+type AlertTone = 'error' | 'success' | 'info' | 'warning'
 
 const tones: Record<AlertTone, { box: string; icon: LucideIcon; iconColor: string }> = {
   error: { box: 'border-red-200 bg-red-50 text-red-900', icon: CircleAlert, iconColor: 'text-red-700' },
   success: { box: 'border-green-200 bg-green-50 text-green-900', icon: CircleCheck, iconColor: 'text-green-700' },
+  warning: { box: 'border-amber-200 bg-amber-50 text-amber-900', icon: TriangleAlert, iconColor: 'text-amber-700' },
   info: { box: 'border-slate-200 bg-slate-50 text-slate-800', icon: Info, iconColor: 'text-slate-500' },
 }
 

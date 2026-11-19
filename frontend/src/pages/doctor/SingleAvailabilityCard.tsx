@@ -6,12 +6,15 @@ import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
 import { Input } from '../../components/Input'
 import { istanbulToUtcIso, todayIsoDate } from '../../utils/format'
+import type { WorkingHour } from '../../api/types'
+import { leavesBranchHours, weekdayNameOf } from '../shared/working-hours-utils'
 import { minutesOf } from './availability-utils'
+import { OutsideHoursNotice } from './OutsideHoursNotice'
 import { useToast } from '../../components/useToast'
 import { CalendarPlus } from 'lucide-react'
 
 /** Adds one availability range on one day. Times are Turkey time and are sent to the API as UTC. */
-export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string; onAdded: () => void }) {
+export function SingleAvailabilityCard({ doctorId, branchHours, onAdded }: { doctorId: string; branchHours: readonly WorkingHour[] | undefined; onAdded: () => void }) {
   const toast = useToast()
   const [date, setDate] = useState('')
   const [start, setStart] = useState('')
@@ -19,6 +22,10 @@ export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string
   const [errors, setErrors] = useState<{ date?: string; start?: string; end?: string }>({})
   const [saving, setSaving] = useState(false)
   const [apiError, setApiError] = useState<string | null>(null)
+
+  // A hint only (the branch hours are known): the chosen day and times reach outside the opening hours.
+  const outside =
+    branchHours !== undefined && date !== '' && start !== '' && end !== '' && minutesOf(end) > minutesOf(start) && leavesBranchHours(branchHours, weekdayNameOf(date), start, end)
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -59,6 +66,7 @@ export function SingleAvailabilityCard({ doctorId, onAdded }: { doctorId: string
           <Input label="Bitiş saati" type="time" value={end} onChange={(e) => setEnd(e.target.value)} error={errors.end} />
         </div>
         <p className="text-sm text-slate-600">Saatler Türkiye saatidir.</p>
+        {outside ? <OutsideHoursNotice /> : null}
         {apiError ? <Alert tone="error">{apiError}</Alert> : null}
         <Button type="submit" loading={saving}>
           Aralık ekle

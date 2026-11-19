@@ -60,3 +60,26 @@ export function summarizeHours(hours: readonly WorkingHour[]): string {
   if (groups.length === 0) return 'Çalışma saati tanımlı değil'
   return groups.map((group) => `${group.days} ${group.ranges}`).join(' · ')
 }
+
+const minutes = (time: string) => {
+  const [hours, mins] = time.split(':').map(Number)
+  return hours * 60 + mins
+}
+
+/** The weekday name of a calendar date ("YYYY-MM-DD"). */
+export function weekdayNameOf(isoDate: string): WeekdayName {
+  const [year, month, day] = isoDate.split('-').map(Number)
+  const index = (new Date(Date.UTC(year, month - 1, day)).getUTCDay() + 6) % 7 // Monday = 0
+  return DAY_ORDER[index].name
+}
+
+/**
+ * Whether a time range ("HH:mm" to "HH:mm") on a weekday reaches outside the branch's working hours: it is not inside one
+ * of that day's opening ranges (a closed day has none). Only used for a hint: the range is saved either way, and the
+ * API simply does not offer the part outside the hours.
+ */
+export function leavesBranchHours(hours: readonly WorkingHour[], day: WeekdayName, start: string, end: string): boolean {
+  const from = minutes(start)
+  const to = minutes(end)
+  return !hours.some((hour) => hour.dayOfWeek === day && minutes(shortTime(hour.opensAt)) <= from && to <= minutes(shortTime(hour.closesAt)))
+}

@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { addBulkAvailability } from '../../api/doctor'
 import { readableMessage } from '../../api/errors'
-import type { BulkAvailabilityResult, WeekdayName } from '../../api/types'
+import type { BulkAvailabilityResult, WeekdayName, WorkingHour } from '../../api/types'
 import { Alert } from '../../components/Alert'
 import { Button } from '../../components/Button'
 import { Card } from '../../components/Card'
@@ -10,9 +10,14 @@ import { isoDateOf, todayIsoDate } from '../../utils/format'
 import { DEFAULT_WEEKDAYS, WEEKDAYS, minutesOf, previewBulk, type TimeWindow } from './availability-utils'
 import { useToast } from '../../components/useToast'
 import { CalendarRange } from 'lucide-react'
+import { addDays } from '../../utils/booking-window'
+import { leavesBranchHours, weekdayNameOf } from '../shared/working-hours-utils'
+import { OutsideHoursNotice } from './OutsideHoursNotice'
 
 interface BulkAvailabilityCardProps {
   doctorId: string
+  /** The branch's working hours, for the hint; undefined while they load (no hint then). */
+  branchHours: readonly WorkingHour[] | undefined
   slotDurationMinutes: number
   onAdded: () => void
 }
@@ -38,7 +43,7 @@ function merge(results: BulkAvailabilityResult[]): Summary {
  * requests; the API itself knows nothing about lunch. The API skips days that overlap an existing range and days
  * that have already started, and reports them.
  */
-export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }: BulkAvailabilityCardProps) {
+export function BulkAvailabilityCard({ doctorId, branchHours, slotDurationMinutes, onAdded }: BulkAvailabilityCardProps) {
   const toast = useToast()
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
@@ -63,6 +68,22 @@ export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }:
 
   const preview = previewBulk(fromDate, toDate, weekdays, windows, slotDurationMinutes, now)
   const showPreview = fromDate && toDate && toDate >= fromDate && weekdays.length > 0 && preview.days + preview.slots > 0
+
+  // A hint only: some chosen day and time window reaches outside the branch hours. Only the days that really occur between
+  // the dates count (all chosen weekdays while the dates are not filled in).
+  const outside = (() => {
+    if (branchHours === undefined || windows.some((window) => !window.start || !window.end || minutesOf(window.end) <= minutesOf(window.start))) return false
+    const days = new Set<WeekdayName>()
+    if (fromDate && toDate && toDate >= fromDate) {
+      for (let day = fromDate, guard = 0; day <= toDate && guard < 400; day = addDays(day, 1), guard++) {
+        const name = weekdayNameOf(day)
+        if (weekdays.includes(name)) days.add(name)
+      }
+    } else {
+      weekdays.forEach((name) => days.add(name))
+    }
+    return [...days].some((day) => windows.some((window) => leavesBranchHours(branchHours, day, window.start, window.end)))
+  })()
 
   const toggle = (name: WeekdayName) =>
     setWeekdays((current) => (current.includes(name) ? current.filter((day) => day !== name) : [...current, name]))
@@ -165,6 +186,7 @@ export function BulkAvailabilityCard({ doctorId, slotDurationMinutes, onAdded }:
           </p>
         ) : null}
 
+        {outside ? <OutsideHoursNotice /> : null}
         {apiError ? (
           <Alert tone="error">
             {summary ? 'İşlem yarım kaldı: öğle arasından önceki aralıklar eklendi, sonrakiler eklenemedi. ' : ''}
