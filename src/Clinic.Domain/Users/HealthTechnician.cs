@@ -4,11 +4,17 @@ namespace Clinic.Domain.Users;
 
 /// <summary>
 /// A health technician (e.g. radiology technician, laboratory technician). Only a registered
-/// staff member for now: there is no scheduling or assignment logic for technicians.
+/// staff member: there is no scheduling or assignment logic for technicians, and technicians cannot sign in.
 /// </summary>
 public class HealthTechnician : StaffMember
 {
+    /// <summary>The title a technician gets when none is given ("Sağlık Teknisyeni").</summary>
+    public const string DefaultTitle = "Sağlık Teknisyeni";
+
     public string Title { get; private set; }
+
+    /// <summary>Technicians are staff records only: they never sign in (and have no password).</summary>
+    public override bool CanSignIn => false;
 
     public HealthTechnician(
         string fullName,

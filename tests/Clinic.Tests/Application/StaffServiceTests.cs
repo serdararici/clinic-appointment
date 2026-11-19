@@ -176,6 +176,71 @@ public class StaffServiceTests
     }
 
     [Fact]
+    public async Task CreateTechnician_NeedsNoPasswordOrTitle_AndCannotSignIn()
+    {
+        var department = NewDepartment("Radyoloji");
+
+        var dto = await _f.StaffService().CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("Kemal Arslan", "kemal@example.com", "+90-264-555-0021"));
+
+        var technician = Assert.IsType<HealthTechnician>(Assert.Single(_f.Staff.Items));
+        Assert.Equal("Sağlık Teknisyeni", dto.Title); // the default title
+        Assert.Null(technician.PasswordHash);           // no password is asked for or stored
+        Assert.False(technician.CanSignIn);
+        Assert.Equal(department.Id, dto.DepartmentId);
+        Assert.Equal(department.ClinicFacilityId, dto.BranchId);
+    }
+
+    [Fact]
+    public async Task CreateTechnician_Throws_ForAnInvalidOrUsedEmail_AndSavesNothing()
+    {
+        var department = NewDepartment("Radyoloji");
+        _f.Users.Items.Add(new Patient("Var Olan", "var@example.com", "", new DateOnly(1990, 1, 1)));
+
+        await Assert.ThrowsAsync<ArgumentException>(() => _f.StaffService().CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("Kemal", "not-an-email", null)));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => _f.StaffService().CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("Kemal", "VAR@example.com", null)));
+
+        Assert.Empty(_f.Staff.Items);
+    }
+
+    [Fact]
+    public async Task Technicians_AreListedWithDoctors_AndCanBeEditedAndDeactivatedAndActivated()
+    {
+        var department = NewDepartment("Radyoloji");
+        var doctor = _f.AddDoctor(department, "d@example.com", "Dr. Test");
+        var created = await _f.StaffService().CreateTechnicianAsync(department.Id, new CreateTechnicianRequest("Kemal Arslan", "kemal@example.com", null));
+
+        var list = await _f.StaffService().ListAsync(department.ClinicFacilityId, null);
+        Assert.Equal(["Doctor", "HealthTechnician"], list.Select(s => s.Role).Order());
+
+        var edited = await _f.StaffService().UpdateAsync(created.Id, new UpdateStaffRequest("Kemal Yeni", "kemal@example.com", "+90-1"));
+        Assert.Equal("Kemal Yeni", edited.FullName);
+        Assert.Equal("Sağlık Teknisyeni", edited.Title); // a missing title leaves it as it is
+
+        Assert.False((await _f.StaffService().DeactivateAsync(created.Id)).IsActive);
+        Assert.True((await _f.StaffService().ActivateAsync(created.Id)).IsActive);
+        Assert.NotNull(doctor);
+    }
+
+    [Fact]
+    public async Task Services_OfADoctor_AreExaminationServicesOfTheirOwnDepartment_AndTechniciansOfferNone()
+    {
+        var department = NewDepartment("Kardiyoloji");
+        var examination = _f.AddService(department, "Genel Muayene", ServiceType.Examination, 30, 600m);
+        var diagnostic = _f.AddService(department, "EKG", ServiceType.Diagnostic, 15, 300m);
+        var doctor = _f.AddDoctor(department, "d@example.com", "Dr. Test");
+        var technician = _f.AddTechnician(department, "t@example.com");
+        var service = _f.StaffService();
+
+        var set = await service.SetServicesAsync(doctor.Id, [examination.Id]);
+        Assert.Equal([examination.Id], set.ServiceIds); // the read side: ServiceIds of the staff record
+
+        await Assert.ThrowsAsync<ArgumentException>(() => service.SetServicesAsync(doctor.Id, [diagnostic.Id]));
+        await Assert.ThrowsAsync<ArgumentException>(() => service.SetServicesAsync(technician.Id, [examination.Id]));
+        Assert.Equal([examination.Id], (await service.GetAsync(doctor.Id)).ServiceIds); // unchanged by the refused calls
+        Assert.Empty((await service.SetServicesAsync(technician.Id, [])).ServiceIds);
+    }
+
+    [Fact]
     public async Task CreateTechnician_Throws_WhenTheTitleIsMissingOrTheDepartmentUnknown()
     {
         var department = NewDepartment();
@@ -224,7 +289,7 @@ public class StaffServiceTests
         var service = _f.StaffService();
 
         await Assert.ThrowsAsync<ArgumentException>(() => service.UpdateAsync(technician.Id,
-            new UpdateStaffRequest("Kemal", "t2@example.com", null, Title: null)));
+            new UpdateStaffRequest("Kemal", "t2@example.com", null, Title: " ")));
         await Assert.ThrowsAsync<KeyNotFoundException>(() => service.UpdateAsync(Guid.NewGuid(),
             new UpdateStaffRequest("x", "x@example.com", null, "y")));
         Assert.Equal(0, _f.UnitOfWork.SaveCount);

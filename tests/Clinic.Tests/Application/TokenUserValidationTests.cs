@@ -33,7 +33,6 @@ public class TokenUserValidationTests
         [
             new Patient("Ahmet", "ahmet@example.com", "", new DateOnly(1990, 1, 1)),
             new Doctor("Dr. Hakan", "hakan@example.com", "", department),
-            new HealthTechnician("Kemal", "kemal@example.com", "", department, "Radyoloji Teknikeri"),
             new ClinicManager("Ayşe", "ayse@example.com", "", Guid.NewGuid()),
             new SystemAdmin("Sistem", "admin@example.com", ""),
         ];
@@ -106,12 +105,12 @@ public class TokenUserValidationTests
         var patient = new Patient("Ahmet", "ahmet@example.com", "", new DateOnly(1990, 1, 1));
 
         doctor.Deactivate();
-        technician.Deactivate();
         manager.Deactivate();
 
         Assert.False(doctor.CanSignIn);
         Assert.False(technician.CanSignIn);
         Assert.False(manager.CanSignIn);
+        Assert.False(technician.CanSignIn); // technicians never sign in, active or not
         Assert.True(patient.CanSignIn); // patients have no active flag
     }
 

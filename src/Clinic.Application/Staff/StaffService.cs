@@ -69,12 +69,19 @@ public class StaffService(
         var department = await LoadDepartmentAsync(departmentId, cancellationToken);
         await guard.EnsureDepartmentAsync(department, cancellationToken);
 
+        // A technician has no login, but the email is still the person's unique identity.
+        var email = AuthService.ValidateEmail(request.Email);
+        if (await userRepository.EmailExistsAsync(email, cancellationToken))
+        {
+            throw new InvalidOperationException("An account with this email address already exists.");
+        }
+
         var technician = new HealthTechnician(
             request.FullName,
-            request.Email,
+            email,
             request.PhoneNumber ?? string.Empty,
             department,
-            request.Title);
+            request.Title ?? HealthTechnician.DefaultTitle);
 
         await staffRepository.AddAsync(technician, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -183,7 +190,11 @@ public class StaffService(
         switch (staff)
         {
             case HealthTechnician technician:
-                technician.ChangeTitle(request.Title ?? throw new ArgumentException("Title is required for a technician.", nameof(request)));
+                if (request.Title is not null)
+                {
+                    technician.ChangeTitle(request.Title);
+                }
+
                 break;
         }
 
@@ -204,6 +215,18 @@ public class StaffService(
         if (missing.Count > 0)
         {
             throw new KeyNotFoundException($"Service(s) not found: {string.Join(", ", missing)}.");
+        }
+
+        // Doctors offer Examination services; a Diagnostic service is booked without a doctor, and technicians are
+        // not booked at all. Rejected before anything changes.
+        if (staff is HealthTechnician && services.Count > 0)
+        {
+            throw new ArgumentException("Health technicians do not offer bookable services.", nameof(serviceIds));
+        }
+
+        if (services.Any(service => service.ServiceType != ServiceType.Examination))
+        {
+            throw new ArgumentException("Doctors can only offer examination services.", nameof(serviceIds));
         }
 
         // Rejects (ArgumentException) any service of another department and then changes nothing.

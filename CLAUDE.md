@@ -82,7 +82,7 @@ HealthOrganization (Id, Name)
 StaffMember (abstract, : User)   ClinicFacilityId, DepartmentId, SlotDurationMinutes,
   │                              services provided, availability windows
   ├─ Doctor                      (no own specialty: it is the department name)
-  └─ HealthTechnician            + Title (registered only; no scheduling logic)
+  └─ HealthTechnician            + Title (registered only; no scheduling logic; never signs in)
 Appointment   PatientId, StaffMemberId? (null = unassigned), ServiceId, start/end (UTC),
               Price, Status
 ```
@@ -217,7 +217,13 @@ Delete rules (409 with a message when violated):
   `PUT staff/{id}` changes an email to one that is taken). The new doctor offers **all Examination services of the
   department** and gets the default work schedule at once (`EnsureDefaultAvailabilityAsync`), so they are bookable
   immediately.
-- `PUT /api/staff/{id}/services` replaces the offered set; every service must belong to the staff
+- **Health technicians** are staff records only: the manager creates them with name, email, phone and department (no
+  password; the title is optional and defaults to "Sağlık Teknisyeni"), lists them with the doctors (`GET /api/staff`, the
+  `role` field tells `Doctor` from `HealthTechnician`), edits, deactivates and activates them with the same scope rules as
+  doctors. `User.CanSignIn` is **false** for technicians, so the login refuses them like a wrong password.
+- `PUT /api/staff/{id}/services` replaces the offered set (a doctor's current services are the `serviceIds` of the staff
+  record); a doctor can only offer **Examination** services (Diagnostic ones are booked without a doctor) and a
+  technician offers none (400 otherwise); every service must belong to the staff
   member's own department (400 otherwise, nothing changes).
 
 ## Authentication and Authorization
@@ -290,7 +296,7 @@ Radyoloji and Laboratuvar. Every examination department has at least two doctors
 The table below lists only a short selection. The seed runs only on an empty database (reset `ClinicDb` to apply changes).
 
 All demo accounts use the password **`Demo123!`** and are given it at startup only if they have no password yet
-(`DbInitializer.DemoEmails`). Technicians have no demo login. The system administrator account is created at
+(`DbInitializer.DemoEmails`). Technicians have no login at all (the seed has two or three per branch, shown on the manager's "Personel" page). The system administrator account is created at
 startup if it does not exist.
 
 | Role | Email | Works at |

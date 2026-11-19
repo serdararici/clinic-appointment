@@ -21,7 +21,7 @@ export function navItemsFor(role: Role): NavItem[] {
     case 'Doctor':
       return [home, { to: '/doktor/randevular', label: 'Randevular', icon: CalendarCheck }, { to: '/doktor/uygunluk', label: 'Uygunluk', icon: CalendarRange }]
     case 'ClinicManager':
-      return [home, { to: '/yonetici/bolumler', label: 'Bölümler', icon: Layers }, { to: '/yonetici/doktorlar', label: 'Doktorlar', icon: Users }]
+      return [home, { to: '/yonetici/bolumler', label: 'Bölümler', icon: Layers }, { to: '/yonetici/personel', label: 'Personel', icon: Users }]
     case 'SystemAdmin':
       return [home, { to: '/sistem/kurumlar', label: 'Kurumlar', icon: Hospital }, { to: '/sistem/yoneticiler', label: 'Yöneticiler', icon: UserCog }]
     default:

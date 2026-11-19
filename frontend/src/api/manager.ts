@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { CreateDoctorRequest, Department, SaveServiceRequest, Service, StaffMember, UpdateStaffRequest } from './types'
+import type { CreateDoctorRequest, CreateTechnicianRequest, Department, SaveServiceRequest, Service, StaffMember, UpdateStaffRequest } from './types'
 
 // The clinic manager's calls. The API limits a manager to their own organization (403 for anything else); the
 // screens work on the branch in the manager's token. Reads of departments and services are public and live in
@@ -33,3 +33,10 @@ export const updateStaff = (staffId: string, request: UpdateStaffRequest) => api
 export const deactivateStaff = (staffId: string) => api.post<StaffMember>(`/api/staff/${staffId}/deactivate`)
 
 export const activateStaff = (staffId: string) => api.post<StaffMember>(`/api/staff/${staffId}/activate`)
+
+/** A health technician is a staff record only: no password, no login. */
+export const createTechnician = (departmentId: string, request: CreateTechnicianRequest) =>
+  api.post<StaffMember>(`/api/departments/${departmentId}/technicians`, request)
+
+/** Replaces the examination services a doctor offers (the current ones are the doctor's serviceIds). */
+export const setStaffServices = (staffId: string, serviceIds: string[]) => api.put<StaffMember>(`/api/staff/${staffId}/services`, { serviceIds })

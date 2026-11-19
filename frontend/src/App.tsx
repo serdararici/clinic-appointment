@@ -17,7 +17,7 @@ import { AvailabilityPage } from './pages/doctor/AvailabilityPage'
 import { DoctorAppointmentsPage } from './pages/doctor/DoctorAppointmentsPage'
 import { DoctorHome } from './pages/doctor/DoctorHome'
 import { DepartmentsPage } from './pages/manager/DepartmentsPage'
-import { DoctorsPage } from './pages/manager/DoctorsPage'
+import { StaffPage } from './pages/manager/StaffPage'
 import { ManagerHome } from './pages/manager/ManagerHome'
 import { AdminHome } from './pages/admin/AdminHome'
 import { ManagersPage } from './pages/admin/ManagersPage'
@@ -66,7 +66,9 @@ export default function App() {
         <Route element={<RequireRole roles={['ClinicManager']} />}>
           <Route path="yonetici" element={<ManagerHome />} />
           <Route path="yonetici/bolumler" element={<DepartmentsPage />} />
-          <Route path="yonetici/doktorlar" element={<DoctorsPage />} />
+          <Route path="yonetici/personel" element={<StaffPage />} />
+          {/* The old address of the doctors page. */}
+          <Route path="yonetici/doktorlar" element={<Navigate to="/yonetici/personel" replace />} />
         </Route>
         <Route element={<RequireRole roles={['SystemAdmin']} />}>
           <Route path="sistem" element={<AdminHome />} />

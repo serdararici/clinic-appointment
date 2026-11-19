@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { listDepartments, listServices } from '../../api/booking'
 import { deleteDepartment, deleteService } from '../../api/manager'
 import type { Department, Service } from '../../api/types'
@@ -48,7 +49,9 @@ export function DepartmentsPage() {
       [branchId],
     ),
   )
-  const [dialog, setDialog] = useState<Dialog | null>(null)
+  const [searchParams] = useSearchParams()
+  // "Bölüm ekle" on the manager home opens the form right away (?ekle=1).
+  const [dialog, setDialog] = useState<Dialog | null>(() => (searchParams.get('ekle') ? { kind: 'department', department: null } : null))
 
   const close = () => setDialog(null)
   const saved = (message: string) => {

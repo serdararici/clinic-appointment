@@ -117,6 +117,7 @@ function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: rea
             options={departments.map((department) => ({ value: department.id, label: department.name }))}
             error={errors.department}
           />
+          <p className="-mt-1.5 text-sm text-slate-500">Doktor, bölümündeki tüm muayene hizmetlerini otomatik olarak sunar. Sonra “Hizmetler” ile değiştirebilirsiniz.</p>
         </>
       )}
       <Select
@@ -127,8 +128,8 @@ function DoctorForm({ departments, doctor, onSaved, onBusy }: { departments: rea
       />
       {doctor ? null : (
         <p className="text-sm text-slate-600">
-          Doktor, bölümündeki tüm muayene hizmetlerini otomatik olarak verir ve çalışma takvimi otomatik oluşturulur (hafta içi 09:00-12:00 ve
-          13:00-16:00, önümüzdeki 14 gün). Uygunluğu doktor kendi sayfasından düzenler.
+          Çalışma takvimi otomatik oluşturulur (hafta içi 09:00-12:00 ve 13:00-16:00, önümüzdeki 14 gün). Uygunluğu doktor kendi sayfasından
+          düzenler.
         </p>
       )}
       {apiError ? <Alert tone="error">{apiError}</Alert> : null}

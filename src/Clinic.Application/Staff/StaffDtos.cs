@@ -30,10 +30,14 @@ public record SetAutoConfirmRequest(bool Enabled);
 /// </summary>
 public record CreateDoctorRequest(string FullName, string Email, string? PhoneNumber, string Password, int? SlotDurationMinutes = null);
 
-public record CreateTechnicianRequest(string FullName, string Email, string? PhoneNumber, string Title);
+/// <summary>
+/// Input DTO for registering a health technician. Technicians cannot sign in, so there is no password. The title is
+/// optional and defaults to "Sağlık Teknisyeni"; a title that is given must not be blank.
+/// </summary>
+public record CreateTechnicianRequest(string FullName, string Email, string? PhoneNumber, string? Title = null);
 
 /// <summary>
-/// Input DTO for editing a staff member. <paramref name="Title"/> is required for a technician and ignored
+/// Input DTO for editing a staff member. <paramref name="Title"/> changes a technician's title (left as it is when null) and is ignored
 /// for a doctor (a doctor's specialty is the name of their department).
 /// </summary>
 public record UpdateStaffRequest(string FullName, string Email, string? PhoneNumber, string? Title = null);

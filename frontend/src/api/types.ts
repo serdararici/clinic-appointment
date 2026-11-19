@@ -221,6 +221,12 @@ export interface CreateDoctorRequest {
   slotDurationMinutes?: number
 }
 
+export interface CreateTechnicianRequest {
+  fullName: string
+  email: string
+  phoneNumber?: string
+}
+
 export interface UpdateStaffRequest {
   fullName: string
   email: string

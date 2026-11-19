@@ -333,16 +333,15 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task Login_UsesTheHealthTechnicianRoleName()
+    public async Task Login_IsRefusedLikeAWrongPassword_ForAHealthTechnician_EvenWithAPasswordHash()
     {
+        // Technicians are staff records only: they cannot sign in (User.CanSignIn is false for them).
         var branch = new ClinicFacility(Guid.NewGuid(), "Merkez", "Sakarya");
         _clinics.Items.Add(branch);
         AddUserWithPassword(new HealthTechnician("Kemal", "kemal@example.com", "", branch.AddDepartment("Radyoloji"), "Teknikeri"));
 
-        var response = await _auth.LoginAsync(new LoginRequest("kemal@example.com", "Demo123!"));
-
-        Assert.Equal("HealthTechnician", response.Role);
-        Assert.Equal(branch.Id, response.BranchId);
+        await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("kemal@example.com", "Demo123!")));
+        await Assert.ThrowsAsync<InvalidCredentialsException>(() => _auth.LoginAsync(new LoginRequest("kemal@example.com", "wrong")));
     }
 
     [Fact]
